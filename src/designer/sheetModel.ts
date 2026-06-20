@@ -32,6 +32,7 @@ export type Action =
   | { type: 'flattenLast' }
   | { type: 'insertBreak' }
   | { type: 'insertSection'; text: string }
+  | { type: 'setSection'; index: number; text: string }
   | { type: 'deleteLast' }
   | { type: 'removeAt'; index: number }
   | { type: 'moveItem'; from: number; to: number }
@@ -65,6 +66,7 @@ export function reduce(doc: SheetDoc, action: Action): SheetDoc {
     case 'flattenLast':   return { ...doc, items: shiftLastNote(doc.items, -1) };
     case 'insertBreak':   return { ...doc, items: [...doc.items, { type: 'break' }] };
     case 'insertSection': return { ...doc, items: [...doc.items, { type: 'section', text: action.text }] };
+    case 'setSection':    return { ...doc, items: doc.items.map((it, i) => i === action.index && it.type === 'section' ? { ...it, text: action.text } : it) };
     case 'deleteLast':    return { ...doc, items: doc.items.slice(0, -1) };
     case 'removeAt':      return { ...doc, items: doc.items.filter((_, i) => i !== action.index) };
     case 'moveItem':      return { ...doc, items: moveItem(doc.items, action.from, action.to) };

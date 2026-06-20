@@ -81,16 +81,12 @@ body { background: var(--paper); color: var(--ink); }
 .brut-tab:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
 .brut-tab[aria-pressed='true'] { background: var(--accent); box-shadow: var(--shadow); }
 
-/* Workspace: faint drafting grid behind the white sheet ----------------- */
+/* Workspace: plain white behind the sheet (the hard shadow gives definition). */
 .stage {
-  background-color: var(--paper);
-  background-image:
-    linear-gradient(rgba(20,18,16,.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(20,18,16,.035) 1px, transparent 1px);
-  background-size: 22px 22px;
+  background-color: #ffffff;
   border-color: var(--ink);
+  border-bottom-width: 3px;
 }
-.stage { border-bottom-width: 3px; }
 
 /* Tool panels ----------------------------------------------------------- */
 .designer-panel, .generator-panel, .quiz-panel, .quiz-viewer-panel { background: var(--paper); }

@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
-import type { SheetDoc, HeaderField, Action } from './sheetModel';
+import type { SheetDoc, HeaderField, Action, Item } from './sheetModel';
 import { DesignerCanvas } from './DesignerCanvas';
 import { Palette } from './Palette';
 import { DesignerControls } from './DesignerControls';
 import { HeaderEditOverlay } from './HeaderEditOverlay';
+import { EditOverlay } from './EditOverlay';
 import { useKeyboard, type KeyResult } from './useKeyboard';
 import { TabBar } from '../components/Tabs';
 import { tabPanelClass, type TabDef } from '../components/tabPanel';
@@ -31,6 +32,7 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
   const [exportMsg, setExportMsg] = useState('');
   const [tab, setTab] = useState('notes');
   const [editingField, setEditingField] = useState<HeaderField | null>(null);
+  const [sectionEdit, setSectionEdit] = useState<number | null>(null);
   const [speaker, setSpeaker] = useState(false);
   const [email, setEmail] = useState('');
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
@@ -43,8 +45,10 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
 
   const handle = (r: KeyResult) => {
     if (r.type === 'newSection') {
-      const text = window.prompt('Section title');
-      if (text) dispatch({ type: 'insertSection', text });
+      // Insert an empty section then edit it in the overlay (same as header fields).
+      const idx = doc.items.length;
+      dispatch({ type: 'insertSection', text: '' });
+      setSectionEdit(idx);
       return;
     }
     dispatch(r);
@@ -143,6 +147,7 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
           doc={doc}
           editable
           onEditField={setEditingField}
+          onEditSection={setSectionEdit}
           onRemove={(i) => dispatch({ type: 'removeAt', index: i })}
           onMove={(from, to) => dispatch({ type: 'moveItem', from, to })}
           playingIndex={playingIndex}
@@ -241,10 +246,25 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
 
       {editingField && (
         <HeaderEditOverlay
+          key={editingField}
           field={editingField}
           value={doc[editingField]}
           onChange={(v) => dispatch({ type: 'setHeader', field: editingField, value: v })}
           onClose={() => setEditingField(null)}
+        />
+      )}
+
+      {sectionEdit !== null && doc.items[sectionEdit]?.type === 'section' && (
+        <EditOverlay
+          key={sectionEdit}
+          label="Section title"
+          value={(doc.items[sectionEdit] as Extract<Item, { type: 'section' }>).text}
+          onChange={(v) => dispatch({ type: 'setSection', index: sectionEdit, text: ucfirst(v) })}
+          onClose={() => {
+            const it = doc.items[sectionEdit];
+            if (it && it.type === 'section' && !it.text.trim()) dispatch({ type: 'removeAt', index: sectionEdit });
+            setSectionEdit(null);
+          }}
         />
       )}
     </div>

@@ -40,18 +40,23 @@ function DragSlot({ index, isOver, isPlaying, children }: { index: number; isOve
 }
 
 // A section row that is also a drop target while dragging.
-function DropSection({ index, text, isOver }: { index: number; text: string; isOver: boolean }) {
+function DropSection({ index, text, isOver, onEdit }: { index: number; text: string; isOver: boolean; onEdit?: () => void }) {
   const { setNodeRef } = useDroppable({ id: index });
   return (
-    <div ref={setNodeRef} className={`row-section font-semibold text-slate-700 mt-2 ${isOver ? 'ring-2 ring-slate-900 rounded-md' : ''}`}>{text}</div>
+    <div
+      ref={setNodeRef}
+      className={`row-section font-semibold text-slate-700 mt-2 ${onEdit ? 'cursor-pointer hover:bg-slate-100/70 rounded px-1 -mx-1' : ''} ${isOver ? 'ring-2 ring-slate-900 rounded-md' : ''}`}
+      onClick={onEdit}
+    >{text || <span className="text-slate-400">Section…</span>}</div>
   );
 }
 
-export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, onMove, playingIndex = null }: {
+export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, onEditSection, onMove, playingIndex = null }: {
   doc: SheetDoc;
   onRemove: (index: number) => void;
   editable?: boolean;
   onEditField?: (f: HeaderField) => void;
+  onEditSection?: (index: number) => void;
   onMove?: (from: number, to: number) => void;
   playingIndex?: number | null;
 }) {
@@ -86,7 +91,7 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
       {rows.map((row, ri) =>
         row.kind === 'section'
           ? (dnd
-              ? <DropSection key={ri} index={row.index} text={row.text} isOver={overIndex === row.index} />
+              ? <DropSection key={ri} index={row.index} text={row.text} isOver={overIndex === row.index} onEdit={onEditSection ? () => onEditSection(row.index) : undefined} />
               : <div key={ri} className="row-section font-semibold text-slate-700 mt-2">{row.text}</div>)
           : (
             <div key={ri} className="row-tiles flex flex-wrap" style={{ gap: 6 }}>
