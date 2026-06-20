@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Note Tile Sheets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1c1b22;
+    --muted:#6c6a78;
+    --line:#e7e5ee;
+    --panel:#ffffff;
+    --shell:#f4f3f7;
+    --accent:#6bc6a0;          /* CRF G-note green as the one UI accent */
+    --accent-ink:#0f5840;
+    --radius:12px;
+    --pad:8mm;                 /* page margin */
+    --label-h:7mm;             /* sheet label strip height */
+    --tile-font: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--tile-font);
+    color:var(--ink);
+    background:var(--shell);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- App shell ---------- */
+  .app{
+    display:grid;
+    grid-template-columns:340px 1fr;
+    min-height:100vh;
+  }
+
+  .panel{
+    background:var(--panel);
+    border-right:1px solid var(--line);
+    padding:22px 20px 40px;
+    position:sticky;
+    top:0;
+    align-self:start;
+    height:100vh;
+    overflow-y:auto;
+  }
+
+  .brandrow{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+  .brandmark{
+    width:26px;height:26px;border-radius:7px;flex:0 0 auto;
+    background:
+      linear-gradient(135deg,#f86e6e 0 25%,#ffbc57 25% 50%,#6bc6a0 50% 75%,#88a7f8 75% 100%);
+  }
+  h1{font-size:16px;font-weight:700;letter-spacing:-.01em;margin:0;line-height:1.15}
+  .sub{font-size:11px;color:var(--muted);margin:2px 0 20px;line-height:1.4}
+
+  .group{margin-bottom:20px}
+  .group > .lbl{
+    display:block;font-size:11px;font-weight:600;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--muted);margin-bottom:8px;
+  }
+
+  /* segmented size control */
+  .seg{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+  .seg.four{grid-template-columns:repeat(4,1fr)}
+  .seg button{
+    font-family:inherit;font-size:11px;font-weight:600;color:var(--muted);
+    border:1px solid var(--line);background:#fff;border-radius:8px;
+    padding:7px 0;cursor:pointer;transition:.12s;
+  }
+  .seg button:hover{border-color:#cdcad8}
+  .seg button[aria-pressed="true"]{
+    background:var(--accent);border-color:var(--accent);color:#06301f;
+  }
+  .sizehint{font-size:11px;color:var(--muted);margin-top:6px}
+
+  /* mode toggle */
+  .toggle2{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+  .toggle2 button{
+    font-family:inherit;font-size:12px;font-weight:600;color:var(--muted);
+    border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px 0;cursor:pointer;
+  }
+  .toggle2 button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+
+  .field{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+  .field label{font-size:13px}
+  .num{
+    width:64px;font-family:inherit;font-size:13px;text-align:center;
+    border:1px solid var(--line);border-radius:8px;padding:7px 6px;
+  }
+  .num:focus,.seg button:focus-visible,.toggle2 button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+  .row-check{display:flex;align-items:center;gap:8px;font-size:13px}
+  .row-check input{width:16px;height:16px;accent-color:var(--accent)}
+
+  .miniactions{display:flex;gap:8px;margin:4px 0 10px}
+  .mini{
+    font-family:inherit;font-size:11px;font-weight:600;color:var(--accent-ink);
+    background:#eef8f3;border:1px solid #d4ede2;border-radius:7px;padding:6px 10px;cursor:pointer;
+  }
+  .mini:hover{background:#e4f3ec}
+
+  /* note list */
+  .notes{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .note{
+    display:grid;grid-template-columns:18px 22px 1fr 58px;align-items:center;gap:9px;
+    padding:7px 11px;border-bottom:1px solid var(--line);
+  }
+  .note:last-child{border-bottom:0}
+  .note.off{opacity:.4}
+  .note input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent)}
+  .swatch{width:20px;height:20px;border-radius:5px;border:1px solid rgba(0,0,0,.08)}
+  .nname{font-size:13px;font-weight:600}
+  .nhex{font-size:10px;color:var(--muted);font-weight:400}
+  .note .num{width:54px;padding:5px 4px;font-size:12px}
+
+  .cta{
+    width:100%;font-family:inherit;font-size:14px;font-weight:700;color:#06301f;
+    background:var(--accent);border:0;border-radius:10px;padding:13px 0;cursor:pointer;
+    margin-top:6px;transition:.12s;
+  }
+  .cta:hover{filter:brightness(.96)}
+  .cta.secondary{background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:600;margin-top:8px}
+  .cta.secondary:hover{background:#fafafa;filter:none}
+  .cta:disabled{opacity:.6;cursor:default;filter:none}
+  .tip{
+    font-size:11px;color:var(--muted);line-height:1.5;margin-top:12px;
+    background:#fbfbfd;border:1px solid var(--line);border-radius:9px;padding:10px 11px;
+  }
+  .tip b{color:var(--ink)}
+
+  .stat{font-size:11px;color:var(--muted);margin-top:10px;text-align:center}
+
+  /* ---------- Preview / print area ---------- */
+  .stage{padding:30px;overflow:auto}
+  .sheets{display:block}          /* block context — flex/grid parents break pagination */
+
+  .sheet{
+    display:block;
+    background:#fff;
+    box-shadow:0 2px 18px rgba(20,18,40,.12);
+    padding:var(--pad);
+    margin:0 auto 26px;           /* centre on screen; spacing between previews */
+    page-break-after:always;break-after:page;
+  }
+  .sheet:last-child{page-break-after:auto;break-after:auto;margin-bottom:0}
+
+  .grid{display:grid;align-content:start;justify-content:start;flex:1 1 auto}
+
+  .tile{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:#fff;line-height:1;text-align:center;
+  }
+  .tile .main{
+    font-weight:700;
+    text-shadow:0 1px 0 rgba(0,0,0,.22), 0 2px 4px rgba(0,0,0,.38);
+  }
+  .tile .sub{
+    font-weight:600;opacity:.92;margin-top:.12em;
+    text-shadow:0 1px 0 rgba(0,0,0,.20), 0 1px 3px rgba(0,0,0,.32);
+  }
+  .guides .tile{outline:.4px dashed rgba(0,0,0,.22);outline-offset:-.2px}
+
+  .empty{color:var(--muted);font-size:14px;text-align:center;margin-top:80px}
+
+  .grid-svg{display:block}
+  body.mode-tiles .grid-only{display:none}
+  body.mode-grid  .tiles-only{display:none}
+
+  /* ---------- Print ---------- */
+  @media print{
+    .panel,.stage-pad-top{display:none !important}
+    .app{display:block}
+    .stage{padding:0;overflow:visible}
+    .sheet{box-shadow:none;margin:0 auto}
+    body{background:#fff}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+
+  @media (max-width:820px){
+    .app{grid-template-columns:1fr}
+    .panel{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+    .stage{padding:16px}
+    .sheet{width:100%;min-height:auto}
+  }
+</style>
+<style id="pageRule">@page{size:A4 portrait;margin:0}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+<div class="app">
+  <!-- ============ CONTROL PANEL ============ -->
+  <aside class="panel no-print">
+    <div class="brandrow"><span class="brandmark"></span><h1>Note Tile Sheets</h1></div>
+    <p class="sub">Creative Ranges Foundation · printable cut-out tiles for building song sheets</p>
+
+    <div class="group">
+      <span class="lbl">Sheet type</span>
+      <div class="toggle2" id="typeToggle">
+        <button data-type="tiles" aria-pressed="true">Tiles</button>
+        <button data-type="grid">Grid paper</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <span class="lbl">Page</span>
+      <div class="seg four" id="paperSeg" style="margin-bottom:6px">
+        <button data-paper="A4" aria-pressed="true">A4</button>
+        <button data-paper="A3">A3</button>
+        <button data-paper="Letter">Letter</button>
+        <button data-paper="Legal">Legal</button>
+      </div>
+      <div class="toggle2" id="orientToggle">
+        <button data-orient="portrait" aria-pressed="true">Portrait</button>
+        <button data-orient="landscape">Landscape</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <span class="lbl">Tile size</span>
+      <div class="seg" id="sizeSeg">
+        <button data-size="40" value="xs">XS</button>
+        <button data-size="60" value="sm">SM</button>
+        <button data-size="80" value="md" aria-pressed="true">MD</button>
+        <button data-size="100" value="lg">LG</button>
+        <button data-size="120" value="xl">XL</button>
+        <button data-size="160" value="xxl">XXL</button>
+      </div>
+      <div class="sizehint" id="sizeHint">MD · 80&times;80 px · 9 columns per A4 page</div>
+    </div>
+
+    <div class="group grid-only">
+      <span class="lbl">Grid paper</span>
+      <div class="field">
+        <label for="gridPages">Grid sheets</label>
+        <input class="num" id="gridPages" type="number" min="1" max="50" value="1">
+      </div>
+      <div class="field">
+        <label for="clearance">Tile clearance (px)</label>
+        <input class="num" id="clearance" type="number" min="0" max="40" value="4">
+      </div>
+      <div class="sizehint" id="gridHint"></div>
+    </div>
+
+    <div class="group tiles-only">
+      <span class="lbl">Amount per note</span>
+      <div class="toggle2" id="modeToggle">
+        <button data-mode="rows" aria-pressed="true">By rows</button>
+        <button data-mode="pages">By full pages</button>
+      </div>
+      <div class="field">
+        <label id="allLabel">Set all notes to</label>
+        <input class="num" id="allCount" type="number" min="0" max="200" value="2">
+      </div>
+      <div class="miniactions">
+        <button class="mini" id="applyAll">Apply to all</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <span class="lbl">Sheet options</span>
+      <div class="row-check tiles-only"><input type="checkbox" id="optGuides" checked><label for="optGuides">Show cut guides</label></div>
+      <div class="field tiles-only">
+        <label for="optGap">Cutting margin (px/side)</label>
+        <input class="num" id="optGap" type="number" min="0" max="20" value="2">
+      </div>
+    </div>
+
+    <div class="group tiles-only">
+      <span class="lbl">Notes &amp; counts</span>
+      <div class="miniactions">
+        <button class="mini" id="selAll">Select all</button>
+        <button class="mini" id="selNone">Select none</button>
+        <button class="mini" id="resetAll">Reset</button>
+      </div>
+      <div class="notes" id="noteList"></div>
+    </div>
+
+    <div class="group">
+      <span class="lbl">Templates</span>
+      <div class="field" style="gap:6px">
+        <input id="tplName" type="text" placeholder="Name this setup"
+               style="flex:1;font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:7px 9px">
+        <button class="mini" id="tplSave">Save</button>
+      </div>
+      <div class="field" style="gap:6px;margin-top:8px">
+        <select id="tplList"
+                style="flex:1;font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:7px 6px;background:#fff"></select>
+        <button class="mini" id="tplLoad">Load</button>
+        <button class="mini" id="tplDel">Delete</button>
+      </div>
+      <div class="sizehint" id="tplMsg"></div>
+    </div>
+
+    <button class="cta" id="downloadBtn">Download PDF</button>
+    <button class="cta secondary" id="printBtn">Print instead…</button>
+    <div class="stat" id="stat"></div>
+    <div class="tip">
+      <b>Download PDF</b> renders straight to a file — no dialog needed. If you use <b>Print</b> instead, set <b>Margins → None</b> and turn <b>Background graphics ON</b> so the tile colours print.
+    </div>
+  </aside>
+
+  <!-- ============ PREVIEW / PRINT ============ -->
+  <main class="stage">
+    <div class="sheets" id="sheets"></div>
+  </main>
+</div>
+
+<script>
+/* ---- Note data (CRF palette) ---- */
+const NOTES = [
+  {id:'C',  main:'C',  sub:'',   hex:'#f86e6e'},
+  {id:'Cs', main:'C\u266F', sub:'D\u266D', hex:'#f58841'},
+  {id:'D',  main:'D',  sub:'',   hex:'#ffbc57'},
+  {id:'Ds', main:'D\u266F', sub:'E\u266D', hex:'#b8a334'},
+  {id:'E',  main:'E',  sub:'',   hex:'#fff56d'},
+  {id:'F',  main:'F',  sub:'',   hex:'#b3f888'},
+  {id:'Fs', main:'F\u266F', sub:'G\u266D', hex:'#93d154'},
+  {id:'G',  main:'G',  sub:'',   hex:'#6bc6a0'},
+  {id:'Gs', main:'G\u266F', sub:'A\u266D', hex:'#7ee8df'},
+  {id:'A',  main:'A',  sub:'',   hex:'#88a7f8'},
+  {id:'Bb', main:'B\u266D', sub:'',   hex:'#cc97e8'},
+  {id:'B',  main:'B',  sub:'',   hex:'#e277b1'},
+];
+
+/* ---- State ---- */
+const state = {
+  type: 'tiles',         // 'tiles' | 'grid'
+  paper: 'A4',           // 'A4' | 'A3' | 'Letter' | 'Legal'
+  orientation: 'portrait', // 'portrait' | 'landscape'
+  size: 80,
+  sizeLabel: 'MD',
+  mode: 'rows',          // 'rows' | 'pages'
+  margin: 2,             // cutting margin per side (px); gap between tiles = margin*2
+  guides: true,
+  gridPages: 1,
+  clearance: 4,
+  counts: {},            // id -> number
+  on: {},                // id -> bool
+};
+NOTES.forEach(n => { state.counts[n.id] = 2; state.on[n.id] = true; });
+
+/* ---- Geometry (@96dpi) ---- */
+const MM = 96/25.4;                       // px per mm
+const PAPERS = {                          // portrait short x long, mm
+  A4:     {short:210,   long:297},
+  A3:     {short:297,   long:420},
+  Letter: {short:215.9, long:279.4},
+  Legal:  {short:215.9, long:355.6},
+};
+const CSS_PAGE = {A4:'A4', A3:'A3', Letter:'letter', Legal:'legal'};
+
+let PAGE_W = 210*MM, PAGE_H = 297*MM;     // current page box px (updated per render)
+const PAD   = 8*MM;                        // matches --pad
+const LABEL = 7*MM;                        // matches --label-h
+
+function applyPage(paper, orient){
+  const p = PAPERS[paper] || PAPERS.A4;
+  if(orient === 'landscape'){ PAGE_W = p.long*MM;  PAGE_H = p.short*MM; }
+  else                      { PAGE_W = p.short*MM; PAGE_H = p.long*MM;  }
+}
+function sheetDims(paper, orient){
+  const p = PAPERS[paper] || PAPERS.A4;
+  const w = orient === 'landscape' ? p.long  : p.short;
+  const h = orient === 'landscape' ? p.short : p.long;
+  return {w:w+'mm', h:h+'mm'};
+}
+
+function cols(size, gap){
+  const inner = PAGE_W - PAD*2;
+  return Math.max(1, Math.floor((inner + gap) / (size + gap)));
+}
+function rowsPerPage(size, gap){
+  const inner = PAGE_H - PAD*2;
+  return Math.max(1, Math.floor((inner + gap) / (size + gap)));
+}
+
+/* ---- Build a single tile ---- */
+function tileEl(note, size){
+  const t = document.createElement('div');
+  t.className = 'tile';
+  t.style.width = size+'px';
+  t.style.height = size+'px';
+  t.style.background = note.hex;
+
+  const m = document.createElement('div');
+  m.className = 'main';
+  m.textContent = note.main;
+  m.style.fontSize = (size * (note.sub ? 0.40 : 0.46)).toFixed(1)+'px';
+  t.appendChild(m);
+
+  if(note.sub){
+    const s = document.createElement('div');
+    s.className = 'sub';
+    s.textContent = note.sub;
+    s.style.fontSize = (size * 0.22).toFixed(1)+'px';
+    t.appendChild(s);
+  }
+  return t;
+}
+
+/* ---- Build one sheet (single note) ---- */
+function sheetEl(note, tilesOnThisPage, size, gap, c, showGuides){
+  const sheet = document.createElement('div');
+  sheet.className = 'sheet' + (showGuides ? ' guides' : '');
+  sheet.style.width = curSheet.w;
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  grid.style.gridTemplateColumns = `repeat(${c}, ${size}px)`;
+  grid.style.gap = gap+'px';
+  for(let i=0;i<tilesOnThisPage;i++) grid.appendChild(tileEl(note, size));
+  sheet.appendChild(grid);
+  return sheet;
+}
+
+/* ---- Build one sheet with rows that may differ by note (rows mode) ---- */
+function mixedSheetEl(rowNotes, size, gap, c, showGuides){
+  const sheet = document.createElement('div');
+  sheet.className = 'sheet' + (showGuides ? ' guides' : '');
+  sheet.style.width = curSheet.w;
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  grid.style.gridTemplateColumns = `repeat(${c}, ${size}px)`;
+  grid.style.gap = gap+'px';
+  rowNotes.forEach(note => {
+    for(let k=0;k<c;k++) grid.appendChild(tileEl(note, size));
+  });
+  sheet.appendChild(grid);
+  return sheet;
+}
+
+/* ---- Build one grid-paper sheet ---- */
+function gridSheetEl(size, clearance){
+  const pitch = size + clearance;
+  const innerW = PAGE_W - PAD*2;
+  const innerH = PAGE_H - PAD*2;
+  const c = Math.max(1, Math.floor(innerW / pitch));
+  const r = Math.max(1, Math.floor(innerH / pitch));
+  const gw = c * pitch, gh = r * pitch;
+
+  const sheet = document.createElement('div');
+  sheet.className = 'sheet';
+  sheet.style.width = curSheet.w;
+
+  // build SVG: solid horizontal lines, light dashed vertical lines
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class','grid-svg');
+  svg.setAttribute('width', gw);
+  svg.setAttribute('height', gh);
+  svg.setAttribute('viewBox', `0 0 ${gw} ${gh}`);
+
+  // vertical lines (dashed, light) — drawn first so horizontals sit on top
+  for(let i=0;i<=c;i++){
+    const x = i*pitch;
+    const l = document.createElementNS(NS,'line');
+    l.setAttribute('x1',x); l.setAttribute('y1',0);
+    l.setAttribute('x2',x); l.setAttribute('y2',gh);
+    l.setAttribute('stroke','#d6d4e0');
+    l.setAttribute('stroke-width','0.75');
+    l.setAttribute('stroke-dasharray','1 5');
+    svg.appendChild(l);
+  }
+  // horizontal lines (solid)
+  for(let j=0;j<=r;j++){
+    const y = j*pitch;
+    const l = document.createElementNS(NS,'line');
+    l.setAttribute('x1',0); l.setAttribute('y1',y);
+    l.setAttribute('x2',gw); l.setAttribute('y2',y);
+    l.setAttribute('stroke','#b3b1c0');
+    l.setAttribute('stroke-width','0.9');
+    svg.appendChild(l);
+  }
+
+  sheet.appendChild(svg);
+  return sheet;
+}
+
+/* ---- Render everything ---- */
+let curSheet = {w:'297mm', h:'210mm'};
+
+function render(){
+  const { size, mode } = state;
+  const guides = state.guides;
+  const gap = state.margin * 2;            // 2px each side -> 4px between tiles
+
+  // Page geometry from the explicit controls
+  const orient = state.orientation;
+  applyPage(state.paper, orient);
+  curSheet = sheetDims(state.paper, orient);
+  document.getElementById('pageRule').textContent =
+    `@page{size:${CSS_PAGE[state.paper]} ${orient};margin:0}`;
+
+  const c  = cols(size, gap);
+  const container = document.getElementById('sheets');
+  container.innerHTML = '';
+
+  // hint lines
+  document.getElementById('sizeHint').textContent =
+    `${state.sizeLabel} · ${size}\u00D7${size} px · ${c} columns/page`;
+  const pitch = size + state.clearance;
+  document.getElementById('gridHint').textContent =
+    `${pitch}px between lines · ${Math.floor((PAGE_W-PAD*2)/pitch)}\u00D7${Math.floor((PAGE_H-PAD*2)/pitch)} cells`;
+
+  /* ----- GRID PAPER MODE ----- */
+  if(state.type === 'grid'){
+    const pages = Math.max(1, parseInt(state.gridPages)||1);
+    for(let p=0;p<pages;p++){
+      container.appendChild(gridSheetEl(size, state.clearance));
+    }
+    document.getElementById('stat').textContent =
+      `${pages} grid ${pages===1?'sheet':'sheets'} · ${pitch}px spacing`;
+    return;
+  }
+
+  /* ----- TILE MODE ----- */
+  const rpp = rowsPerPage(size, gap);
+  let totalTiles = 0, totalSheets = 0;
+
+  if(mode === 'rows'){
+    // One row per requested row, flowing across pages — no break per colour.
+    const rowNotes = [];
+    NOTES.forEach(note => {
+      if(!state.on[note.id]) return;
+      const count = Math.max(0, parseInt(state.counts[note.id]) || 0);
+      for(let i=0;i<count;i++) rowNotes.push(note);
+    });
+
+    for(let i=0;i<rowNotes.length;i+=rpp){
+      const pageRows = rowNotes.slice(i, i+rpp);
+      container.appendChild(mixedSheetEl(pageRows, size, gap, c, guides));
+      totalTiles += pageRows.length * c;
+      totalSheets++;
+    }
+  } else {
+    // Full-page mode: each note fills its own page(s).
+    NOTES.forEach(note => {
+      if(!state.on[note.id]) return;
+      const count = Math.max(0, parseInt(state.counts[note.id]) || 0);
+      if(count === 0) return;
+
+      let rowsLeft = count * rpp;
+      while(rowsLeft > 0){
+        const rowsHere = Math.min(rpp, rowsLeft);
+        const tilesHere = rowsHere * c;
+        container.appendChild(sheetEl(note, tilesHere, size, gap, c, guides));
+        totalTiles += tilesHere;
+        totalSheets++;
+        rowsLeft -= rowsHere;
+      }
+    });
+  }
+
+  if(totalSheets === 0){
+    const e = document.createElement('div');
+    e.className = 'empty';
+    e.textContent = 'No tiles yet — switch on a note and give it a count.';
+    container.appendChild(e);
+  }
+
+  document.getElementById('stat').textContent =
+    `${totalTiles} tiles · ${totalSheets} ${totalSheets===1?'sheet':'sheets'}`;
+}
+
+/* ---- Build the note list UI ---- */
+function buildNoteList(){
+  const list = document.getElementById('noteList');
+  list.innerHTML = '';
+  NOTES.forEach(note => {
+    const row = document.createElement('div');
+    row.className = 'note' + (state.on[note.id] ? '' : ' off');
+    row.dataset.id = note.id;
+
+    const chk = document.createElement('input');
+    chk.type = 'checkbox'; chk.checked = state.on[note.id];
+    chk.addEventListener('change', () => {
+      state.on[note.id] = chk.checked;
+      row.classList.toggle('off', !chk.checked);
+      render();
+    });
+
+    const sw = document.createElement('div');
+    sw.className = 'swatch'; sw.style.background = note.hex;
+
+    const nameWrap = document.createElement('div');
+    const nm = document.createElement('div'); nm.className='nname';
+    nm.textContent = note.sub ? `${note.main}/${note.sub}` : note.main;
+    const hx = document.createElement('div'); hx.className='nhex';
+    hx.textContent = note.hex.toUpperCase();
+    nameWrap.appendChild(nm); nameWrap.appendChild(hx);
+
+    const num = document.createElement('input');
+    num.className='num'; num.type='number'; num.min='0'; num.max='200';
+    num.value = state.counts[note.id];
+    num.addEventListener('input', () => {
+      state.counts[note.id] = num.value === '' ? '' : Math.max(0, parseInt(num.value)||0);
+      render();
+    });
+
+    row.append(chk, sw, nameWrap, num);
+    list.appendChild(row);
+  });
+}
+
+/* ---- Wire up controls ---- */
+document.querySelectorAll('#paperSeg button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('#paperSeg button').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    state.paper = b.dataset.paper;
+    render();
+  });
+});
+
+document.querySelectorAll('#orientToggle button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('#orientToggle button').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    state.orientation = b.dataset.orient;
+    render();
+  });
+});
+
+document.querySelectorAll('#typeToggle button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('#typeToggle button').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    state.type = b.dataset.type;
+    document.body.className = 'mode-' + state.type;
+    render();
+  });
+});
+
+document.getElementById('gridPages').addEventListener('input', e=>{ state.gridPages = Math.max(1, parseInt(e.target.value)||1); render(); });
+document.getElementById('clearance').addEventListener('input', e=>{ state.clearance = Math.max(0, parseInt(e.target.value)||0); render(); });
+
+document.querySelectorAll('#sizeSeg button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('#sizeSeg button').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    state.size = parseInt(b.dataset.size);
+    state.sizeLabel = b.textContent;
+    render();
+  });
+});
+
+document.querySelectorAll('#modeToggle button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('#modeToggle button').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    state.mode = b.dataset.mode;
+    document.getElementById('allLabel').textContent =
+      state.mode === 'rows' ? 'Set all notes to (rows)' : 'Set all notes to (pages)';
+    render();
+  });
+});
+
+document.getElementById('applyAll').addEventListener('click', ()=>{
+  const v = Math.max(0, parseInt(document.getElementById('allCount').value)||0);
+  NOTES.forEach(n => state.counts[n.id] = v);
+  buildNoteList(); render();
+});
+
+document.getElementById('optGuides').addEventListener('change', e=>{ state.guides = e.target.checked; render(); });
+document.getElementById('optGap').addEventListener('input', e=>{ state.margin = Math.max(0, parseInt(e.target.value)||0); render(); });
+
+document.getElementById('selAll').addEventListener('click', ()=>{ NOTES.forEach(n=>state.on[n.id]=true); buildNoteList(); render(); });
+document.getElementById('selNone').addEventListener('click', ()=>{ NOTES.forEach(n=>state.on[n.id]=false); buildNoteList(); render(); });
+document.getElementById('resetAll').addEventListener('click', ()=>{
+  NOTES.forEach(n=>{ state.on[n.id]=true; state.counts[n.id]=2; });
+  buildNoteList(); render();
+});
+
+document.getElementById('printBtn').addEventListener('click', ()=>{
+  document.title = 'CRF Note Tiles';
+  window.print();
+});
+
+/* ---- Download PDF (html2canvas + jsPDF) ---- */
+async function downloadPDF(){
+  const btn = document.getElementById('downloadBtn');
+  if(!(window.jspdf && window.html2canvas)){
+    tplMsg('PDF tools not loaded — check your connection, or use Print.');
+    return;
+  }
+  const sheets = [...document.querySelectorAll('#sheets .sheet')];
+  if(sheets.length === 0){ tplMsg('Nothing to export yet.'); return; }
+
+  const original = btn.textContent;
+  btn.disabled = true;
+  try{
+    if(document.fonts && document.fonts.ready) await document.fonts.ready;
+    const { jsPDF } = window.jspdf;
+    const fmt = state.paper.toLowerCase();
+    const doc = new jsPDF({ orientation: state.orientation, unit: 'mm', format: fmt });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+
+    for(let i=0;i<sheets.length;i++){
+      btn.textContent = `Rendering ${i+1} / ${sheets.length}…`;
+      const el = sheets[i];
+      const shadow = el.style.boxShadow; el.style.boxShadow = 'none';
+      const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
+      el.style.boxShadow = shadow;
+
+      let w = pageW, h = pageW * (canvas.height / canvas.width);
+      if(h > pageH + 0.5){ h = pageH; w = pageH * (canvas.width / canvas.height); }
+      if(i > 0) doc.addPage(fmt, state.orientation);
+      doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, w, h, undefined, 'FAST');
+    }
+    doc.save('CRF Note Tiles.pdf');
+    btn.textContent = original;
+    tplMsg(`Downloaded ${sheets.length} ${sheets.length===1?'page':'pages'}.`);
+  }catch(e){
+    console.error(e);
+    btn.textContent = 'Download failed — try Print';
+    setTimeout(()=>{ btn.textContent = original; }, 2500);
+  }finally{
+    btn.disabled = false;
+  }
+}
+document.getElementById('downloadBtn').addEventListener('click', downloadPDF);
+
+/* ---- Templates (localStorage) ---- */
+const TPL_KEY = 'crf_note_tiles_templates_v1';
+
+function tplMsg(text){ document.getElementById('tplMsg').textContent = text || ''; }
+
+function loadTemplates(){
+  try { return JSON.parse(localStorage.getItem(TPL_KEY) || '{}') || {}; }
+  catch(e){ return {}; }
+}
+function storeTemplates(obj){
+  try { localStorage.setItem(TPL_KEY, JSON.stringify(obj)); return true; }
+  catch(e){ tplMsg('Storage unavailable in this view — open the downloaded file in your browser.'); return false; }
+}
+
+function captureState(){
+  return {
+    type: state.type, paper: state.paper, orientation: state.orientation,
+    size: state.size, sizeLabel: state.sizeLabel, mode: state.mode,
+    margin: state.margin, guides: state.guides,
+    gridPages: state.gridPages, clearance: state.clearance,
+    counts: {...state.counts}, on: {...state.on},
+  };
+}
+
+function setPressed(sel, attr, value){
+  document.querySelectorAll(sel).forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset[attr]) === String(value) ? 'true' : 'false'));
+}
+
+function applyState(s){
+  // merge (fall back to current for anything missing)
+  state.type = s.type ?? state.type;
+  state.paper = s.paper ?? state.paper;
+  state.orientation = s.orientation ?? state.orientation;
+  state.size = s.size ?? state.size;
+  state.sizeLabel = s.sizeLabel ?? state.sizeLabel;
+  state.mode = s.mode ?? state.mode;
+  state.margin = s.margin ?? state.margin;
+  state.guides = s.guides ?? state.guides;
+  state.gridPages = s.gridPages ?? state.gridPages;
+  state.clearance = s.clearance ?? state.clearance;
+  NOTES.forEach(n => {
+    if(s.counts && n.id in s.counts) state.counts[n.id] = s.counts[n.id];
+    if(s.on && n.id in s.on) state.on[n.id] = s.on[n.id];
+  });
+
+  // sync the controls
+  setPressed('#typeToggle button', 'type', state.type);
+  document.body.className = 'mode-' + state.type;
+  setPressed('#paperSeg button', 'paper', state.paper);
+  setPressed('#orientToggle button', 'orient', state.orientation);
+  setPressed('#sizeSeg button', 'size', state.size);
+  setPressed('#modeToggle button', 'mode', state.mode);
+  document.getElementById('allLabel').textContent =
+    state.mode === 'rows' ? 'Set all notes to (rows)' : 'Set all notes to (pages)';
+  document.getElementById('optGuides').checked = state.guides;
+  document.getElementById('optGap').value = state.margin;
+  document.getElementById('gridPages').value = state.gridPages;
+  document.getElementById('clearance').value = state.clearance;
+
+  buildNoteList();
+  render();
+}
+
+function refreshTplList(selectName){
+  const sel = document.getElementById('tplList');
+  const names = Object.keys(loadTemplates()).sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = '';
+  if(names.length === 0){
+    const o = document.createElement('option');
+    o.value=''; o.textContent='No saved templates'; o.disabled=true; o.selected=true;
+    sel.appendChild(o);
+    return;
+  }
+  names.forEach(n=>{
+    const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o);
+  });
+  if(selectName && names.includes(selectName)) sel.value = selectName;
+}
+
+document.getElementById('tplSave').addEventListener('click', ()=>{
+  const name = document.getElementById('tplName').value.trim();
+  if(!name){ tplMsg('Give the template a name first.'); return; }
+  const all = loadTemplates();
+  const existed = name in all;
+  all[name] = captureState();
+  if(storeTemplates(all)){
+    refreshTplList(name);
+    tplMsg(`${existed ? 'Updated' : 'Saved'} "${name}".`);
+  }
+});
+
+document.getElementById('tplLoad').addEventListener('click', ()=>{
+  const name = document.getElementById('tplList').value;
+  const all = loadTemplates();
+  if(!name || !(name in all)){ tplMsg('Pick a template to load.'); return; }
+  applyState(all[name]);
+  document.getElementById('tplName').value = name;
+  tplMsg(`Loaded "${name}".`);
+});
+
+document.getElementById('tplDel').addEventListener('click', ()=>{
+  const name = document.getElementById('tplList').value;
+  const all = loadTemplates();
+  if(!name || !(name in all)){ tplMsg('Pick a template to delete.'); return; }
+  delete all[name];
+  if(storeTemplates(all)){ refreshTplList(); tplMsg(`Deleted "${name}".`); }
+});
+
+/* ---- Init ---- */
+document.body.className = 'mode-' + state.type;
+buildNoteList();
+refreshTplList();
+render();
+</script>
+</body>
+</html>
