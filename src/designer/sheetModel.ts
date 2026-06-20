@@ -1,4 +1,4 @@
-import { semitone, noteById } from '../notes';
+import { semitone, noteById, type AccidentalStyle } from '../notes';
 import type { Paper, Orient, TilesPerRow } from '../geometry';
 
 export type Item =
@@ -12,6 +12,7 @@ export type HeaderField = 'part' | 'title' | 'subtitle' | 'composer' | 'tempoSty
 export type SheetDoc = {
   part: string; title: string; subtitle: string; composer: string; tempoStyle: string;
   tilesPerRow: TilesPerRow; size: number; paper: Paper; orientation: Orient;
+  accidentalStyle: AccidentalStyle;
   items: Item[];
 };
 
@@ -19,6 +20,7 @@ export function defaultDoc(): SheetDoc {
   return {
     part: '', title: '', subtitle: '', composer: '', tempoStyle: '',
     tilesPerRow: 'auto', size: 64, paper: 'A4', orientation: 'portrait',
+    accidentalStyle: 'sharp',
     items: [],
   };
 }
@@ -32,9 +34,19 @@ export type Action =
   | { type: 'insertSection'; text: string }
   | { type: 'deleteLast' }
   | { type: 'removeAt'; index: number }
+  | { type: 'moveItem'; from: number; to: number }
   | { type: 'setHeader'; field: HeaderField; value: string }
-  | { type: 'setLayout'; patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation'>> }
+  | { type: 'setLayout'; patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation' | 'accidentalStyle'>> }
   | { type: 'load'; doc: SheetDoc };
+
+function moveItem(items: Item[], from: number, to: number): Item[] {
+  if (from === to) return items;
+  if (from < 0 || to < 0 || from >= items.length || to >= items.length) return items;
+  const next = items.slice();
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
+}
 
 function shiftLastNote(items: Item[], delta: number): Item[] {
   const last = items.at(-1);
@@ -54,6 +66,7 @@ export function reduce(doc: SheetDoc, action: Action): SheetDoc {
     case 'insertSection': return { ...doc, items: [...doc.items, { type: 'section', text: action.text }] };
     case 'deleteLast':    return { ...doc, items: doc.items.slice(0, -1) };
     case 'removeAt':      return { ...doc, items: doc.items.filter((_, i) => i !== action.index) };
+    case 'moveItem':      return { ...doc, items: moveItem(doc.items, action.from, action.to) };
     case 'setHeader':     return { ...doc, [action.field]: action.value };
     case 'setLayout':     return { ...doc, ...action.patch };
     case 'load':          return action.doc;

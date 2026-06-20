@@ -33,3 +33,15 @@ export function semitone(id: string, delta: number): string {
   const n = CHROMATIC.length;
   return CHROMATIC[((i + delta) % n + n) % n];
 }
+
+export type AccidentalStyle = 'sharp' | 'flat';
+
+// Resolve which enharmonic spelling is predominant (main) vs small (sub).
+// Naturals (and single-name accidentals like Bb) are unaffected.
+// note.main is the sharp spelling, note.sub the flat spelling.
+export function displayNote(note: Note, style: AccidentalStyle): { main: string; sub: string } {
+  if (!note.sub) return { main: note.main, sub: note.sub };
+  return style === 'flat'
+    ? { main: note.sub, sub: note.main }
+    : { main: note.main, sub: note.sub };
+}

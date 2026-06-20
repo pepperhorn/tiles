@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import type { Paper, Orient } from '../geometry';
 
 export async function exportPdf(sheets: HTMLElement[], paper: Paper, orient: Orient, filename: string): Promise<void> {

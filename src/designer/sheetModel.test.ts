@@ -35,11 +35,34 @@ test('insertBreak, insertSection, deleteLast, removeAt', () => {
   expect(d.items).toEqual([{ type: 'note', noteId: 'G' }]);
 });
 
+test('moveItem reorders items (e.g. arrow before note)', () => {
+  let d = defaultDoc();
+  d = reduce(d, { type: 'insertNote', noteId: 'C' });
+  d = reduce(d, { type: 'insertNote', noteId: 'E' });
+  d = reduce(d, { type: 'insertArrow', dir: 'up' });
+  // move the arrow (index 2) to the front (index 0)
+  d = reduce(d, { type: 'moveItem', from: 2, to: 0 });
+  expect(d.items).toEqual([
+    { type: 'arrow', dir: 'up' },
+    { type: 'note', noteId: 'C' },
+    { type: 'note', noteId: 'E' },
+  ]);
+});
+
+test('moveItem is a no-op for out-of-range or equal indices', () => {
+  const d = reduce(defaultDoc(), { type: 'insertNote', noteId: 'C' });
+  expect(reduce(d, { type: 'moveItem', from: 0, to: 0 }).items).toEqual(d.items);
+  expect(reduce(d, { type: 'moveItem', from: 0, to: 5 }).items).toEqual(d.items);
+  expect(reduce(d, { type: 'moveItem', from: -1, to: 0 }).items).toEqual(d.items);
+});
+
 test('setHeader and setLayout patch the doc', () => {
   let d = reduce(defaultDoc(), { type: 'setHeader', field: 'title', value: 'My Song' });
   expect(d.title).toBe('My Song');
   d = reduce(d, { type: 'setLayout', patch: { tilesPerRow: 6 } });
   expect(d.tilesPerRow).toBe(6);
+  d = reduce(d, { type: 'setLayout', patch: { accidentalStyle: 'flat' } });
+  expect(d.accidentalStyle).toBe('flat');
 });
 
 test('load replaces the whole document', () => {
