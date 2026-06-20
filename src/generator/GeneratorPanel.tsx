@@ -11,6 +11,7 @@ type Props = {
   totalTiles: number;
   sheetCount: number;
   onExport: { pdf: () => void; png: () => void; webp: () => void; print: () => void };
+  exportMsg?: string;
 };
 
 const SIZES = [
@@ -22,7 +23,7 @@ const SIZES = [
   { label: 'XXL', size: 160 },
 ];
 
-export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, onExport }: Props) {
+export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, onExport, exportMsg }: Props) {
   const [allCount, setAllCount] = useState(2);
   const [tplName, setTplName] = useState('');
   const [tplList, setTplList] = useState<string[]>(() => templateStore.list());
@@ -304,6 +305,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
       <div className="stat text-xs text-slate-400 text-center mt-2">
         {totalTiles} tiles · {sheetCount} {sheetCount === 1 ? 'sheet' : 'sheets'}
       </div>
+      {exportMsg && <div className="export-msg text-xs text-red-500 text-center mt-1" role="alert">{exportMsg}</div>}
     </aside>
   );
 }

@@ -11,7 +11,9 @@ export function DesignerControls({ doc, dispatch }: { doc: SheetDoc; dispatch: (
     dispatch({ type: 'setLayout', patch });
 
   const handleTpr = (val: string) => {
-    const tpr: TilesPerRow = val.trim() === '' ? 'auto' : Math.max(1, parseInt(val, 10)) as number;
+    if (val.trim() === '') { setLayout({ tilesPerRow: 'auto' }); return; }
+    const n = parseInt(val, 10);
+    const tpr: TilesPerRow = Number.isFinite(n) ? Math.max(1, n) : 'auto';
     setLayout({ tilesPerRow: tpr });
   };
 

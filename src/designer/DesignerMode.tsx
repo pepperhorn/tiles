@@ -8,11 +8,13 @@ import { useKeyboard, type KeyResult } from './useKeyboard';
 import { designStore } from '../storage';
 import { exportPdf } from '../export/pdf';
 import { exportRaster } from '../export/raster';
+import { usePageRule } from '../export/usePageRule';
 
 export function DesignerMode() {
   const [doc, dispatch] = useReducer(reduce, undefined, defaultDoc);
   const stageRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState('');
+  const [exportMsg, setExportMsg] = useState('');
 
   const handle = (r: KeyResult) => {
     if (r.type === 'newSection') {
@@ -24,12 +26,41 @@ export function DesignerMode() {
   };
   useKeyboard(handle, true);
 
+  usePageRule(doc.paper, doc.orientation);
+
   const sheetEl = () => stageRef.current?.querySelector('.sheet') as HTMLElement | null;
   const baseName = () => doc.title?.trim() || 'CRF Sheet';
   const onExport = {
-    pdf: () => { const el = sheetEl(); if (el) exportPdf([el], doc.paper, doc.orientation, baseName()); },
-    png: () => { const el = sheetEl(); if (el) exportRaster(el, 'image/png', baseName()); },
-    webp: () => { const el = sheetEl(); if (el) exportRaster(el, 'image/webp', baseName()); },
+    pdf: async () => {
+      try {
+        const el = sheetEl();
+        if (el) await exportPdf([el], doc.paper, doc.orientation, baseName());
+        setExportMsg('');
+      } catch (err) {
+        setExportMsg('Export failed: ' + String(err));
+        console.error(err);
+      }
+    },
+    png: async () => {
+      try {
+        const el = sheetEl();
+        if (el) await exportRaster(el, 'image/png', baseName());
+        setExportMsg('');
+      } catch (err) {
+        setExportMsg('Export failed: ' + String(err));
+        console.error(err);
+      }
+    },
+    webp: async () => {
+      try {
+        const el = sheetEl();
+        if (el) await exportRaster(el, 'image/webp', baseName());
+        setExportMsg('');
+      } catch (err) {
+        setExportMsg('Export failed: ' + String(err));
+        console.error(err);
+      }
+    },
     print: () => window.print(),
   };
   const onSave = () => name.trim() && designStore.save(name.trim(), doc);
@@ -56,6 +87,7 @@ export function DesignerMode() {
           <button className="btn-webp rounded-lg border px-3 py-1 text-sm" onClick={onExport.webp}>WebP</button>
           <button className="btn-print rounded-lg border px-3 py-1 text-sm" onClick={onExport.print}>Print</button>
         </div>
+        {exportMsg && <p className="designer-export-msg text-xs text-red-500 mt-1" role="alert">{exportMsg}</p>}
       </aside>
       <main className="stage overflow-auto p-4 md:p-8" ref={stageRef}>
         <DesignerCanvas doc={doc} editable onHeader={(f, v) => dispatch({ type: 'setHeader', field: f, value: v })} onRemove={(i) => dispatch({ type: 'removeAt', index: i })} />
