@@ -67,6 +67,13 @@ export function DesignerControls({ doc, dispatch }: { doc: SheetDoc; dispatch: (
           ))}
         </div>
       </div>
+      <div className="control-transpose flex items-center gap-2">
+        <span className="text-sm font-medium text-slate-600">Transpose</span>
+        <div className="transpose-options flex gap-1">
+          <button className="btn-transpose-down rounded px-2 py-1 text-xs border text-slate-600" aria-label="Transpose down a semitone" onClick={() => dispatch({ type: 'transpose', delta: -1 })}>− semitone</button>
+          <button className="btn-transpose-up rounded px-2 py-1 text-xs border text-slate-600" aria-label="Transpose up a semitone" onClick={() => dispatch({ type: 'transpose', delta: 1 })}>+ semitone</button>
+        </div>
+      </div>
       <p className="shortcuts-hint text-xs text-slate-400">A–G note · # sharp · b flat · ↑↓ arrow · Enter break · [ section</p>
     </div>
   );

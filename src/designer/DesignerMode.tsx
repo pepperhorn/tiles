@@ -13,6 +13,8 @@ import { exportRaster, downloadBlob } from '../export/raster';
 import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
 import { serializeDoc, parseSheetJson } from './json';
+import { usePiano } from '../audio/usePiano';
+import { itemsToPitches } from '../audio/pitch';
 
 const TABS: TabDef[] = [
   { id: 'notes', label: 'Notes' },
@@ -27,6 +29,8 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
   const [exportMsg, setExportMsg] = useState('');
   const [tab, setTab] = useState('notes');
   const [editingField, setEditingField] = useState<HeaderField | null>(null);
+  const piano = usePiano();
+  const playSheet = () => piano.playSequence(itemsToPitches(doc.items).map(p => ({ midi: p.midi, dur: 0.5 })));
 
   const handle = (r: KeyResult) => {
     if (r.type === 'newSection') {
@@ -126,6 +130,12 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
         <TabBar tabs={TABS} active={tab} onSelect={setTab} />
         <div className="panel-scroll flex-1 min-h-0 overflow-y-auto lg:overflow-visible lg:flex lg:flex-col lg:gap-4 lg:p-4">
           <div className={`panel-notes ${tabPanelClass(tab === 'notes')} p-4 lg:p-0`}>
+            <div className="designer-audio mb-3 flex items-center gap-2">
+              <button className="btn-play rounded-lg border px-3 py-1.5 text-sm font-semibold" onClick={playSheet}>▶ Play</button>
+              <button className="btn-stop rounded-lg border px-3 py-1.5 text-sm" onClick={piano.stop}>■ Stop</button>
+              {piano.status === 'loading' && <span className="text-xs text-slate-400">loading piano…</span>}
+              {piano.status === 'error' && <span className="text-xs text-red-500">audio unavailable</span>}
+            </div>
             <Palette
               onAction={handle}
               accidentalStyle={doc.accidentalStyle}

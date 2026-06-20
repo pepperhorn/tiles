@@ -1,49 +1,27 @@
 import { useMemo, useRef, useState } from 'react';
 import type { SheetDoc } from '../designer/sheetModel';
 import { QuizCanvas } from './QuizCanvas';
+import { chooseBlanks, noteIndexes } from './blanks';
 import { exportPdf } from '../export/pdf';
 import { exportRaster } from '../export/raster';
 import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
-
-// Small seeded PRNG so the unknown selection is stable until the user reshuffles.
-function mulberry32(seed: number) {
-  return () => {
-    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-function seededShuffle(arr: number[], seed: number): number[] {
-  const a = [...arr];
-  const rnd = mulberry32(seed);
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+import { usePiano } from '../audio/usePiano';
+import { itemsToPitches } from '../audio/pitch';
 
 export function QuizMode({ doc }: { doc: SheetDoc }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [knownPct, setKnownPct] = useState(0.6); // 0.25 – 0.90
   const [seed, setSeed] = useState(1);
   const [exportMsg, setExportMsg] = useState('');
+  const piano = usePiano();
 
   usePageRule(doc.paper, doc.orientation);
 
-  const noteIndexes = useMemo(
-    () => doc.items.map((it, i) => (it.type === 'note' ? i : -1)).filter(i => i >= 0),
-    [doc.items],
-  );
-  const noteCount = noteIndexes.length;
+  const noteCount = useMemo(() => noteIndexes(doc.items).length, [doc.items]);
   const unknownCount = Math.max(0, Math.round(noteCount * (1 - knownPct)));
   const knownCount = noteCount - unknownCount;
-  const unknown = useMemo(
-    () => new Set(seededShuffle(noteIndexes, seed).slice(0, unknownCount)),
-    [noteIndexes, seed, unknownCount],
-  );
+  const unknown = useMemo(() => chooseBlanks(doc.items, knownPct, seed), [doc.items, knownPct, seed]);
 
   const sheetEl = () => stageRef.current?.querySelector('.sheet') as HTMLElement | null;
   const baseName = () => `${doc.title?.trim() || 'CRF Sheet'} — Quiz`;
@@ -110,6 +88,11 @@ export function QuizMode({ doc }: { doc: SheetDoc }) {
         >
           ⟳ Shuffle blanks
         </button>
+
+        <div className="group group-audio grid grid-cols-2 gap-2">
+          <button className="btn-play rounded-lg border px-3 py-2 text-sm font-semibold" onClick={() => piano.playSequence(itemsToPitches(doc.items).map(p => ({ midi: p.midi, dur: 0.5 })))}>▶ Play song</button>
+          <button className="btn-stop rounded-lg border px-3 py-2 text-sm" onClick={piano.stop}>■ Stop</button>
+        </div>
 
         <div className="group group-export grid grid-cols-2 gap-2">
           <button className="btn-pdf rounded-lg border px-3 py-1 text-sm" onClick={onExport.pdf}>PDF</button>

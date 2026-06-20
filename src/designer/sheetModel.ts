@@ -37,6 +37,7 @@ export type Action =
   | { type: 'moveItem'; from: number; to: number }
   | { type: 'setHeader'; field: HeaderField; value: string }
   | { type: 'setLayout'; patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation' | 'accidentalStyle'>> }
+  | { type: 'transpose'; delta: number }
   | { type: 'load'; doc: SheetDoc };
 
 function moveItem(items: Item[], from: number, to: number): Item[] {
@@ -69,6 +70,7 @@ export function reduce(doc: SheetDoc, action: Action): SheetDoc {
     case 'moveItem':      return { ...doc, items: moveItem(doc.items, action.from, action.to) };
     case 'setHeader':     return { ...doc, [action.field]: action.value };
     case 'setLayout':     return { ...doc, ...action.patch };
+    case 'transpose':     return { ...doc, items: doc.items.map(it => it.type === 'note' ? { ...it, noteId: semitone(it.noteId, action.delta) } : it) };
     case 'load':          return action.doc;
   }
 }
