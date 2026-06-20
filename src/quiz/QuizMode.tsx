@@ -14,7 +14,13 @@ export function QuizMode({ doc }: { doc: SheetDoc }) {
   const [knownPct, setKnownPct] = useState(0.6); // 0.25 – 0.90
   const [seed, setSeed] = useState(1);
   const [exportMsg, setExportMsg] = useState('');
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const piano = usePiano();
+  const playSong = () => piano.playSequence(
+    itemsToPitches(doc.items).map(p => ({ midi: p.midi, dur: 0.5, index: p.index })),
+    setPlayingIndex,
+  );
+  const stopAudio = () => { piano.stop(); setPlayingIndex(null); };
 
   usePageRule(doc.paper, doc.orientation);
 
@@ -55,7 +61,7 @@ export function QuizMode({ doc }: { doc: SheetDoc }) {
     // capped at 45% height below. Desktop (lg+): controls sidebar + preview.
     <div className="quiz-mode flex flex-col lg:grid lg:grid-cols-[340px_1fr] h-full lg:h-full">
       <main className="stage order-1 lg:order-2 flex-1 lg:flex-none min-h-0 overflow-auto p-4 lg:p-8 border-b border-slate-200 lg:border-b-0" ref={stageRef}>
-        <QuizCanvas doc={doc} unknown={unknown} />
+        <QuizCanvas doc={doc} unknown={unknown} playingIndex={playingIndex} />
       </main>
 
       <aside className="quiz-panel no-print order-2 lg:order-1 basis-[45%] lg:basis-auto shrink-0 lg:shrink min-h-0 overflow-y-auto bg-white lg:border-r lg:border-slate-200 p-5 flex flex-col gap-4">
@@ -89,8 +95,8 @@ export function QuizMode({ doc }: { doc: SheetDoc }) {
         </button>
 
         <div className="group group-audio grid grid-cols-2 gap-2">
-          <button className="btn-play rounded-lg border px-3 py-2 text-sm font-semibold" onClick={() => piano.playSequence(itemsToPitches(doc.items).map(p => ({ midi: p.midi, dur: 0.5 })))}>▶ Play song</button>
-          <button className="btn-stop rounded-lg border px-3 py-2 text-sm" onClick={piano.stop}>■ Stop</button>
+          <button className="btn-play rounded-lg border px-3 py-2 text-sm font-semibold" onClick={playSong}>▶ Play song</button>
+          <button className="btn-stop rounded-lg border px-3 py-2 text-sm" onClick={stopAudio}>■ Stop</button>
         </div>
 
         <div className="group group-export grid grid-cols-2 gap-2">

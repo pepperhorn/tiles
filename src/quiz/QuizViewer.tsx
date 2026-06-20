@@ -35,6 +35,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [selected, setSelected] = useState<number | null>(null);
   const [verdicts, setVerdicts] = useState<Record<number, Verdict> | null>(null);
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const piano = usePiano();
 
   // Changing the quiz (different source or blank set) clears prior answers —
@@ -72,12 +73,14 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
     const overrides = withAnswers ? answers : {};
     const placed = itemsToPitches(source.items, overrides);
     const events = placed.map(p => {
-      const isBlank = blankSet.has(p.index);
-      const muted = isBlank && (!withAnswers || answers[p.index] === undefined);
-      return { midi: muted ? null : p.midi, dur: NOTE_DUR };
+      // "Song" plays the FULL melody incl. blanks — an auditory cue to the
+      // answers. "With my answers" mutes only blanks the user hasn't filled.
+      const muted = withAnswers && blankSet.has(p.index) && answers[p.index] === undefined;
+      return { midi: muted ? null : p.midi, dur: NOTE_DUR, index: p.index };
     });
-    void piano.playSequence(events);
+    void piano.playSequence(events, setPlayingIndex);
   };
+  const stopAudio = () => { piano.stop(); setPlayingIndex(null); };
 
   const submit = () => {
     const v: Record<number, Verdict> = {};
@@ -96,7 +99,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
 
   const sheet = (
     <div className="sheets block" ref={fitRef}>
-      <div className="sheet bg-white mx-auto" style={{ width: dims.w, padding: PAD, boxShadow: '0 2px 18px rgba(20,18,40,.12)' }}>
+      <div className="sheet bg-white mx-auto" style={{ width: dims.w, padding: PAD, boxShadow: '7px 7px 0 var(--ink)' }}>
         <HeaderZone doc={source} editable={false} />
         <div className="sheet-body flex flex-col gap-1.5">
           {rows.map((row, ri) =>
@@ -106,11 +109,12 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
                 <div key={ri} className="row-tiles flex flex-wrap" style={{ gap: 6 }}>
                   {row.cells.map(cell => {
                     const item = cell.item;
+                    const playing = playingIndex === cell.index;
                     if (item.type === 'arrow') {
-                      return <div key={cell.index} className="tile-slot"><Tile kind="arrow" sym={arrowSym(item.dir)} size={source.size} /></div>;
+                      return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}><Tile kind="arrow" sym={arrowSym(item.dir)} size={source.size} /></div>;
                     }
                     if (!blankSet.has(cell.index)) {
-                      return <div key={cell.index} className="tile-slot"><Tile kind="note" note={noteById(item.noteId)!} size={source.size} accidental={source.accidentalStyle} /></div>;
+                      return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}><Tile kind="note" note={noteById(item.noteId)!} size={source.size} accidental={source.accidentalStyle} /></div>;
                     }
                     // Blank cell — fillable.
                     const given = answers[cell.index];
@@ -122,7 +126,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
                     return (
                       <button
                         key={cell.index}
-                        className={`tile-slot quiz-cell rounded-lg ${isSel ? 'quiz-cell-selected' : ''}`}
+                        className={`tile-slot quiz-cell rounded-lg ${isSel ? 'quiz-cell-selected' : ''} ${playing ? 'is-playing' : ''}`}
                         style={{ width: source.size, height: source.size, boxSizing: 'border-box', boxShadow: ring, border: given ? 'none' : '2px dashed #94a3b8', borderRadius: 8 }}
                         aria-label={`Blank ${cell.index}${given ? `, answered ${given}` : ''}`}
                         onClick={() => { setSelected(cell.index); setVerdicts(null); }}
@@ -165,7 +169,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
         <div className="audio-actions grid grid-cols-2 gap-2">
           <button className="btn-play-song rounded-lg border px-3 py-2 text-sm font-semibold" onClick={() => playSong(false)}>▶ Song</button>
           <button className="btn-play-answers rounded-lg border px-3 py-2 text-sm font-semibold" onClick={() => playSong(true)}>▶ With my answers</button>
-          <button className="btn-stop rounded-lg border px-3 py-2 text-sm col-span-2" onClick={piano.stop}>■ Stop</button>
+          <button className="btn-stop rounded-lg border px-3 py-2 text-sm col-span-2" onClick={stopAudio}>■ Stop</button>
         </div>
         {piano.status === 'loading' && <p className="text-xs text-slate-400 mt-1">Loading piano…</p>}
         {piano.status === 'error' && <p className="text-xs text-red-500 mt-1">Audio unavailable.</p>}

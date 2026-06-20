@@ -16,7 +16,7 @@ export function GeneratorSheets({ sheets, paper, orientation }: { sheets: SheetP
     <div className="sheets block" ref={fitRef}>
       {sheets.map((plan, i) => (
         <div key={i} className={`sheet bg-white mx-auto mb-6 ${plan.kind === 'tiles' && plan.guides ? 'guides' : ''}`}
-             style={{ width: dims.w, padding: PAD, boxShadow: '0 2px 18px rgba(20,18,40,.12)' }}>
+             style={{ width: dims.w, padding: PAD, boxShadow: '7px 7px 0 var(--ink)' }}>
           {plan.kind === 'gridpaper'
             ? <GridPaper size={plan.size} clearance={plan.clearance} pageW={pageW} pageH={pageH} />
             : (

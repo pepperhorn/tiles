@@ -33,8 +33,13 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
   const [editingField, setEditingField] = useState<HeaderField | null>(null);
   const [speaker, setSpeaker] = useState(false);
   const [email, setEmail] = useState('');
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const piano = usePiano();
-  const playSheet = () => piano.playSequence(itemsToPitches(doc.items).map(p => ({ midi: p.midi, dur: 0.5 })));
+  const playSheet = () => piano.playSequence(
+    itemsToPitches(doc.items).map(p => ({ midi: p.midi, dur: 0.5, index: p.index })),
+    setPlayingIndex,
+  );
+  const stopAudio = () => { piano.stop(); setPlayingIndex(null); };
 
   const handle = (r: KeyResult) => {
     if (r.type === 'newSection') {
@@ -140,6 +145,7 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
           onEditField={setEditingField}
           onRemove={(i) => dispatch({ type: 'removeAt', index: i })}
           onMove={(from, to) => dispatch({ type: 'moveItem', from, to })}
+          playingIndex={playingIndex}
         />
       </main>
 
@@ -163,7 +169,7 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
               <button className="btn-play rounded-lg border p-2 text-slate-700" aria-label="Play" title="Play" onClick={playSheet}>
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true"><path d="M7 5v14l12-7z" /></svg>
               </button>
-              <button className="btn-stop rounded-lg border p-2 text-slate-700" aria-label="Stop" title="Stop" onClick={piano.stop}>
+              <button className="btn-stop rounded-lg border p-2 text-slate-700" aria-label="Stop" title="Stop" onClick={stopAudio}>
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" /></svg>
               </button>
 

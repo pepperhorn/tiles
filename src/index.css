@@ -201,3 +201,13 @@ body { background: var(--paper); color: var(--ink); }
 /* Overlay card + score block ------------------------------------------- */
 .overlay-card { border-radius: 0; border: 3px solid var(--ink); box-shadow: var(--shadow); }
 .quiz-score { border-radius: 0; border: 2.5px solid var(--ink); background: var(--accent) !important; box-shadow: var(--shadow-sm); }
+
+/* Playback transport: glow the tile that is currently sounding. */
+.tile-slot.is-playing, .quiz-cell.is-playing {
+  position: relative;
+  z-index: 3;
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px var(--ink), 0 0 16px 4px rgba(255, 245, 109, .95);
+  transform: scale(1.06);
+  transition: transform .06s ease, box-shadow .06s ease;
+}

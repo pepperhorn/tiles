@@ -23,7 +23,7 @@ function innerTile(item: TileItem, size: number, accidental: SheetDoc['accidenta
 }
 
 // A draggable + droppable tile slot (only rendered inside a DndContext).
-function DragSlot({ index, isOver, children }: { index: number; isOver: boolean; children: ReactNode }) {
+function DragSlot({ index, isOver, isPlaying, children }: { index: number; isOver: boolean; isPlaying: boolean; children: ReactNode }) {
   const { setNodeRef: dragRef, listeners, attributes, isDragging } = useDraggable({ id: index });
   const { setNodeRef: dropRef } = useDroppable({ id: index });
   const setRef = (n: HTMLDivElement | null) => { dragRef(n); dropRef(n); };
@@ -32,7 +32,7 @@ function DragSlot({ index, isOver, children }: { index: number; isOver: boolean;
       ref={setRef}
       {...attributes}
       {...listeners}
-      className={`tile-slot cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-40' : ''} ${isOver ? 'ring-2 ring-slate-900 rounded-lg' : ''}`}
+      className={`tile-slot cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-40' : ''} ${isOver ? 'ring-2 ring-slate-900 rounded-lg' : ''} ${isPlaying ? 'is-playing' : ''}`}
     >
       {children}
     </div>
@@ -47,12 +47,13 @@ function DropSection({ index, text, isOver }: { index: number; text: string; isO
   );
 }
 
-export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, onMove }: {
+export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, onMove, playingIndex = null }: {
   doc: SheetDoc;
   onRemove: (index: number) => void;
   editable?: boolean;
   onEditField?: (f: HeaderField) => void;
   onMove?: (from: number, to: number) => void;
+  playingIndex?: number | null;
 }) {
   const dims = sheetDimsMm(doc.paper, doc.orientation);
   const { w: pageW } = pageBox(doc.paper, doc.orientation);
@@ -91,10 +92,10 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
             <div key={ri} className="row-tiles flex flex-wrap" style={{ gap: 6 }}>
               {row.cells.map(cell =>
                 dnd
-                  ? <DragSlot key={cell.index} index={cell.index} isOver={overIndex === cell.index}>
+                  ? <DragSlot key={cell.index} index={cell.index} isOver={overIndex === cell.index} isPlaying={playingIndex === cell.index}>
                       {innerTile(cell.item, doc.size, doc.accidentalStyle, () => onRemove(cell.index))}
                     </DragSlot>
-                  : <div key={cell.index} className="tile-slot">
+                  : <div key={cell.index} className={`tile-slot ${playingIndex === cell.index ? 'is-playing' : ''}`}>
                       {innerTile(cell.item, doc.size, doc.accidentalStyle, () => onRemove(cell.index))}
                     </div>
               )}
@@ -108,7 +109,7 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
 
   return (
     <div className="sheets block" ref={fitRef}>
-      <div className="sheet bg-white mx-auto" style={{ width: dims.w, padding: PAD, boxShadow: '0 2px 18px rgba(20,18,40,.12)' }}>
+      <div className="sheet bg-white mx-auto" style={{ width: dims.w, padding: PAD, boxShadow: '7px 7px 0 var(--ink)' }}>
         <HeaderZone doc={doc} editable={editable} onEditField={onEditField} />
         {dnd ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={reset}>
