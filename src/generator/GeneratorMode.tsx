@@ -3,6 +3,7 @@ import { useGeneratorState } from './useGeneratorState';
 import { GeneratorSheets } from './GeneratorSheets';
 import { GeneratorPanel } from './GeneratorPanel';
 import { exportPdf } from '../export/pdf';
+import { exportVectorPdf, plansToPages } from '../export/pdfVector';
 import { exportRaster } from '../export/raster';
 import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
@@ -18,15 +19,24 @@ export function GeneratorMode() {
   // Reset the preview's fit-to-width zoom so exports capture at natural resolution.
   const exporting = (fn: () => Promise<void> | void) => withExportReady(stageRef.current, fn);
   const onExport = {
-    pdf: () => exporting(async () => {
-      try {
-        await exportPdf(sheetEls(), state.paper, state.orientation, 'CRF Note Tiles');
-        setExportMsg('');
-      } catch (err) {
-        setExportMsg('Export failed: ' + String(err));
-        console.error(err);
+    pdf: () => {
+      const pages = plansToPages(buildResult.sheets);
+      if (pages) {
+        // Vector CMYK path for tile sheets (print-first).
+        try {
+          exportVectorPdf(pages, state.paper, state.orientation, 'CRF Note Tiles');
+          setExportMsg('');
+        } catch (err) { setExportMsg('Export failed: ' + String(err)); console.error(err); }
+        return;
       }
-    }),
+      // Grid-paper sheets fall back to the raster path.
+      void exporting(async () => {
+        try {
+          await exportPdf(sheetEls(), state.paper, state.orientation, 'CRF Note Tiles');
+          setExportMsg('');
+        } catch (err) { setExportMsg('Export failed: ' + String(err)); console.error(err); }
+      });
+    },
     png: () => exporting(async () => {
       try {
         const sheets = sheetEls();

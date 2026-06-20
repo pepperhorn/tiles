@@ -6,13 +6,14 @@ import { flowRows } from '../designer/flow';
 import { HeaderZone } from '../designer/HeaderZone';
 import { useFitWidth } from '../useFitWidth';
 import { usePiano } from '../audio/usePiano';
-import { itemsToPitches, pcOf } from '../audio/pitch';
+import { itemsToPitches } from '../audio/pitch';
+import { gradeAnswer } from './grade';
 import type { SheetDoc } from '../designer/sheetModel';
 
 const arrowSym = (dir: 'up' | 'down') => SYMBOLS.find(s => s.id === (dir === 'up' ? 'arrowUp' : 'arrowDown'))!;
 const NOTE_DUR = 0.5;
 
-type Verdict = 'correct' | 'wrong';
+type Verdict = 'correct' | 'retry';
 
 /**
  * Self-contained, embeddable quiz player. Given the full song (`source`, the
@@ -73,8 +74,7 @@ export function QuizViewer({ source, blanks, embed = false, configSlot }: {
   const submit = () => {
     const v: Record<number, Verdict> = {};
     for (const i of blanks) {
-      const given = answers[i];
-      v[i] = given !== undefined && pcOf(given) === pcOf(answerNoteId(i)) ? 'correct' : 'wrong';
+      v[i] = gradeAnswer(answers[i], answerNoteId(i)) ? 'correct' : 'retry';
     }
     setVerdicts(v);
     setSelected(null);
@@ -109,7 +109,7 @@ export function QuizViewer({ source, blanks, embed = false, configSlot }: {
                     const verdict = verdicts?.[cell.index];
                     const isSel = selected === cell.index;
                     const ring = verdict === 'correct' ? '0 0 0 3px #16a34a'
-                      : verdict === 'wrong' ? '0 0 0 3px #dc2626'
+                      : verdict === 'retry' ? '0 0 0 3px #d97706'
                       : isSel ? '0 0 0 3px #0f172a' : 'none';
                     return (
                       <button
@@ -180,7 +180,7 @@ export function QuizViewer({ source, blanks, embed = false, configSlot }: {
           <div className="quiz-score rounded-lg bg-slate-50 p-3 text-center">
             <div className="score-pct text-2xl font-extrabold text-slate-900">{pct}%</div>
             <div className="score-detail text-xs text-slate-500">{correctCount} of {total} correct</div>
-            {correctCount < total && <div className="score-fix text-xs text-red-500 mt-1">Fix the red cells and resubmit.</div>}
+            {correctCount < total && <div className="score-fix text-xs text-amber-600 mt-1">Try again on the highlighted cells.</div>}
           </div>
         )}
       </div>

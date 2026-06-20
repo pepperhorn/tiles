@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import type { SheetDoc } from '../designer/sheetModel';
 import { QuizCanvas } from './QuizCanvas';
 import { chooseBlanks, noteIndexes } from './blanks';
-import { exportPdf } from '../export/pdf';
+import { exportVectorPdf, docToPages } from '../export/pdfVector';
 import { exportRaster } from '../export/raster';
 import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
@@ -27,13 +27,12 @@ export function QuizMode({ doc }: { doc: SheetDoc }) {
   const baseName = () => `${doc.title?.trim() || 'CRF Sheet'} — Quiz`;
   const exporting = (fn: () => Promise<void> | void) => withExportReady(stageRef.current, fn);
   const onExport = {
-    pdf: () => exporting(async () => {
+    pdf: () => {
       try {
-        const el = sheetEl();
-        if (el) await exportPdf([el], doc.paper, doc.orientation, baseName());
+        exportVectorPdf(docToPages(doc, unknown), doc.paper, doc.orientation, baseName());
         setExportMsg('');
       } catch (err) { setExportMsg('Export failed: ' + String(err)); console.error(err); }
-    }),
+    },
     png: () => exporting(async () => {
       try {
         const el = sheetEl();
