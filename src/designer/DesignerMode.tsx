@@ -15,6 +15,7 @@ import { usePageRule } from '../export/usePageRule';
 import { serializeDoc, parseSheetJson } from './json';
 import { usePiano } from '../audio/usePiano';
 import { itemsToPitches } from '../audio/pitch';
+import { ucfirst } from '../text';
 
 const TABS: TabDef[] = [
   { id: 'notes', label: 'Notes' },
@@ -172,7 +173,7 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
 
           <div className={`panel-file ${tabPanelClass(tab === 'file')} p-4 lg:p-0 grid gap-3`}>
             <div className="designer-saveload grid gap-2">
-              <input className="input-name border rounded-lg px-2 py-1 text-sm" placeholder="Design name" value={name} onChange={e => setName(e.target.value)} />
+              <input className="input-name border rounded-lg px-2 py-1 text-sm" placeholder="Design name" value={name} autoCapitalize="sentences" onChange={e => setName(ucfirst(e.target.value))} />
               <div className="saveload-actions flex gap-2">
                 <button className="btn-save flex-1 rounded-lg border px-3 py-1 text-sm" onClick={onSave}>Save</button>
                 <button className="btn-load flex-1 rounded-lg border px-3 py-1 text-sm" onClick={onLoad}>Load</button>

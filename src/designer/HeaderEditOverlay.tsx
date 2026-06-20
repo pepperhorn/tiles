@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { ucfirst } from '../text';
 import type { HeaderField } from './sheetModel';
 
 const LABELS: Record<HeaderField, string> = {
@@ -39,7 +40,8 @@ export function HeaderEditOverlay({ field, value, onChange, onClose }: {
           className="overlay-input w-full rounded-lg border border-slate-300 px-3 py-2 text-base outline-none focus:border-slate-900"
           value={value}
           placeholder={LABELS[field]}
-          onChange={e => onChange(e.target.value)}
+          autoCapitalize="sentences"
+          onChange={e => onChange(ucfirst(e.target.value))}
         />
         <div className="overlay-actions mt-3 flex justify-end">
           <button

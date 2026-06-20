@@ -4,6 +4,7 @@ import { templateStore } from '../storage';
 import { pageBox, resolveCols } from '../geometry';
 import { TabBar } from '../components/Tabs';
 import { tabPanelClass, type TabDef } from '../components/tabPanel';
+import { ucfirst } from '../text';
 import type { GeneratorState } from './useGeneratorState';
 
 type Props = {
@@ -250,7 +251,8 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
           <input id="tplName" className="tpl-name-input flex-1 border rounded-lg px-3 py-1.5 text-sm border-slate-200"
             type="text" placeholder="Name this setup"
             value={tplName}
-            onChange={e => setTplName(e.target.value)} />
+            autoCapitalize="sentences"
+            onChange={e => setTplName(ucfirst(e.target.value))} />
           <button className="btn-tpl-save text-xs font-semibold text-blue-600 hover:underline"
             onClick={() => {
               if (!tplName.trim()) { setTplMsg('Give the template a name first.'); return; }
