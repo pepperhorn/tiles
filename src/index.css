@@ -5,3 +5,5 @@
 @import '@fontsource/poppins/700.css';
 
 :root { font-family: Poppins, system-ui, sans-serif; }
+
+.guides .tile { outline: .4px dashed rgba(0,0,0,.22); outline-offset: -.2px; }
