@@ -4,7 +4,7 @@ import { DesignerMode } from './designer/DesignerMode';
 import { QuizMode } from './quiz/QuizMode';
 import { QuizViewer } from './quiz/QuizViewer';
 import { QuizViewerTab } from './quiz/QuizViewerTab';
-import { readQuizFromHash } from './quiz/encode';
+import { readQuizFromHash, readEditFromHash, DEFAULT_PRESET, type QuizPreset } from './quiz/encode';
 import { reduce, defaultDoc } from './designer/sheetModel';
 import { NOTES } from './notes';
 
@@ -12,12 +12,15 @@ type Mode = 'designer' | 'generator' | 'quiz' | 'viewer';
 
 export default function App() {
   const [mode, setMode] = useState<Mode>('designer');
-  // Shared between the Designer and the Quiz so a quiz reflects the current design.
-  const [doc, dispatch] = useReducer(reduce, undefined, defaultDoc);
+  // A shared sheet doc; an #edit= link seeds it so receipts can reopen a design.
+  const editDoc = useMemo(() => readEditFromHash(window.location.hash), []);
+  const [doc, dispatch] = useReducer(reduce, undefined, () => editDoc ?? defaultDoc());
 
-  // Embed mode: #quiz=<base64url> renders only the standalone quiz player.
+  // Embed mode: #quiz=<base64url> renders only the standalone quiz player, whose
+  // difficulty preset the taker can adjust.
   const embedQuiz = useMemo(() => readQuizFromHash(window.location.hash), []);
-  if (embedQuiz) return <QuizViewer source={embedQuiz.doc} blanks={embedQuiz.blanks} embed />;
+  const [embedPreset, setEmbedPreset] = useState<QuizPreset>(() => embedQuiz?.quiz ?? DEFAULT_PRESET);
+  if (embedQuiz) return <QuizViewer source={embedQuiz.doc} preset={embedPreset} onPreset={setEmbedPreset} embed />;
 
   const tab = (id: Mode, label: string) => (
     <button

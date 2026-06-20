@@ -8,6 +8,8 @@ import { useFitWidth } from '../useFitWidth';
 import { usePiano } from '../audio/usePiano';
 import { itemsToPitches } from '../audio/pitch';
 import { gradeAnswer } from './grade';
+import { chooseBlanks } from './blanks';
+import type { QuizPreset } from './encode';
 import type { SheetDoc } from '../designer/sheetModel';
 
 const arrowSym = (dir: 'up' | 'down') => SYMBOLS.find(s => s.id === (dir === 'up' ? 'arrowUp' : 'arrowDown'))!;
@@ -20,9 +22,15 @@ type Verdict = 'correct' | 'retry';
  * answer key) and the fixed `blanks`, a user fills the blanks, hears the song
  * (with or without their answers), and submits for assessment.
  */
-export function QuizViewer({ source, blanks, embed = false, configSlot }: {
-  source: SheetDoc; blanks: number[]; embed?: boolean; configSlot?: ReactNode;
+export function QuizViewer({ source, preset, onPreset, embed = false, configSlot }: {
+  source: SheetDoc; preset: QuizPreset; onPreset?: (p: QuizPreset) => void; embed?: boolean; configSlot?: ReactNode;
 }) {
+  // Blanks are derived from the addon preset (difficulty), not stored fixed —
+  // so a quiz-taker can make it simpler or harder.
+  const blanks = useMemo(
+    () => [...chooseBlanks(source.items, preset.knownPct, preset.seed)],
+    [source.items, preset.knownPct, preset.seed],
+  );
   const blankSet = useMemo(() => new Set(blanks), [blanks]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [selected, setSelected] = useState<number | null>(null);
@@ -134,6 +142,24 @@ export function QuizViewer({ source, blanks, embed = false, configSlot }: {
   const controls = (
     <div className="quiz-viewer-controls flex flex-col gap-4">
       {configSlot}
+      {onPreset && (
+        <div className="group group-difficulty">
+          <div className="diff-head flex items-center justify-between">
+            <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400">Difficulty</span>
+            <button className="btn-shuffle text-xs font-semibold text-blue-600 hover:underline" onClick={() => onPreset({ ...preset, seed: preset.seed + 1 })}>⟳ Shuffle</button>
+          </div>
+          <input
+            className="diff-slider w-full mt-2 accent-slate-900"
+            type="range" min={25} max={90} step={5}
+            value={Math.round(preset.knownPct * 100)}
+            aria-label="Difficulty (percent shown)"
+            onChange={e => onPreset({ ...preset, knownPct: Number(e.target.value) / 100 })}
+          />
+          <div className="diff-legend flex justify-between text-[11px] text-slate-400 mt-1">
+            <span>harder</span><span>easier</span>
+          </div>
+        </div>
+      )}
       <div className="group group-audio">
         <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Listen</span>
         <div className="audio-actions grid grid-cols-2 gap-2">
