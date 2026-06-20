@@ -19,7 +19,7 @@ export function GeneratorMode() {
 
   return (
     <div className="generator-mode grid md:grid-cols-[340px_1fr] min-h-[calc(100vh-49px)]">
-      <GeneratorPanel state={state} set={set} setState={setState} totalTiles={buildResult.totalTiles} onExport={onExport} />
+      <GeneratorPanel state={state} set={set} setState={setState} totalTiles={buildResult.totalTiles} sheetCount={buildResult.sheets.length} onExport={onExport} />
       <main className="stage overflow-auto p-6 md:p-8" ref={stageRef}>
         <GeneratorSheets sheets={buildResult.sheets} paper={state.paper} orientation={state.orientation} />
       </main>

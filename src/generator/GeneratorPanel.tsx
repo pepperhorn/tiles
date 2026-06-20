@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NOTES } from '../notes';
 import { templateStore } from '../storage';
+import { pageBox, resolveCols } from '../geometry';
 import type { GeneratorState } from './useGeneratorState';
 
 type Props = {
@@ -8,6 +9,7 @@ type Props = {
   set: (patch: Partial<GeneratorState>) => void;
   setState: React.Dispatch<React.SetStateAction<GeneratorState>>;
   totalTiles: number;
+  sheetCount: number;
   onExport: { pdf: () => void; png: () => void; webp: () => void; print: () => void };
 };
 
@@ -20,7 +22,7 @@ const SIZES = [
   { label: 'XXL', size: 160 },
 ];
 
-export function GeneratorPanel({ state, set, setState, totalTiles, onExport }: Props) {
+export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, onExport }: Props) {
   const [allCount, setAllCount] = useState(2);
   const [tplName, setTplName] = useState('');
   const [tplList, setTplList] = useState<string[]>(() => templateStore.list());
@@ -32,6 +34,9 @@ export function GeneratorPanel({ state, set, setState, totalTiles, onExport }: P
     setTplList(list);
     if (list.length > 0 && !list.includes(selectedTpl)) setSelectedTpl(list[0]);
   };
+
+  const { w: pageW } = pageBox(state.paper, state.orientation);
+  const cols = resolveCols(state.tilesPerRow, state.size, state.margin * 2, pageW);
 
   return (
     <aside className="generator-panel no-print border-r border-slate-200 bg-white overflow-y-auto p-5 flex flex-col gap-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -90,7 +95,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, onExport }: P
           ))}
         </div>
         <div className="size-hint text-xs text-slate-400 mt-2">
-          {state.sizeLabel} · {state.size}×{state.size} px
+          {state.sizeLabel} · {state.size}×{state.size} px · {cols} columns/page
         </div>
       </div>
 
@@ -146,40 +151,41 @@ export function GeneratorPanel({ state, set, setState, totalTiles, onExport }: P
       )}
 
       {/* Tiles per row — EXACT code from brief (test depends on id/label) */}
-      <div className="field tpr-field flex items-center justify-between gap-2 mt-2">
-        <label htmlFor="tilesPerRow">Tiles per row</label>
-        <input
-          id="tilesPerRow" className="num w-20 border rounded-lg px-2 py-1 text-center"
-          type="text" inputMode="numeric"
-          value={state.tilesPerRow === 'auto' ? '' : String(state.tilesPerRow)}
-          placeholder="Auto"
-          onChange={e => {
-            const v = e.target.value.trim();
-            set({ tilesPerRow: v === '' ? 'auto' : Math.max(1, parseInt(v) || 1) });
-          }}
-        />
+      <div className="group group-tpr">
+        <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Layout</span>
+        <div className="field tpr-field flex items-center justify-between gap-2">
+          <label htmlFor="tilesPerRow">Tiles per row</label>
+          <input
+            id="tilesPerRow" className="num w-20 border rounded-lg px-2 py-1 text-center"
+            type="text" inputMode="numeric"
+            value={state.tilesPerRow === 'auto' ? '' : String(state.tilesPerRow)}
+            placeholder="Auto"
+            onChange={e => {
+              const v = e.target.value.trim();
+              set({ tilesPerRow: v === '' ? 'auto' : Math.max(1, parseInt(v) || 1) });
+            }}
+          />
+        </div>
       </div>
 
       {/* Sheet options */}
-      <div className="group group-options">
-        <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Sheet options</span>
-        {state.type === 'tiles' && (
-          <>
-            <div className="row-check flex items-center gap-2 text-sm">
-              <input type="checkbox" id="optGuides" checked={state.guides}
-                onChange={e => set({ guides: e.target.checked })} />
-              <label htmlFor="optGuides">Show cut guides</label>
-            </div>
-            <div className="field field-margin flex items-center justify-between gap-2 mt-2">
-              <label htmlFor="optGap" className="text-sm">Cutting margin (px/side)</label>
-              <input id="optGap" className="num w-20 border rounded-lg px-2 py-1 text-center text-sm border-slate-200"
-                type="number" min={0} max={20}
-                value={state.margin}
-                onChange={e => set({ margin: Math.max(0, parseInt(e.target.value) || 0) })} />
-            </div>
-          </>
-        )}
-      </div>
+      {state.type === 'tiles' && (
+        <div className="group group-options">
+          <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Sheet options</span>
+          <div className="row-check flex items-center gap-2 text-sm">
+            <input type="checkbox" id="optGuides" checked={state.guides}
+              onChange={e => set({ guides: e.target.checked })} />
+            <label htmlFor="optGuides">Show cut guides</label>
+          </div>
+          <div className="field field-margin flex items-center justify-between gap-2 mt-2">
+            <label htmlFor="optGap" className="text-sm">Cutting margin (px/side)</label>
+            <input id="optGap" className="num w-20 border rounded-lg px-2 py-1 text-center text-sm border-slate-200"
+              type="number" min={0} max={20}
+              value={state.margin}
+              onChange={e => set({ margin: Math.max(0, parseInt(e.target.value) || 0) })} />
+          </div>
+        </div>
+      )}
 
       {/* Notes & counts (tiles only) */}
       {state.type === 'tiles' && (
@@ -207,15 +213,16 @@ export function GeneratorPanel({ state, set, setState, totalTiles, onExport }: P
               <div key={note.id} className="note-row grid items-center gap-2" style={{ gridTemplateColumns: '18px 22px 1fr 58px' }}>
                 <input type="checkbox" className="note-check"
                   checked={state.on[note.id] ?? true}
-                  onChange={e => set({ on: { ...state.on, [note.id]: e.target.checked } })} />
+                  onChange={e => { const checked = e.target.checked; setState(s => ({ ...s, on: { ...s.on, [note.id]: checked } })); }} />
                 <span className="note-swatch rounded-sm" style={{ width: 18, height: 18, background: note.hex, display: 'inline-block' }} />
                 <span className="note-name text-sm font-semibold">
                   {note.main}{note.sub ? <span className="note-sub text-xs text-slate-400 font-normal"> / {note.sub}</span> : null}
                 </span>
                 <input className="note-count num w-full border rounded-lg px-1 py-0.5 text-center text-xs border-slate-200"
                   type="number" min={0} max={999}
+                  aria-label={`${note.main} count`}
                   value={state.counts[note.id] ?? 2}
-                  onChange={e => set({ counts: { ...state.counts, [note.id]: Math.max(0, parseInt(e.target.value) || 0) } })} />
+                  onChange={e => { const val = Math.max(0, parseInt(e.target.value) || 0); setState(s => ({ ...s, counts: { ...s.counts, [note.id]: val } })); }} />
               </div>
             ))}
           </div>
@@ -295,7 +302,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, onExport }: P
 
       {/* Stat */}
       <div className="stat text-xs text-slate-400 text-center mt-2">
-        Total tiles: {totalTiles}
+        {totalTiles} tiles · {sheetCount} {sheetCount === 1 ? 'sheet' : 'sheets'}
       </div>
     </aside>
   );
