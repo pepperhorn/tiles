@@ -137,14 +137,25 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
           <div className={`panel-notes ${tabPanelClass(tab === 'notes')} p-4 lg:p-0`}>
             <div className="designer-audio mb-3 flex items-center gap-2">
               <button
-                className={`btn-speaker rounded-lg border px-3 py-1.5 text-sm font-semibold ${speaker ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
+                className={`btn-speaker rounded-lg border p-2 ${speaker ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
                 aria-pressed={speaker}
                 aria-label="Sound notes as you add them"
                 title="Sound notes as you add them"
                 onClick={() => setSpeaker(s => !s)}
-              >{speaker ? '🔊' : '🔇'}</button>
-              <button className="btn-play rounded-lg border px-3 py-1.5 text-sm font-semibold" onClick={playSheet}>▶ Play</button>
-              <button className="btn-stop rounded-lg border px-3 py-1.5 text-sm" onClick={piano.stop}>■ Stop</button>
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none" />
+                  {speaker
+                    ? <path d="M17 9a4 4 0 0 1 0 6" />
+                    : <path d="m17 9 4 6M21 9l-4 6" />}
+                </svg>
+              </button>
+              <button className="btn-play rounded-lg border p-2 text-slate-700" aria-label="Play" title="Play" onClick={playSheet}>
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true"><path d="M7 5v14l12-7z" /></svg>
+              </button>
+              <button className="btn-stop rounded-lg border p-2 text-slate-700" aria-label="Stop" title="Stop" onClick={piano.stop}>
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" /></svg>
+              </button>
               {piano.status === 'loading' && <span className="text-xs text-slate-400">loading piano…</span>}
               {piano.status === 'error' && <span className="text-xs text-red-500">audio unavailable</span>}
             </div>
