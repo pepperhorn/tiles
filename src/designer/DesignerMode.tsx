@@ -1,6 +1,5 @@
-import { useReducer, useRef, useState } from 'react';
-import { reduce, defaultDoc } from './sheetModel';
-import type { SheetDoc, HeaderField } from './sheetModel';
+import { useRef, useState } from 'react';
+import type { SheetDoc, HeaderField, Action } from './sheetModel';
 import { DesignerCanvas } from './DesignerCanvas';
 import { Palette } from './Palette';
 import { DesignerControls } from './DesignerControls';
@@ -21,8 +20,7 @@ const TABS: TabDef[] = [
   { id: 'file', label: 'Save & export' },
 ];
 
-export function DesignerMode() {
-  const [doc, dispatch] = useReducer(reduce, undefined, defaultDoc);
+export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (action: Action) => void }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
