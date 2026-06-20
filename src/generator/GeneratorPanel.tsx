@@ -137,7 +137,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
           <div className="field field-all-count flex items-center justify-between gap-2 mt-2">
             <label htmlFor="allCount" className="text-sm">Set all notes to</label>
             <input id="allCount" className="num w-20 border rounded-lg px-2 py-1 text-center text-sm border-slate-200"
-              type="number" min={0} max={200}
+              type="number" min={0} max={999}
               value={allCount}
               onChange={e => setAllCount(Math.max(0, parseInt(e.target.value) || 0))} />
           </div>

@@ -45,7 +45,7 @@ export function DesignerMode() {
         <Palette onAction={handle} />
         <div className="designer-saveload grid gap-2">
           <input className="input-name border rounded-lg px-2 py-1 text-sm" placeholder="Design name" value={name} onChange={e => setName(e.target.value)} />
-          <div className="flex gap-2">
+          <div className="saveload-actions flex gap-2">
             <button className="btn-save rounded-lg border px-3 py-1 text-sm" onClick={onSave}>Save</button>
             <button className="btn-load rounded-lg border px-3 py-1 text-sm" onClick={onLoad}>Load</button>
           </div>

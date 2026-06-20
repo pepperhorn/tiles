@@ -7,11 +7,11 @@ const PAPERS: Paper[] = ['A4', 'A3', 'Letter', 'Legal'];
 const ORIENTS: Orient[] = ['portrait', 'landscape'];
 
 export function DesignerControls({ doc, dispatch }: { doc: SheetDoc; dispatch: (a: Action) => void }) {
-  const setLayout = (patch: Parameters<typeof dispatch>[0] extends { type: 'setLayout'; patch: infer P } ? P : never) =>
+  const setLayout = (patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation'>>) =>
     dispatch({ type: 'setLayout', patch });
 
   const handleTpr = (val: string) => {
-    const tpr: TilesPerRow = val.trim() === '' ? 'auto' : Math.max(1, parseInt(val)) as number;
+    const tpr: TilesPerRow = val.trim() === '' ? 'auto' : Math.max(1, parseInt(val, 10)) as number;
     setLayout({ tilesPerRow: tpr });
   };
 
