@@ -41,3 +41,10 @@ test('setHeader and setLayout patch the doc', () => {
   d = reduce(d, { type: 'setLayout', patch: { tilesPerRow: 6 } });
   expect(d.tilesPerRow).toBe(6);
 });
+
+test('load replaces the whole document', () => {
+  const base = defaultDoc();
+  const loaded = { ...defaultDoc(), title: 'My Song', items: [{ type: 'note' as const, noteId: 'C' }] };
+  const result = reduce(base, { type: 'load', doc: loaded });
+  expect(result).toEqual(loaded);
+});

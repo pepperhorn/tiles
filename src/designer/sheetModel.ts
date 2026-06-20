@@ -33,7 +33,8 @@ export type Action =
   | { type: 'deleteLast' }
   | { type: 'removeAt'; index: number }
   | { type: 'setHeader'; field: HeaderField; value: string }
-  | { type: 'setLayout'; patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation'>> };
+  | { type: 'setLayout'; patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation'>> }
+  | { type: 'load'; doc: SheetDoc };
 
 function shiftLastNote(items: Item[], delta: number): Item[] {
   const last = items.at(-1);
@@ -55,5 +56,6 @@ export function reduce(doc: SheetDoc, action: Action): SheetDoc {
     case 'removeAt':      return { ...doc, items: doc.items.filter((_, i) => i !== action.index) };
     case 'setHeader':     return { ...doc, [action.field]: action.value };
     case 'setLayout':     return { ...doc, ...action.patch };
+    case 'load':          return action.doc;
   }
 }

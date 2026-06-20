@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { GeneratorMode } from './generator/GeneratorMode';
+import { DesignerMode } from './designer/DesignerMode';
 
 type Mode = 'generator' | 'designer';
 
@@ -21,7 +22,7 @@ export default function App() {
       </nav>
       <main className="app-body">
         {mode === 'generator' ? <GeneratorMode />
-                              : <div className="designer-placeholder p-8">Designer</div>}
+                              : <DesignerMode />}
       </main>
     </div>
   );
