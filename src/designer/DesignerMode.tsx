@@ -29,6 +29,7 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
   const [exportMsg, setExportMsg] = useState('');
   const [tab, setTab] = useState('notes');
   const [editingField, setEditingField] = useState<HeaderField | null>(null);
+  const [speaker, setSpeaker] = useState(false);
   const piano = usePiano();
   const playSheet = () => piano.playSequence(itemsToPitches(doc.items).map(p => ({ midi: p.midi, dur: 0.5 })));
 
@@ -39,6 +40,11 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
       return;
     }
     dispatch(r);
+    // Speaker on: sound each note as it's added (palette tap or keyboard).
+    if (speaker && r.type === 'insertNote') {
+      const placed = itemsToPitches([...doc.items, { type: 'note', noteId: r.noteId }]).at(-1);
+      if (placed) void piano.playNote(placed.midi);
+    }
   };
   useKeyboard(handle, true);
 
@@ -130,6 +136,13 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
         <div className="panel-scroll flex-1 min-h-0 overflow-y-auto lg:overflow-visible lg:flex lg:flex-col lg:gap-4 lg:p-4">
           <div className={`panel-notes ${tabPanelClass(tab === 'notes')} p-4 lg:p-0`}>
             <div className="designer-audio mb-3 flex items-center gap-2">
+              <button
+                className={`btn-speaker rounded-lg border px-3 py-1.5 text-sm font-semibold ${speaker ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
+                aria-pressed={speaker}
+                aria-label="Sound notes as you add them"
+                title="Sound notes as you add them"
+                onClick={() => setSpeaker(s => !s)}
+              >{speaker ? '🔊' : '🔇'}</button>
               <button className="btn-play rounded-lg border px-3 py-1.5 text-sm font-semibold" onClick={playSheet}>▶ Play</button>
               <button className="btn-stop rounded-lg border px-3 py-1.5 text-sm" onClick={piano.stop}>■ Stop</button>
               {piano.status === 'loading' && <span className="text-xs text-slate-400">loading piano…</span>}
