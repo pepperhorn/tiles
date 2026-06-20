@@ -1,6 +1,7 @@
 import type { Item } from './sheetModel';
 
-export type Cell = { item: Item; index: number };
+export type TileItem = Extract<Item, { type: 'note' | 'arrow' }>;
+export type Cell = { item: TileItem; index: number };
 export type Row =
   | { kind: 'section'; text: string; index: number }
   | { kind: 'tiles'; cells: Cell[] };
@@ -14,7 +15,7 @@ export function flowRows(items: Item[], cols: number): Row[] {
   items.forEach((item, index) => {
     if (item.type === 'section') { flush(); rows.push({ kind: 'section', text: item.text, index }); return; }
     if (item.type === 'break')   { flush(); return; }
-    cur.push({ item, index });
+    cur.push({ item: item as TileItem, index });
     if (cur.length >= max) flush();
   });
   flush();
