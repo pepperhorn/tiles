@@ -1,0 +1,8 @@
+@media print {
+  .no-print { display: none !important; }
+  .app-body { padding: 0; }
+  .sheet { box-shadow: none !important; margin: 0 auto !important; page-break-after: always; break-after: page; }
+  .sheet:last-child { page-break-after: auto; break-after: auto; }
+  body { background: #fff; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
