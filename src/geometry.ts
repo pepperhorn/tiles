@@ -31,7 +31,7 @@ export function sheetDimsMm(paper: Paper, orient: Orient): { w: string; h: strin
 
 export function autoCols(size: number, gap: number, pageW: number): number {
   const inner = pageW - PAD * 2;
-  return Math.max(1, Math.round((inner + gap) / (size + gap)));
+  return Math.max(1, Math.floor((inner + gap) / (size + gap)));
 }
 
 export function resolveCols(tpr: TilesPerRow, size: number, gap: number, pageW: number): number {
@@ -41,5 +41,5 @@ export function resolveCols(tpr: TilesPerRow, size: number, gap: number, pageW: 
 
 export function rowsPerPage(size: number, gap: number, pageH: number): number {
   const inner = pageH - PAD * 2;
-  return Math.max(1, Math.round((inner + gap) / (size + gap)));
+  return Math.max(1, Math.floor((inner + gap) / (size + gap)));
 }

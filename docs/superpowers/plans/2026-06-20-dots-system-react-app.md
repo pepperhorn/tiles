@@ -285,7 +285,7 @@ test('A4 portrait page box matches demo geometry', () => {
 
 test('autoCols matches demo: MD 80px tiles, 4px gap on A4 portrait', () => {
   const { w } = pageBox('A4', 'portrait');
-  expect(autoCols(80, 4, w)).toBe(9);
+  expect(autoCols(80, 4, w)).toBe(8); // floor math: ~8.78 -> 8
 });
 
 test('resolveCols honors a fixed tiles-per-row, else auto', () => {

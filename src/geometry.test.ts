@@ -6,9 +6,10 @@ test('A4 portrait page box matches demo geometry', () => {
   expect(Math.round(h)).toBe(1123);  // 297mm @96dpi
 });
 
-test('autoCols matches demo: MD 80px tiles, 4px gap on A4 portrait', () => {
+test('autoCols matches demo floor math: MD 80px tiles, 4px gap on A4 portrait', () => {
   const { w } = pageBox('A4', 'portrait');
-  expect(autoCols(80, 4, w)).toBe(9);
+  // inner ≈ 733px, (733+4)/(80+4) ≈ 8.78 -> floor -> 8 (tiles must fit within page width)
+  expect(autoCols(80, 4, w)).toBe(8);
 });
 
 test('resolveCols honors a fixed tiles-per-row, else auto', () => {
