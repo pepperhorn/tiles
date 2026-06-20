@@ -16,6 +16,7 @@ import { serializeDoc, parseSheetJson } from './json';
 import { usePiano } from '../audio/usePiano';
 import { itemsToPitches } from '../audio/pitch';
 import { ucfirst } from '../text';
+import { cmsEnabled, emailReceipt } from '../cms';
 
 const TABS: TabDef[] = [
   { id: 'notes', label: 'Notes' },
@@ -31,6 +32,7 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
   const [tab, setTab] = useState('notes');
   const [editingField, setEditingField] = useState<HeaderField | null>(null);
   const [speaker, setSpeaker] = useState(false);
+  const [email, setEmail] = useState('');
   const piano = usePiano();
   const playSheet = () => piano.playSequence(itemsToPitches(doc.items).map(p => ({ midi: p.midi, dur: 0.5 })));
 
@@ -87,6 +89,15 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
     }),
     print: () => exporting(() => window.print()),
   };
+  const onEmail = async () => {
+    if (!email.trim()) { setExportMsg('Enter an email first.'); return; }
+    try {
+      await emailReceipt({ email, doc });
+      setExportMsg(`Edit link sent to ${email.trim()}.`);
+    } catch (err) {
+      setExportMsg(String(err instanceof Error ? err.message : err));
+    }
+  };
   const onSave = () => name.trim() && designStore.save(name.trim(), doc);
   const onLoad = () => {
     const d = designStore.load(name.trim());
@@ -136,7 +147,7 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
         <TabBar tabs={TABS} active={tab} onSelect={setTab} />
         <div className="panel-scroll flex-1 min-h-0 overflow-y-auto lg:overflow-visible lg:flex lg:flex-col lg:gap-4 lg:p-4">
           <div className={`panel-notes ${tabPanelClass(tab === 'notes')} p-4 lg:p-0`}>
-            <div className="designer-audio mb-3 flex items-center gap-2">
+            <div className="designer-toolbar mb-3 flex flex-wrap items-center gap-2">
               <button
                 className={`btn-speaker rounded-lg border p-2 ${speaker ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
                 aria-pressed={speaker}
@@ -146,9 +157,7 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none" />
-                  {speaker
-                    ? <path d="M17 9a4 4 0 0 1 0 6" />
-                    : <path d="m17 9 4 6M21 9l-4 6" />}
+                  {speaker ? <path d="M17 9a4 4 0 0 1 0 6" /> : <path d="m17 9 4 6M21 9l-4 6" />}
                 </svg>
               </button>
               <button className="btn-play rounded-lg border p-2 text-slate-700" aria-label="Play" title="Play" onClick={playSheet}>
@@ -157,14 +166,30 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
               <button className="btn-stop rounded-lg border p-2 text-slate-700" aria-label="Stop" title="Stop" onClick={piano.stop}>
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" /></svg>
               </button>
+
+              <span className="toolbar-sep mx-0.5 self-stretch w-px bg-slate-300" aria-hidden="true" />
+
+              <button
+                className={`palette-sharp-toggle rounded-lg border px-2.5 py-2 text-sm font-semibold ${doc.accidentalStyle === 'sharp' ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
+                aria-pressed={doc.accidentalStyle === 'sharp'} aria-label="Sharp spelling"
+                onClick={() => dispatch({ type: 'setLayout', patch: { accidentalStyle: 'sharp' } })}
+              >♯</button>
+              <button
+                className={`palette-flat-toggle rounded-lg border px-2.5 py-2 text-sm font-semibold ${doc.accidentalStyle === 'flat' ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
+                aria-pressed={doc.accidentalStyle === 'flat'} aria-label="Flat spelling"
+                onClick={() => dispatch({ type: 'setLayout', patch: { accidentalStyle: 'flat' } })}
+              >♭</button>
+
+              <span className="toolbar-sep mx-0.5 self-stretch w-px bg-slate-300" aria-hidden="true" />
+
+              <button className="palette-up rounded-lg border px-2.5 py-2 text-sm text-slate-700" aria-label="Up arrow" onClick={() => handle({ type: 'insertArrow', dir: 'up' })}>↑</button>
+              <button className="palette-down rounded-lg border px-2.5 py-2 text-sm text-slate-700" aria-label="Down arrow" onClick={() => handle({ type: 'insertArrow', dir: 'down' })}>↓</button>
+              <button className="palette-break rounded-lg border px-2.5 py-2 text-sm text-slate-700" aria-label="Line break" onClick={() => handle({ type: 'insertBreak' })}>⏎</button>
+
               {piano.status === 'loading' && <span className="text-xs text-slate-400">loading piano…</span>}
               {piano.status === 'error' && <span className="text-xs text-red-500">audio unavailable</span>}
             </div>
-            <Palette
-              onAction={handle}
-              accidentalStyle={doc.accidentalStyle}
-              onAccidentalStyle={(accidentalStyle) => dispatch({ type: 'setLayout', patch: { accidentalStyle } })}
-            />
+            <Palette onAction={handle} accidentalStyle={doc.accidentalStyle} />
           </div>
 
           <div className={`panel-layout ${tabPanelClass(tab === 'layout')} p-4 lg:p-0`}>
@@ -197,6 +222,13 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
               <button className="btn-print rounded-lg border px-3 py-1 text-sm" onClick={onExport.print}>Print</button>
               {exportMsg && <p className="designer-export-msg col-span-2 text-xs text-red-500 mt-1" role="alert">{exportMsg}</p>}
             </div>
+            {cmsEnabled && (
+              <div className="designer-email grid gap-2 border-t border-slate-200 pt-3">
+                <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400">Email me a copy</span>
+                <input className="input-email border rounded-lg px-2 py-1 text-sm" type="email" inputMode="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} />
+                <button className="btn-email rounded-lg border px-3 py-1 text-sm" onClick={onEmail}>Send edit link</button>
+              </div>
+            )}
           </div>
         </div>
       </div>

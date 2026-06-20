@@ -9,21 +9,18 @@ test('tapping a note button dispatches insertNote', async () => {
   expect(onAction).toHaveBeenCalledWith({ type: 'insertNote', noteId: 'C' });
 });
 
-test('tapping line-break dispatches insertBreak', async () => {
+test('tapping section dispatches newSection', async () => {
   const onAction = vi.fn();
   render(<Palette onAction={onAction} />);
-  await userEvent.click(screen.getByRole('button', { name: /line break/i }));
-  expect(onAction).toHaveBeenCalledWith({ type: 'insertBreak' });
+  await userEvent.click(screen.getByRole('button', { name: /section/i }));
+  expect(onAction).toHaveBeenCalledWith({ type: 'newSection' });
 });
 
-test('there are no sharp/flat action buttons — only the spelling toggle', async () => {
-  const onAction = vi.fn();
-  const onAccidentalStyle = vi.fn();
-  render(<Palette onAction={onAction} accidentalStyle="sharp" onAccidentalStyle={onAccidentalStyle} />);
-  // Tapping the Flat toggle changes spelling, it does NOT dispatch a note action.
-  await userEvent.click(screen.getByRole('button', { name: /flat spelling/i }));
-  expect(onAccidentalStyle).toHaveBeenCalledWith('flat');
-  expect(onAction).not.toHaveBeenCalled();
+test('spelling toggle and arrow/break keys live in the toolbar, not the palette', () => {
+  render(<Palette onAction={() => {}} accidentalStyle="sharp" />);
+  expect(screen.queryByRole('button', { name: /flat spelling/i })).toBeNull();
+  expect(screen.queryByRole('button', { name: /line break/i })).toBeNull();
+  expect(screen.queryByRole('button', { name: /up arrow/i })).toBeNull();
 });
 
 test('accidental note tiles show the predominant spelling per the toggle', () => {

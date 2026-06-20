@@ -10,7 +10,7 @@
 
   /* Brutalist tokens */
   --ink: #141210;
-  --paper: #f3efe4;
+  --paper: #fdfcf9;
   --shadow: 5px 5px 0 var(--ink);
   --shadow-sm: 3px 3px 0 var(--ink);
 
@@ -85,8 +85,8 @@ body { background: var(--paper); color: var(--ink); }
 .stage {
   background-color: var(--paper);
   background-image:
-    linear-gradient(rgba(20,18,16,.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(20,18,16,.05) 1px, transparent 1px);
+    linear-gradient(rgba(20,18,16,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20,18,16,.035) 1px, transparent 1px);
   background-size: 22px 22px;
   border-color: var(--ink);
 }
@@ -123,7 +123,7 @@ body { background: var(--paper); color: var(--ink); }
 .btn-transpose-up, .btn-transpose-down,
 .btn-download-png, .btn-download-webp,
 .btn-shuffle, .btn-reset, .btn-embed, .btn-load-json, .btn-use-current,
-.btn-play-song, .btn-play-answers {
+.btn-play-song, .btn-play-answers, .btn-email {
   border: 2px solid var(--ink);
   border-radius: 0;
   background: var(--paper);
@@ -192,7 +192,7 @@ body { background: var(--paper); color: var(--ink); }
 }
 
 /* Inputs ---------------------------------------------------------------- */
-.input-name, .input-tpr, .num, .tpl-name-input, .tpl-select, .overlay-input {
+.input-name, .input-tpr, .input-email, .num, .tpl-name-input, .tpl-select, .overlay-input {
   border-radius: 0;
   border: 2px solid var(--ink);
   background: #fff;
