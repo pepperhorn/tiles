@@ -1,6 +1,8 @@
 @media print {
   .no-print { display: none !important; }
   .app-body { padding: 0; }
+  .sheets { zoom: 1 !important; }
+  .header-field.is-empty { display: none !important; }
   .sheet { box-shadow: none !important; margin: 0 auto !important; page-break-after: always; break-after: page; }
   .sheet:last-child { page-break-after: auto; break-after: auto; }
   body { background: #fff; }

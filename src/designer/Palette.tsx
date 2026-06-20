@@ -33,13 +33,13 @@ export function Palette({
           return (
             <button
               key={n.id}
-              className="palette-note flex flex-col items-center justify-center rounded-lg py-2 text-white font-semibold text-sm leading-none border border-black/20 shadow-sm transition hover:brightness-95 active:brightness-90"
-              style={{ background: n.hex, textShadow: '0 1px 0 rgba(0,0,0,.30), 0 2px 4px rgba(0,0,0,.45)' }}
+              className="palette-note flex aspect-square flex-col items-center justify-center rounded-lg text-slate-900 font-semibold text-xs leading-none border border-black/15 shadow-sm transition hover:brightness-95 active:brightness-90"
+              style={{ background: n.hex }}
               aria-label={n.id}
               onClick={() => onAction({ type: 'insertNote', noteId: n.id })}
             >
               <span className="palette-note-main">{d.main}</span>
-              {d.sub && <span className="palette-note-sub text-[0.6em] font-medium opacity-90 mt-0.5">{d.sub}</span>}
+              {d.sub && <span className="palette-note-sub text-[0.65em] font-medium opacity-90 mt-0.5">{d.sub}</span>}
             </button>
           );
         })}

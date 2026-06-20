@@ -9,6 +9,7 @@ import { noteById, SYMBOLS } from '../notes';
 import { sheetDimsMm, pageBox, resolveCols, PAD } from '../geometry';
 import { flowRows } from './flow';
 import { HeaderZone } from './HeaderZone';
+import { useFitWidth } from '../useFitWidth';
 import type { Item, SheetDoc, HeaderField } from './sheetModel';
 
 type TileItem = Extract<Item, { type: 'note' | 'arrow' }>;
@@ -46,17 +47,18 @@ function DropSection({ index, text, isOver }: { index: number; text: string; isO
   );
 }
 
-export function DesignerCanvas({ doc, onRemove, editable = false, onHeader = () => {}, onMove }: {
+export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, onMove }: {
   doc: SheetDoc;
   onRemove: (index: number) => void;
   editable?: boolean;
-  onHeader?: (f: HeaderField, v: string) => void;
+  onEditField?: (f: HeaderField) => void;
   onMove?: (from: number, to: number) => void;
 }) {
   const dims = sheetDimsMm(doc.paper, doc.orientation);
   const { w: pageW } = pageBox(doc.paper, doc.orientation);
   const cols = resolveCols(doc.tilesPerRow, doc.size, 6, pageW);
   const rows = flowRows(doc.items, cols);
+  const fitRef = useFitWidth(pageW);
 
   const dnd = !!onMove;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -105,9 +107,9 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onHeader = () 
   const activeItem = activeIndex != null ? doc.items[activeIndex] : undefined;
 
   return (
-    <div className="sheets block">
+    <div className="sheets block" ref={fitRef}>
       <div className="sheet bg-white mx-auto" style={{ width: dims.w, padding: PAD, boxShadow: '0 2px 18px rgba(20,18,40,.12)' }}>
-        <HeaderZone doc={doc} editable={editable} onHeader={onHeader} />
+        <HeaderZone doc={doc} editable={editable} onEditField={onEditField} />
         {dnd ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={reset}>
             {body}

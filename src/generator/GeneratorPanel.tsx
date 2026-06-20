@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { NOTES } from '../notes';
 import { templateStore } from '../storage';
 import { pageBox, resolveCols } from '../geometry';
+import { TabBar } from '../components/Tabs';
+import { tabPanelClass, type TabDef } from '../components/tabPanel';
 import type { GeneratorState } from './useGeneratorState';
 
 type Props = {
@@ -24,6 +26,7 @@ const SIZES = [
 ];
 
 export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, onExport, exportMsg }: Props) {
+  const [tab, setTab] = useState('setup');
   const [allCount, setAllCount] = useState(2);
   const [tplName, setTplName] = useState('');
   const [tplList, setTplList] = useState<string[]>(() => templateStore.list());
@@ -39,11 +42,21 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
   const { w: pageW } = pageBox(state.paper, state.orientation);
   const cols = resolveCols(state.tilesPerRow, state.size, state.margin * 2, pageW);
 
+  const tabs: TabDef[] = state.type === 'tiles'
+    ? [{ id: 'setup', label: 'Setup' }, { id: 'notes', label: 'Notes' }, { id: 'output', label: 'Output' }]
+    : [{ id: 'setup', label: 'Setup' }, { id: 'output', label: 'Output' }];
+  const activeTab = tabs.some(t => t.id === tab) ? tab : 'setup';
+  const tc = (id: string) => tabPanelClass(activeTab === id);
+
   return (
-    <aside className="generator-panel no-print border-r border-slate-200 bg-white overflow-y-auto p-5 flex flex-col gap-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+    // Mobile/tablet: tabbed panel capped at 45% height with its own scroll.
+    // Desktop (lg+): full sidebar with every group shown.
+    <aside className="generator-panel no-print order-2 lg:order-1 basis-[45%] lg:basis-auto shrink-0 lg:shrink min-h-0 flex flex-col overflow-hidden lg:overflow-y-auto bg-white lg:border-r lg:border-slate-200" style={{ fontFamily: 'Poppins, sans-serif' }}>
+      <TabBar tabs={tabs} active={activeTab} onSelect={setTab} />
+      <div className="panel-scroll flex-1 min-h-0 overflow-y-auto lg:overflow-visible p-5 flex flex-col gap-4">
 
       {/* Sheet type */}
-      <div className="group group-type">
+      <div className={`group group-type ${tc('setup')}`}>
         <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Sheet type</span>
         <div className="toggle2 grid grid-cols-2 gap-1">
           {(['tiles', 'grid'] as const).map(t => (
@@ -58,7 +71,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
       </div>
 
       {/* Paper */}
-      <div className="group group-paper">
+      <div className={`group group-paper ${tc('setup')}`}>
         <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Page</span>
         <div className="seg-paper grid grid-cols-4 gap-1 mb-2">
           {(['A4','A3','Letter','Legal'] as const).map(p => (
@@ -83,7 +96,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
       </div>
 
       {/* Tile size */}
-      <div className="group group-size">
+      <div className={`group group-size ${tc('setup')}`}>
         <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Tile size</span>
         <div className="seg-size grid grid-cols-6 gap-1">
           {SIZES.map(s => (
@@ -102,7 +115,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
 
       {/* Grid paper section */}
       {state.type === 'grid' && (
-        <div className="group group-grid">
+        <div className={`group group-grid ${tc('setup')}`}>
           <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Grid paper</span>
           <div className="field field-grid-pages flex items-center justify-between gap-2 mt-2">
             <label htmlFor="gridPages" className="text-sm">Grid sheets</label>
@@ -123,7 +136,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
 
       {/* Amount per note (tiles only) */}
       {state.type === 'tiles' && (
-        <div className="group group-amount">
+        <div className={`group group-amount ${tc('setup')}`}>
           <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Amount per note</span>
           <div className="seg-mode grid grid-cols-2 gap-1">
             {(['rows','pages'] as const).map(m => (
@@ -152,7 +165,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
       )}
 
       {/* Tiles per row — EXACT code from brief (test depends on id/label) */}
-      <div className="group group-tpr">
+      <div className={`group group-tpr ${tc('setup')}`}>
         <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Layout</span>
         <div className="field tpr-field flex items-center justify-between gap-2">
           <label htmlFor="tilesPerRow">Tiles per row</label>
@@ -171,7 +184,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
 
       {/* Sheet options */}
       {state.type === 'tiles' && (
-        <div className="group group-options">
+        <div className={`group group-options ${tc('setup')}`}>
           <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Sheet options</span>
           <div className="row-check flex items-center gap-2 text-sm">
             <input type="checkbox" id="optGuides" checked={state.guides}
@@ -190,7 +203,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
 
       {/* Notes & counts (tiles only) */}
       {state.type === 'tiles' && (
-        <div className="group group-notes">
+        <div className={`group group-notes ${tc('notes')}`}>
           <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Notes &amp; counts</span>
           <div className="miniactions flex gap-2 mb-2">
             <button className="btn-sel-all text-xs font-semibold text-blue-600 hover:underline"
@@ -231,7 +244,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
       )}
 
       {/* Templates */}
-      <div className="group group-templates">
+      <div className={`group group-templates ${tc('output')}`}>
         <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Templates</span>
         <div className="field field-tpl-save flex items-center gap-2">
           <input id="tplName" className="tpl-name-input flex-1 border rounded-lg px-3 py-1.5 text-sm border-slate-200"
@@ -282,7 +295,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
       </div>
 
       {/* Export buttons */}
-      <div className="group group-export flex flex-col gap-2">
+      <div className={`group group-export flex flex-col gap-2 ${tc('output')}`}>
         <button className="btn-download-pdf w-full py-2 rounded-xl bg-emerald-700 text-white font-bold text-sm hover:bg-emerald-800 transition"
           onClick={onExport.pdf}>
           Download PDF
@@ -302,10 +315,11 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
       </div>
 
       {/* Stat */}
-      <div className="stat text-xs text-slate-400 text-center mt-2">
+      <div className={`stat text-xs text-slate-400 text-center mt-2 ${tc('output')}`}>
         {totalTiles} tiles · {sheetCount} {sheetCount === 1 ? 'sheet' : 'sheets'}
       </div>
-      {exportMsg && <div className="export-msg text-xs text-red-500 text-center mt-1" role="alert">{exportMsg}</div>}
+      {exportMsg && <div className={`export-msg text-xs text-red-500 text-center mt-1 ${tc('output')}`} role="alert">{exportMsg}</div>}
+      </div>
     </aside>
   );
 }

@@ -4,6 +4,7 @@ import { GeneratorSheets } from './GeneratorSheets';
 import { GeneratorPanel } from './GeneratorPanel';
 import { exportPdf } from '../export/pdf';
 import { exportRaster } from '../export/raster';
+import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
 
 export function GeneratorMode() {
@@ -14,8 +15,10 @@ export function GeneratorMode() {
 
   usePageRule(state.paper, state.orientation);
 
+  // Reset the preview's fit-to-width zoom so exports capture at natural resolution.
+  const exporting = (fn: () => Promise<void> | void) => withExportReady(stageRef.current, fn);
   const onExport = {
-    pdf: async () => {
+    pdf: () => exporting(async () => {
       try {
         await exportPdf(sheetEls(), state.paper, state.orientation, 'CRF Note Tiles');
         setExportMsg('');
@@ -23,44 +26,48 @@ export function GeneratorMode() {
         setExportMsg('Export failed: ' + String(err));
         console.error(err);
       }
-    },
-    png: async () => {
+    }),
+    png: () => exporting(async () => {
       try {
         const sheets = sheetEls();
         const base = 'CRF Note Tiles';
         for (let i = 0; i < sheets.length; i++) {
           const name = sheets.length === 1 ? base : `${base}-${i + 1}`;
           await exportRaster(sheets[i], 'image/png', name);
+          if (i < sheets.length - 1) await new Promise(r => setTimeout(r, 300));
         }
         setExportMsg('');
       } catch (err) {
         setExportMsg('Export failed: ' + String(err));
         console.error(err);
       }
-    },
-    webp: async () => {
+    }),
+    webp: () => exporting(async () => {
       try {
         const sheets = sheetEls();
         const base = 'CRF Note Tiles';
         for (let i = 0; i < sheets.length; i++) {
           const name = sheets.length === 1 ? base : `${base}-${i + 1}`;
           await exportRaster(sheets[i], 'image/webp', name);
+          if (i < sheets.length - 1) await new Promise(r => setTimeout(r, 300));
         }
         setExportMsg('');
       } catch (err) {
         setExportMsg('Export failed: ' + String(err));
         console.error(err);
       }
-    },
-    print: () => window.print(),
+    }),
+    print: () => exporting(() => window.print()),
   };
 
   return (
-    <div className="generator-mode grid md:grid-cols-[340px_1fr] min-h-[calc(100vh-49px)]">
-      <GeneratorPanel state={state} set={set} setState={setState} totalTiles={buildResult.totalTiles} sheetCount={buildResult.sheets.length} onExport={onExport} exportMsg={exportMsg} />
-      <main className="stage overflow-auto p-6 md:p-8" ref={stageRef}>
+    // Mobile/tablet: preview on top (fits width, scrolls), tabbed tools panel
+    // capped at 45% height below. Desktop (lg+): tools sidebar left + preview right.
+    <div className="generator-mode flex flex-col lg:grid lg:grid-cols-[340px_1fr] h-[calc(100dvh-49px)] lg:h-auto lg:min-h-[calc(100vh-49px)]">
+      <main className="stage order-1 lg:order-2 flex-1 lg:flex-none min-h-0 overflow-auto p-4 lg:p-8 border-b border-slate-200 lg:border-b-0" ref={stageRef}>
         <GeneratorSheets sheets={buildResult.sheets} paper={state.paper} orientation={state.orientation} />
       </main>
+      <GeneratorPanel state={state} set={set} setState={setState} totalTiles={buildResult.totalTiles} sheetCount={buildResult.sheets.length} onExport={onExport} exportMsg={exportMsg} />
     </div>
   );
 }

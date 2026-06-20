@@ -27,7 +27,9 @@ export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
+  // Defer revoke so the browser can start the download — revoking immediately
+  // can cancel it, especially when several downloads fire in quick succession.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 export async function exportRaster(el: HTMLElement, type: RasterType, baseName: string): Promise<void> {
