@@ -3,8 +3,24 @@
 @import '@fontsource/poppins/500.css';
 @import '@fontsource/poppins/600.css';
 @import '@fontsource/poppins/700.css';
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap');
 
-:root { font-family: Poppins, system-ui, sans-serif; }
+:root {
+  font-family: Poppins, system-ui, sans-serif;
+
+  /* Brutalist tokens */
+  --ink: #141210;
+  --paper: #f3efe4;
+  --shadow: 5px 5px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+
+  /* The 12 tile colours, used as accents + the spectrum motif */
+  --t1: #f86e6e; --t2: #f58841; --t3: #ffbc57; --t4: #b8a334;
+  --t5: #fff56d; --t6: #b3f888; --t7: #93d154; --t8: #6bc6a0;
+  --t9: #7ee8df; --t10: #88a7f8; --t11: #cc97e8; --t12: #e277b1;
+  --accent: var(--t5);     /* signature yellow */
+  --primary: var(--t8);    /* go/confirm green */
+}
 
 .guides .tile { outline: .4px dashed rgba(0,0,0,.22); outline-offset: -.2px; }
 
@@ -13,3 +29,175 @@
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 .overlay-pop { animation: overlayPop .16s ease-out; }
+
+/* ============================================================
+   BRUTALIST SYSTEM — raw, high-contrast frame around the tiles
+   ============================================================ */
+
+body { background: var(--paper); color: var(--ink); }
+
+/* App shell + masthead -------------------------------------------------- */
+.app-shell { background: var(--paper); }
+.app-bar { background: var(--paper); border-bottom: 3px solid var(--ink); }
+
+.brand-mark {
+  font-family: 'Archivo Black', Poppins, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--ink);
+}
+.brand-dot { color: var(--t1); }
+.brand-sub {
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.6rem;
+  color: var(--ink);
+  opacity: 0.6;
+}
+
+/* The recurring 12-colour spectrum stripe */
+.spectrum { display: flex; height: 7px; border-top: 2px solid var(--ink); }
+.spectrum > i { flex: 1; display: block; }
+
+/* Tabs (masthead) ------------------------------------------------------- */
+.brut-tab {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  border: 2.5px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.4rem 0.7rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, box-shadow .08s ease, background .08s ease;
+}
+.brut-tab:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.brut-tab:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.brut-tab[aria-pressed='true'] { background: var(--accent); box-shadow: var(--shadow); }
+
+/* Workspace: faint drafting grid behind the white sheet ----------------- */
+.stage {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(rgba(20,18,16,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20,18,16,.05) 1px, transparent 1px);
+  background-size: 22px 22px;
+  border-color: var(--ink);
+}
+.stage { border-bottom-width: 3px; }
+
+/* Tool panels ----------------------------------------------------------- */
+.designer-panel, .generator-panel, .quiz-panel, .quiz-viewer-panel { background: var(--paper); }
+@media (min-width: 1024px) {
+  .designer-panel, .generator-panel, .quiz-panel, .quiz-viewer-panel { border-right: 3px solid var(--ink); }
+}
+
+/* Mobile tool tab bar --------------------------------------------------- */
+.tab-bar { border-bottom: 3px solid var(--ink); background: var(--paper); }
+.tab-btn {
+  border-radius: 0;
+  border: 2px solid var(--ink);
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Uppercase mono labels ------------------------------------------------- */
+.lbl, .palette-spelling-label, .section-title {
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+}
+
+/* Outline action buttons ------------------------------------------------ */
+.btn-save, .btn-load, .btn-export-json, .btn-import-json,
+.btn-pdf, .btn-png, .btn-webp, .btn-print,
+.btn-play, .btn-stop, .btn-speaker,
+.btn-transpose-up, .btn-transpose-down,
+.btn-download-png, .btn-download-webp,
+.btn-shuffle, .btn-reset, .btn-embed, .btn-load-json, .btn-use-current,
+.btn-play-song, .btn-play-answers {
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.btn-save:hover, .btn-load:hover, .btn-export-json:hover, .btn-import-json:hover,
+.btn-pdf:hover, .btn-png:hover, .btn-webp:hover, .btn-print:hover,
+.btn-play:hover, .btn-stop:hover, .btn-speaker:hover,
+.btn-transpose-up:hover, .btn-transpose-down:hover,
+.btn-download-png:hover, .btn-download-webp:hover,
+.btn-shuffle:hover, .btn-reset:hover, .btn-embed:hover, .btn-load-json:hover, .btn-use-current:hover,
+.btn-play-song:hover, .btn-play-answers:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.btn-save:active, .btn-load:active, .btn-export-json:active, .btn-import-json:active,
+.btn-pdf:active, .btn-png:active, .btn-webp:active, .btn-print:active,
+.btn-play:active, .btn-stop:active, .btn-speaker:active,
+.btn-transpose-up:active, .btn-transpose-down:active,
+.btn-download-png:active, .btn-download-webp:active,
+.btn-shuffle:active, .btn-reset:active, .btn-embed:active, .btn-load-json:active, .btn-use-current:active,
+.btn-play-song:active, .btn-play-answers:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+/* Speaker toggle when on */
+.btn-speaker[aria-pressed='true'] { background: var(--accent); }
+
+/* Primary / go buttons -------------------------------------------------- */
+.btn-download-pdf, .btn-submit {
+  border: 2.5px solid var(--ink);
+  border-radius: 0;
+  background: var(--primary);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.btn-download-pdf:hover, .btn-submit:hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 var(--ink); }
+.btn-download-pdf:active, .btn-submit:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+
+/* Segmented toggles — keep their active fill, just go sharp + chunky ----- */
+.btn-size, .btn-paper, .btn-orient, .btn-type, .btn-mode,
+.palette-sharp-toggle, .palette-flat-toggle {
+  border-radius: 0;
+  border-width: 2px;
+  border-color: var(--ink);
+  font-weight: 700;
+}
+
+/* Note palette + quiz picker + symbol keys ------------------------------ */
+.palette-note, .pick-note,
+.palette-up, .palette-down, .palette-break, .palette-section {
+  border-radius: 0;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  transition: transform .07s ease, box-shadow .07s ease;
+}
+.palette-note:hover, .pick-note:hover,
+.palette-up:hover, .palette-down:hover, .palette-break:hover, .palette-section:hover {
+  transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink);
+}
+.palette-note:active, .pick-note:active,
+.palette-up:active, .palette-down:active, .palette-break:active, .palette-section:active {
+  transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink);
+}
+
+/* Inputs ---------------------------------------------------------------- */
+.input-name, .input-tpr, .num, .tpl-name-input, .tpl-select, .overlay-input {
+  border-radius: 0;
+  border: 2px solid var(--ink);
+  background: #fff;
+}
+
+/* Overlay card + score block ------------------------------------------- */
+.overlay-card { border-radius: 0; border: 3px solid var(--ink); box-shadow: var(--shadow); }
+.quiz-score { border-radius: 0; border: 2.5px solid var(--ink); background: var(--accent) !important; box-shadow: var(--shadow-sm); }

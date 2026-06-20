@@ -120,7 +120,7 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
   return (
     // Mobile/tablet: preview on top (fits width, scrolls), tools a tabbed panel
     // capped at 45% height below. Desktop (lg+): tools sidebar + preview.
-    <div className="designer-mode flex flex-col lg:grid lg:grid-cols-[360px_1fr] h-[calc(100dvh-49px)] lg:h-auto lg:min-h-[calc(100vh-49px)]">
+    <div className="designer-mode flex flex-col lg:grid lg:grid-cols-[360px_1fr] h-full lg:h-full">
       <main className="stage order-1 lg:order-2 flex-1 lg:flex-none min-h-0 overflow-auto p-4 lg:p-8 border-b border-slate-200 lg:border-b-0" ref={stageRef}>
         <DesignerCanvas
           doc={doc}
