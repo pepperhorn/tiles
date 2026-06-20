@@ -44,6 +44,8 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
   const stopAudio = () => { piano.stop(); setPlayingIndex(null); };
 
   const handle = (r: KeyResult) => {
+    // Editing during playback stops it (the glow cursor would go stale).
+    if (playingIndex !== null) stopAudio();
     if (r.type === 'newSection') {
       // Insert an empty section then edit it in the overlay (same as header fields).
       const idx = doc.items.length;

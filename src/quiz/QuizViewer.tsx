@@ -61,6 +61,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
 
   const fill = (noteId: string) => {
     if (selected == null) return;
+    if (playingIndex !== null) stopAudio(); // entering an answer stops playback
     const next = { ...answers, [selected]: noteId };
     setAnswers(next);
     setVerdicts(null); // editing invalidates a prior grade
