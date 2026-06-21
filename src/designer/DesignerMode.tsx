@@ -14,7 +14,9 @@ import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
 import { serializeDoc, parseSheetJson } from './json';
 import { usePiano } from '../audio/usePiano';
-import { itemsToPitches } from '../audio/pitch';
+import { itemsToPitches, midiToItems } from '../audio/pitch';
+import { defaultDoc } from './sheetModel';
+import { midiFileToMelody } from '../audio/midiFile';
 import { ucfirst } from '../text';
 import { cmsEnabled, emailReceipt } from '../cms';
 
@@ -27,6 +29,7 @@ const TABS: TabDef[] = [
 export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (action: Action) => void }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const midiInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
   const [exportMsg, setExportMsg] = useState('');
   const [tab, setTab] = useState('notes');
@@ -145,6 +148,25 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
     reader.onerror = () => setExportMsg('Could not read file.');
     reader.readAsText(file);
   };
+  const onImportMidi = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const melody = midiFileToMelody(reader.result as ArrayBuffer);
+        if (!melody.length) { setExportMsg('No notes found in that MIDI file.'); return; }
+        dispatch({
+          type: 'load',
+          doc: { ...defaultDoc(), title: file.name.replace(/\.midi?$/i, ''), items: midiToItems(melody) },
+        });
+        setExportMsg('');
+      } catch (err) {
+        setExportMsg('Import failed: ' + String(err));
+        console.error(err);
+      }
+    };
+    reader.onerror = () => setExportMsg('Could not read file.');
+    reader.readAsArrayBuffer(file);
+  };
 
   return (
     // Mobile/tablet: preview on top (fits width, scrolls), tools a tabbed panel
@@ -231,6 +253,16 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
                   accept="application/json,.json"
                   className="import-json-input hidden"
                   onChange={e => { const f = e.target.files?.[0]; if (f) onImportJson(f); e.target.value = ''; }}
+                />
+              </div>
+              <div className="midiio-actions flex gap-2">
+                <button className="btn-import-midi flex-1 rounded-lg border px-3 py-1 text-sm" onClick={() => midiInputRef.current?.click()}>Import MIDI</button>
+                <input
+                  ref={midiInputRef}
+                  type="file"
+                  accept="audio/midi,audio/x-midi,.mid,.midi"
+                  className="import-midi-input hidden"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) onImportMidi(f); e.target.value = ''; }}
                 />
               </div>
             </div>

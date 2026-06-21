@@ -64,3 +64,44 @@ export function itemsToPitches(items: Item[], overrides?: Record<number, string>
   });
   return out;
 }
+
+/**
+ * Standard MIDI note name for a placed tile, e.g. ('Cs', 61) → "C#4". The octave
+ * follows the convention used by `place` (MIDI 60 = middle C = "C4"); the letter
+ * keeps the tile's own spelling so a B♭ tile reads "Bb4", not "A#4".
+ */
+export function midiNoteName(noteId: string, midi: number): string {
+  const octave = Math.floor(midi / 12) - 1;
+  return noteId.replace('s', '#') + octave;
+}
+
+/**
+ * Inverse of `itemsToPitches`: turn a melody (MIDI note numbers in playing order)
+ * back into note items, re-inserting ↑/↓ arrows wherever the default nearest-octave
+ * placement would otherwise move the wrong way. Tiles carry pitch class only, so
+ * the absolute octave can't survive — but the melodic contour does, which is what
+ * the arrows encode. Round-trips with `itemsToPitches` for melodies inside the
+ * playable range (G3..G5).
+ */
+export function midiToItems(midis: number[]): Item[] {
+  const items: Item[] = [];
+  let prevPlaced: number | null = null;
+  let prevTarget: number | null = null;
+  for (const target of midis) {
+    const pc = ((Math.round(target) % 12) + 12) % 12;
+    const noteId = CHROMATIC[pc];
+    let dir: 0 | 1 | -1 = 0;
+    if (prevPlaced != null && prevTarget != null) {
+      const desired = Math.sign(target - prevTarget);
+      const nearestDir = Math.sign(place(pc, prevPlaced, 0) - prevPlaced);
+      if (desired > 0 && nearestDir <= 0) dir = 1;
+      else if (desired < 0 && nearestDir >= 0) dir = -1;
+    }
+    if (dir === 1) items.push({ type: 'arrow', dir: 'up' });
+    else if (dir === -1) items.push({ type: 'arrow', dir: 'down' });
+    items.push({ type: 'note', noteId });
+    prevPlaced = place(pc, prevPlaced, dir);
+    prevTarget = target;
+  }
+  return items;
+}
