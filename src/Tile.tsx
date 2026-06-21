@@ -24,7 +24,7 @@ export function Tile(props: TileProps) {
     >
       <div className="tile-main font-bold" style={{ ...shadow, fontSize: size * (sub ? 0.4 : 0.46) }}>{main}</div>
       {sub && (
-        <div className="tile-sub font-semibold opacity-90" style={{ ...shadow, fontSize: size * 0.22, marginTop: '.12em' }}>{sub}</div>
+        <div className="tile-sub font-semibold opacity-90" style={{ ...shadow, fontSize: size * 0.22, marginTop: 2 }}>{sub}</div>
       )}
     </div>
   );

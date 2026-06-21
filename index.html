@@ -4,10 +4,101 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dots System — Note Tiles</title>
+    <meta name="theme-color" content="#faf8f2" />
+
+    <title>Creative Ranges Tiles - Share music through color</title>
+    <meta
+      name="description"
+      content="Creative Ranges Tiles turns music into color. Every note gets its own color, so scales, chords, and songs become patterns you can see — an easy on-ramp for kids, beginners, and visual learners discovering how to read and play music."
+    />
+    <meta
+      name="keywords"
+      content="color music notation, colored notes, note tiles, learn music by color, music for beginners, visual music learning, color-coded sheet music, music education, discover music"
+    />
+    <meta name="author" content="Creative Ranges" />
+    <meta name="robots" content="index, follow" />
+    <!-- TODO: set to the production URL once the domain is live -->
+    <!-- <link rel="canonical" href="https://YOUR_DOMAIN/" /> -->
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Creative Ranges Tiles" />
+    <meta property="og:title" content="Creative Ranges Tiles - Share music through color" />
+    <meta
+      property="og:description"
+      content="Every note gets its own color, so reading and playing music becomes a visual experience. Build colorful note-tile sheets and help more people discover music."
+    />
+    <meta property="og:image" content="/favicon.svg" />
+    <!-- TODO: add an absolute og:url and a 1200x630 raster og:image for richer link previews -->
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Creative Ranges Tiles - Share music through color" />
+    <meta
+      name="twitter:description"
+      content="Color-coded note tiles that turn scales, chords, and songs into patterns you can see. A friendly first step into reading and playing music."
+    />
+    <meta name="twitter:image" content="/favicon.svg" />
+
+    <!-- Structured data: app + answer-engine FAQ about color-coded music learning -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "name": "Creative Ranges Tiles",
+            "applicationCategory": "MusicApplication",
+            "operatingSystem": "Web browser",
+            "url": "/",
+            "description": "A free web app that maps every musical note to its own color so people can read, build, and share music visually. Design colorful note-tile sheets and quizzes to make learning music easier.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is Creative Ranges Tiles?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Creative Ranges Tiles is a free web app for building colorful note-tile sheets. Each musical note has its own consistent color, so reading and playing music becomes a visual experience instead of decoding abstract symbols."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How does color help you learn music?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "When every one of the twelve notes has a distinct color, scales, chords, and melodies turn into visual patterns and shapes you can recognize at a glance. Color gives beginners and visual learners an immediate way in, so they can start playing songs on day one."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Who are colored note tiles for?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Kids, beginners, music teachers, and visual learners. Color-coded notation lowers the barrier to reading music and helps more and more people discover and share music regardless of prior training."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>Creative Ranges Tiles - Share music through color</h1>
+      <p>
+        Creative Ranges Tiles turns music into color. Every note has its own
+        color, so scales, chords, and whole songs become patterns you can see.
+        It is a friendly first step into reading and playing music for kids,
+        beginners, teachers, and visual learners. Please enable JavaScript to
+        design colorful note-tile sheets and quizzes.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
