@@ -77,11 +77,13 @@ export function midiNoteName(noteId: string, midi: number): string {
 
 /**
  * Inverse of `itemsToPitches`: turn a melody (MIDI note numbers in playing order)
- * back into note items, re-inserting ↑/↓ arrows wherever the default nearest-octave
- * placement would otherwise move the wrong way. Tiles carry pitch class only, so
- * the absolute octave can't survive — but the melodic contour does, which is what
- * the arrows encode. Round-trips with `itemsToPitches` for melodies inside the
- * playable range (G3..G5).
+ * back into note items, re-inserting ↑/↓ arrows so playback follows the melody's
+ * up/down contour. Tiles carry pitch class only and playback spans just G3..G5, so
+ * the absolute octave can't survive and leaps wider than that range get wrapped —
+ * but within reach the contour is preserved. Any arrow it emits is faithful: it's
+ * inserted only when the resulting placement genuinely moves in that direction (a
+ * forced arrow can otherwise wrap the wrong way at the edge of the range), so an
+ * arrow never plays against the note it precedes.
  */
 export function midiToItems(midis: number[]): Item[] {
   const items: Item[] = [];
@@ -92,10 +94,14 @@ export function midiToItems(midis: number[]): Item[] {
     const noteId = CHROMATIC[pc];
     let dir: 0 | 1 | -1 = 0;
     if (prevPlaced != null && prevTarget != null) {
-      const desired = Math.sign(target - prevTarget);
-      const nearestDir = Math.sign(place(pc, prevPlaced, 0) - prevPlaced);
-      if (desired > 0 && nearestDir <= 0) dir = 1;
-      else if (desired < 0 && nearestDir >= 0) dir = -1;
+      const desired = Math.sign(target - prevTarget) as -1 | 0 | 1;
+      // Prefer no arrow; add one only when nearest placement misses the melody's
+      // direction AND the arrow actually achieves it (vs. wrapping at the range edge).
+      if (desired !== 0 &&
+          Math.sign(place(pc, prevPlaced, 0) - prevPlaced) !== desired &&
+          Math.sign(place(pc, prevPlaced, desired) - prevPlaced) === desired) {
+        dir = desired;
+      }
     }
     if (dir === 1) items.push({ type: 'arrow', dir: 'up' });
     else if (dir === -1) items.push({ type: 'arrow', dir: 'down' });

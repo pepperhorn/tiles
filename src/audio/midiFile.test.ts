@@ -72,3 +72,17 @@ test('extractMelody keeps the top voice of each chord', () => {
 test('midiFileToMelody returns a flat list of MIDI numbers', () => {
   expect(midiFileToMelody(buildMidi([{ midi: 62 }, { midi: 65 }, { midi: 69 }]))).toEqual([62, 65, 69]);
 });
+
+test('a truncated track keeps the notes parsed so far instead of throwing', () => {
+  // Valid header + MTrk whose declared length overruns the buffer, cut off mid-track
+  // after one complete note. The reader should return that note, not crash.
+  const buf = new Uint8Array([
+    0x4d, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 0, 0, 1, 0x01, 0xe0,
+    0x4d, 0x54, 0x72, 0x6b, 0, 0, 0xff, 0xff,  // bogus huge track length
+    0x00, 0x90, 60, 0x40,                       // note on C4
+    0x81, 0x70, 0x80, 60, 0x40,                 // note off — last complete event
+    0x00, 0x90, 64,                             // truncated: next note-on cut short
+  ]).buffer;
+  expect(() => parseMidiNotes(buf)).not.toThrow();
+  expect(parseMidiNotes(buf).map(n => n.midi)).toEqual([60]);
+});

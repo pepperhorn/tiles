@@ -65,3 +65,20 @@ test('midiToItems round-trips a melody contour through itemsToPitches', () => {
   const sign = (xs: number[]) => xs.slice(1).map((m, i) => Math.sign(m - xs[i]));
   expect(sign(placed)).toEqual(sign(melody));
 });
+
+test('every arrow midiToItems emits plays in the direction it points', () => {
+  // Includes leaps the G3..G5 range cannot fully represent — those simply get no
+  // (or a wrapped) note, but a contradictory arrow must never be emitted.
+  const melody = [57, 68, 55, 79, 60, 79, 58, 72, 50, 81];
+  const items = midiToItems(melody);
+  const placed = itemsToPitches(items).map(p => p.midi);
+  let pi = 0, prev: number | null = null, pending: 1 | -1 | 0 = 0;
+  for (const it of items) {
+    if (it.type === 'arrow') pending = it.dir === 'up' ? 1 : -1;
+    else if (it.type === 'note') {
+      const cur = placed[pi++];
+      if (pending !== 0 && prev !== null) expect(Math.sign(cur - prev)).toBe(pending);
+      prev = cur; pending = 0;
+    }
+  }
+});

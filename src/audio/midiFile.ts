@@ -12,6 +12,7 @@ class Reader {
   private view: DataView;
   pos = 0;
   constructor(buf: ArrayBuffer) { this.view = new DataView(buf); }
+  get byteLength(): number { return this.view.byteLength; }
   get eof(): boolean { return this.pos >= this.view.byteLength; }
   u8(): number { return this.view.getUint8(this.pos++); }
   u16(): number { const v = this.view.getUint16(this.pos); this.pos += 2; return v; }
@@ -44,40 +45,48 @@ export function parseMidiNotes(buf: ArrayBuffer): MidiNoteEvent[] {
   const notes: MidiNoteEvent[] = [];
   for (let t = 0; t < ntracks && !r.eof; t++) {
     if (r.str(4) !== 'MTrk') break;
-    const end = r.pos + r.u32();
+    // Clamp the declared length to what's actually present; a corrupt length
+    // shouldn't send reads past the buffer.
+    const end = Math.min(r.pos + r.u32(), r.byteLength);
     let tick = 0;
     let status = 0;
     const open = new Map<number, number>(); // (channel<<8 | note) -> startTick
 
-    while (r.pos < end) {
-      tick += r.vlq();
-      let b = r.u8();
-      if (b < 0x80) { r.pos--; b = status; }   // running status: reuse last
-      else if (b < 0xf0) status = b;            // channel message sets running status
-      else status = 0;                          // system/meta cancels it
+    // A malformed event can still run a read off the end mid-track; if so, keep
+    // whatever notes parsed cleanly so far rather than failing the whole import.
+    try {
+      while (r.pos < end) {
+        tick += r.vlq();
+        let b = r.u8();
+        if (b < 0x80) { r.pos--; b = status; }   // running status: reuse last
+        else if (b < 0xf0) status = b;            // channel message sets running status
+        else status = 0;                          // system/meta cancels it
 
-      const hi = b & 0xf0;
-      const ch = b & 0x0f;
-      if (hi === 0x90) {                         // note on (vel 0 == note off)
-        const note = r.u8(), vel = r.u8();
-        const key = (ch << 8) | note;
-        if (vel > 0) open.set(key, tick);
-        else closeNote(notes, open, key, note, tick);
-      } else if (hi === 0x80) {                  // note off
-        const note = r.u8(); r.u8();
-        closeNote(notes, open, (ch << 8) | note, note, tick);
-      } else if (hi === 0xa0 || hi === 0xb0 || hi === 0xe0) {
-        r.u8(); r.u8();                          // 2-byte channel messages
-      } else if (hi === 0xc0 || hi === 0xd0) {
-        r.u8();                                  // 1-byte channel messages
-      } else if (b === 0xff) {                   // meta event
-        r.u8();                                  // type
-        r.pos += r.vlq();                        // skip data
-      } else if (b === 0xf0 || b === 0xf7) {     // sysex
-        r.pos += r.vlq();
-      } else {
-        break;                                   // unknown — bail this track
+        const hi = b & 0xf0;
+        const ch = b & 0x0f;
+        if (hi === 0x90) {                         // note on (vel 0 == note off)
+          const note = r.u8(), vel = r.u8();
+          const key = (ch << 8) | note;
+          if (vel > 0) open.set(key, tick);
+          else closeNote(notes, open, key, note, tick);
+        } else if (hi === 0x80) {                  // note off
+          const note = r.u8(); r.u8();
+          closeNote(notes, open, (ch << 8) | note, note, tick);
+        } else if (hi === 0xa0 || hi === 0xb0 || hi === 0xe0) {
+          r.u8(); r.u8();                          // 2-byte channel messages
+        } else if (hi === 0xc0 || hi === 0xd0) {
+          r.u8();                                  // 1-byte channel messages
+        } else if (b === 0xff) {                   // meta event
+          r.u8();                                  // type
+          r.pos += r.vlq();                        // skip data
+        } else if (b === 0xf0 || b === 0xf7) {     // sysex
+          r.pos += r.vlq();
+        } else {
+          break;                                   // unknown — bail this track
+        }
       }
+    } catch {
+      break;                                       // truncated/corrupt — stop, keep what we have
     }
     r.pos = end;                                 // realign to the next chunk
   }
