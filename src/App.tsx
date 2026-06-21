@@ -1,12 +1,20 @@
-import { useMemo, useReducer, useState } from 'react';
-import { GeneratorMode } from './generator/GeneratorMode';
+import { lazy, Suspense, useMemo, useReducer, useState } from 'react';
 import { DesignerMode } from './designer/DesignerMode';
-import { QuizMode } from './quiz/QuizMode';
-import { QuizViewer } from './quiz/QuizViewer';
-import { QuizViewerTab } from './quiz/QuizViewerTab';
 import { readQuizFromHash, readEditFromHash, DEFAULT_PRESET, type QuizPreset } from './quiz/encode';
 import { reduce, defaultDoc } from './designer/sheetModel';
 import { NOTES } from './notes';
+
+// Designer is the default tab, so it loads eagerly. The other tabs (and the
+// embed-only quiz player) are code-split so their JS — and the heavy export
+// stack they pull — only loads when the user actually opens them.
+const GeneratorMode = lazy(() => import('./generator/GeneratorMode').then(m => ({ default: m.GeneratorMode })));
+const QuizMode = lazy(() => import('./quiz/QuizMode').then(m => ({ default: m.QuizMode })));
+const QuizViewer = lazy(() => import('./quiz/QuizViewer').then(m => ({ default: m.QuizViewer })));
+const QuizViewerTab = lazy(() => import('./quiz/QuizViewerTab').then(m => ({ default: m.QuizViewerTab })));
+
+const ModeFallback = () => (
+  <div className="mode-loading h-full grid place-items-center text-sm text-slate-400">loading…</div>
+);
 
 type Mode = 'designer' | 'generator' | 'quiz' | 'viewer';
 
@@ -20,7 +28,11 @@ export default function App() {
   // difficulty preset the taker can adjust.
   const embedQuiz = useMemo(() => readQuizFromHash(window.location.hash), []);
   const [embedPreset, setEmbedPreset] = useState<QuizPreset>(() => embedQuiz?.quiz ?? DEFAULT_PRESET);
-  if (embedQuiz) return <QuizViewer source={embedQuiz.doc} preset={embedPreset} onPreset={setEmbedPreset} embed />;
+  if (embedQuiz) return (
+    <Suspense fallback={<ModeFallback />}>
+      <QuizViewer source={embedQuiz.doc} preset={embedPreset} onPreset={setEmbedPreset} embed />
+    </Suspense>
+  );
 
   const tab = (id: Mode, label: string) => (
     <button
@@ -50,10 +62,12 @@ export default function App() {
         </div>
       </header>
       <main className="app-body flex-1 min-h-0">
-        {mode === 'designer' && <DesignerMode doc={doc} dispatch={dispatch} />}
-        {mode === 'generator' && <GeneratorMode />}
-        {mode === 'quiz' && <QuizMode doc={doc} />}
-        {mode === 'viewer' && <QuizViewerTab doc={doc} />}
+        <Suspense fallback={<ModeFallback />}>
+          {mode === 'designer' && <DesignerMode doc={doc} dispatch={dispatch} />}
+          {mode === 'generator' && <GeneratorMode />}
+          {mode === 'quiz' && <QuizMode doc={doc} />}
+          {mode === 'viewer' && <QuizViewerTab doc={doc} />}
+        </Suspense>
       </main>
     </div>
   );

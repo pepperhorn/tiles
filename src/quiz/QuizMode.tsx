@@ -2,8 +2,6 @@ import { useMemo, useRef, useState } from 'react';
 import type { SheetDoc } from '../designer/sheetModel';
 import { QuizCanvas } from './QuizCanvas';
 import { chooseBlanks, noteIndexes } from './blanks';
-import { exportVectorPdf, docToPages } from '../export/pdfVector';
-import { exportRaster } from '../export/raster';
 import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
 import { usePiano } from '../audio/usePiano';
@@ -33,8 +31,9 @@ export function QuizMode({ doc }: { doc: SheetDoc }) {
   const baseName = () => `${doc.title?.trim() || 'CRF Sheet'} — Quiz`;
   const exporting = (fn: () => Promise<void> | void) => withExportReady(stageRef.current, fn);
   const onExport = {
-    pdf: () => {
+    pdf: async () => {
       try {
+        const { exportVectorPdf, docToPages } = await import('../export/pdfVector');
         exportVectorPdf(docToPages(doc, unknown), doc.paper, doc.orientation, baseName());
         setExportMsg('');
       } catch (err) { setExportMsg('Export failed: ' + String(err)); console.error(err); }
@@ -42,14 +41,20 @@ export function QuizMode({ doc }: { doc: SheetDoc }) {
     png: () => exporting(async () => {
       try {
         const el = sheetEl();
-        if (el) await exportRaster(el, 'image/png', baseName());
+        if (el) {
+          const { exportRaster } = await import('../export/raster');
+          await exportRaster(el, 'image/png', baseName());
+        }
         setExportMsg('');
       } catch (err) { setExportMsg('Export failed: ' + String(err)); console.error(err); }
     }),
     webp: () => exporting(async () => {
       try {
         const el = sheetEl();
-        if (el) await exportRaster(el, 'image/webp', baseName());
+        if (el) {
+          const { exportRaster } = await import('../export/raster');
+          await exportRaster(el, 'image/webp', baseName());
+        }
         setExportMsg('');
       } catch (err) { setExportMsg('Export failed: ' + String(err)); console.error(err); }
     }),

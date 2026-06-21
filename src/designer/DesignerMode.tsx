@@ -9,8 +9,7 @@ import { useKeyboard, type KeyResult } from './useKeyboard';
 import { TabBar } from '../components/Tabs';
 import { tabPanelClass, type TabDef } from '../components/tabPanel';
 import { designStore } from '../storage';
-import { exportVectorPdf, docToPages } from '../export/pdfVector';
-import { exportRaster, downloadBlob } from '../export/raster';
+import { downloadBlob } from '../export/download';
 import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
 import { serializeDoc, parseSheetJson } from './json';
@@ -69,8 +68,9 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
   // Reset the preview's fit-to-width zoom so exports capture at natural resolution.
   const exporting = (fn: () => Promise<void> | void) => withExportReady(stageRef.current, fn);
   const onExport = {
-    pdf: () => {
+    pdf: async () => {
       try {
+        const { exportVectorPdf, docToPages } = await import('../export/pdfVector');
         exportVectorPdf(docToPages(doc), doc.paper, doc.orientation, baseName());
         setExportMsg('');
       } catch (err) {
@@ -81,7 +81,10 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
     png: () => exporting(async () => {
       try {
         const el = sheetEl();
-        if (el) await exportRaster(el, 'image/png', baseName());
+        if (el) {
+          const { exportRaster } = await import('../export/raster');
+          await exportRaster(el, 'image/png', baseName());
+        }
         setExportMsg('');
       } catch (err) {
         setExportMsg('Export failed: ' + String(err));
@@ -91,7 +94,10 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
     webp: () => exporting(async () => {
       try {
         const el = sheetEl();
-        if (el) await exportRaster(el, 'image/webp', baseName());
+        if (el) {
+          const { exportRaster } = await import('../export/raster');
+          await exportRaster(el, 'image/webp', baseName());
+        }
         setExportMsg('');
       } catch (err) {
         setExportMsg('Export failed: ' + String(err));

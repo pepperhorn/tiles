@@ -2,9 +2,6 @@ import { useRef, useState } from 'react';
 import { useGeneratorState } from './useGeneratorState';
 import { GeneratorSheets } from './GeneratorSheets';
 import { GeneratorPanel } from './GeneratorPanel';
-import { exportPdf } from '../export/pdf';
-import { exportVectorPdf, plansToPages } from '../export/pdfVector';
-import { exportRaster } from '../export/raster';
 import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
 
@@ -19,7 +16,8 @@ export function GeneratorMode() {
   // Reset the preview's fit-to-width zoom so exports capture at natural resolution.
   const exporting = (fn: () => Promise<void> | void) => withExportReady(stageRef.current, fn);
   const onExport = {
-    pdf: () => {
+    pdf: async () => {
+      const { exportVectorPdf, plansToPages } = await import('../export/pdfVector');
       const pages = plansToPages(buildResult.sheets);
       if (pages) {
         // Vector CMYK path for tile sheets (print-first).
@@ -32,6 +30,7 @@ export function GeneratorMode() {
       // Grid-paper sheets fall back to the raster path.
       void exporting(async () => {
         try {
+          const { exportPdf } = await import('../export/pdf');
           await exportPdf(sheetEls(), state.paper, state.orientation, 'CRF Note Tiles');
           setExportMsg('');
         } catch (err) { setExportMsg('Export failed: ' + String(err)); console.error(err); }
@@ -39,6 +38,7 @@ export function GeneratorMode() {
     },
     png: () => exporting(async () => {
       try {
+        const { exportRaster } = await import('../export/raster');
         const sheets = sheetEls();
         const base = 'CRF Note Tiles';
         for (let i = 0; i < sheets.length; i++) {
@@ -54,6 +54,7 @@ export function GeneratorMode() {
     }),
     webp: () => exporting(async () => {
       try {
+        const { exportRaster } = await import('../export/raster');
         const sheets = sheetEls();
         const base = 'CRF Note Tiles';
         for (let i = 0; i < sheets.length; i++) {

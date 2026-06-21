@@ -1,4 +1,7 @@
 import html2canvas from 'html2canvas-pro';
+import { downloadBlob } from './download';
+
+export { downloadBlob };
 
 export type RasterType = 'image/png' | 'image/webp';
 
@@ -21,15 +24,6 @@ export async function blobFromElement(el: HTMLElement, type: RasterType): Promis
   const canvas = await canvasOf(el);
   return await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(b => (b ? resolve(b) : reject(new Error('toBlob failed'))), type, 0.95));
-}
-
-export function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  // Defer revoke so the browser can start the download — revoking immediately
-  // can cancel it, especially when several downloads fire in quick succession.
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 export async function exportRaster(el: HTMLElement, type: RasterType, baseName: string): Promise<void> {
