@@ -15,6 +15,10 @@ class Reader {
   get byteLength(): number { return this.view.byteLength; }
   get eof(): boolean { return this.pos >= this.view.byteLength; }
   u8(): number { return this.view.getUint8(this.pos++); }
+  /** Advance past `n` bytes. (A separate method so callers never write the
+   *  bug-prone `pos += vlq()`, where the compound assignment reads pos before
+   *  vlq() advances it.) */
+  skip(n: number): void { this.pos += n; }
   u16(): number { const v = this.view.getUint16(this.pos); this.pos += 2; return v; }
   u32(): number { const v = this.view.getUint32(this.pos); this.pos += 4; return v; }
   str(n: number): string {
@@ -78,9 +82,9 @@ export function parseMidiNotes(buf: ArrayBuffer): MidiNoteEvent[] {
           r.u8();                                  // 1-byte channel messages
         } else if (b === 0xff) {                   // meta event
           r.u8();                                  // type
-          r.pos += r.vlq();                        // skip data
+          r.skip(r.vlq());                         // skip data (read length first)
         } else if (b === 0xf0 || b === 0xf7) {     // sysex
-          r.pos += r.vlq();
+          r.skip(r.vlq());
         } else {
           break;                                   // unknown — bail this track
         }

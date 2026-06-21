@@ -24,6 +24,29 @@ function buildMidi(notes: Array<{ midi: number; dur?: number }>, gap = 0): Array
   ]).buffer;
 }
 
+/** Wrap track bytes in a valid MThd + MTrk envelope (format 0, 1 track, 480 tpqn). */
+function wrapTrack(track: number[]): ArrayBuffer {
+  const len = track.length;
+  return new Uint8Array([
+    0x4d, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 0, 0, 1, 0x01, 0xe0,
+    0x4d, 0x54, 0x72, 0x6b, (len >> 24) & 255, (len >> 16) & 255, (len >> 8) & 255, len & 255,
+    ...track,
+  ]).buffer;
+}
+
+test('reads notes that follow leading meta events (track name + time sig)', () => {
+  // Real files put a track-name and time-signature meta before the first note.
+  // A multi-byte meta length must advance the cursor exactly, or every note is lost.
+  const track = [
+    0x00, 0xff, 0x03, 0x04, 0x53, 0x6f, 0x6e, 0x67,  // meta: track name "Song" (len 4)
+    0x00, 0xff, 0x58, 0x04, 0x04, 0x02, 0x18, 0x08,  // meta: time signature (len 4)
+    0x00, 0x90, 60, 0x40, ...vlq(240), 0x80, 60, 0x40,
+    0x00, 0x90, 64, 0x40, ...vlq(240), 0x80, 64, 0x40,
+    0x00, 0xff, 0x2f, 0x00,
+  ];
+  expect(parseMidiNotes(wrapTrack(track)).map(n => n.midi)).toEqual([60, 64]);
+});
+
 test('rejects a buffer that is not a MIDI file', () => {
   expect(() => parseMidiNotes(new Uint8Array([1, 2, 3, 4]).buffer)).toThrow(/Not a MIDI file/);
 });
