@@ -47,7 +47,7 @@ function DropSection({ index, text, isOver, onEdit }: { index: number; text: str
       ref={setNodeRef}
       className={`row-section font-semibold text-slate-700 mt-2 ${onEdit ? 'cursor-pointer hover:bg-slate-100/70 rounded px-1 -mx-1' : ''} ${isOver ? 'ring-2 ring-slate-900 rounded-md' : ''}`}
       onClick={onEdit}
-    >{text || <span className="text-slate-400">Section…</span>}</div>
+    >{text || <span className="text-slate-600">Section…</span>}</div>
   );
 }
 
@@ -106,7 +106,7 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
               )}
             </div>
           ))}
-      {doc.items.length === 0 && <div className="empty text-slate-400 text-sm">Tap notes below or type A–G to begin.</div>}
+      {doc.items.length === 0 && <div className="empty text-slate-600 text-sm">Tap notes below or type A–G to begin.</div>}
     </div>
   );
 
@@ -114,7 +114,7 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
 
   return (
     <div className="sheets block" ref={fitRef}>
-      <div className="sheet bg-white mx-auto" style={{ width: dims.w, padding: PAD, boxShadow: '7px 7px 0 var(--ink)' }}>
+      <div className="sheet bg-white mx-auto" style={{ width: dims.w, padding: PAD, boxShadow: '7px 7px 0 var(--ink)', borderTop: '1px solid var(--ink)', borderLeft: '1px solid var(--ink)' }}>
         <HeaderZone doc={doc} editable={editable} onEditField={onEditField} />
         {dnd ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={reset}>

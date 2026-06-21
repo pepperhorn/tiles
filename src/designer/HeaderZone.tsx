@@ -11,7 +11,7 @@ export function HeaderZone({ doc, editable, onEditField = () => {} }: {
       return (
         <button
           type="button"
-          className={`${cls} header-field block w-full ${align} break-words cursor-pointer rounded px-1 py-0.5 -mx-1 leading-snug outline-none hover:bg-slate-100/70 focus:bg-slate-100 ${val ? '' : 'is-empty text-slate-400'}`}
+          className={`${cls} header-field block w-full ${align} break-words cursor-pointer rounded px-1 py-0.5 -mx-1 leading-snug outline-none hover:bg-slate-100/70 focus:bg-slate-100 ${val ? '' : 'is-empty text-slate-600'}`}
           onClick={() => onEditField(f)}
           aria-label={`Edit ${placeholder}`}
         >
