@@ -12,12 +12,14 @@ import type { SheetPlan } from '../generator/useGeneratorState';
 type PdfCell =
   | { t: 'note'; cmyk: Cmyk; main: string; sub: string }
   | { t: 'arrow'; dir: 'up' | 'down' }
+  | { t: 'pause' }
   | { t: 'blank' };
 type PdfRow = { t: 'section'; text: string } | { t: 'tiles'; size: number; gap: number; cells: PdfCell[] };
 type PdfHeader = { part: string; tempoStyle: string; title: string; subtitle: string; composer: string };
 export type PdfPage = { header?: PdfHeader; rows: PdfRow[] };
 
 const ARROW_CMYK = hexToCmyk('#64748b');
+const PAUSE_CMYK = hexToCmyk('#a8a29e');
 // Helvetica (jsPDF's built-in) lacks ♯/♭ glyphs — use ASCII for print safety.
 const ascii = (s: string) => s.replace(/♯/g, '#').replace(/♭/g, 'b');
 const mm = (px: number) => px / MM;
@@ -67,6 +69,18 @@ function buildSheetPdf(pages: PdfPage[], paper: Paper, orient: Orient): jsPDF {
     else { doc.line(cx, bot, cx - hw, bot - hw); doc.line(cx, bot, cx + hw, bot - hw); }
   };
 
+  // A paw print drawn in white: one large pad and four toe beans (matches the on-screen tile).
+  const drawPause = (x: number, y: number, s: number) => {
+    fill(PAUSE_CMYK);
+    doc.roundedRect(x, y, s, s, s * 0.12, s * 0.12, 'F');
+    fill(CMYK_WHITE);
+    const cx = x + s / 2;
+    doc.ellipse(cx, y + s * 0.66, s * 0.2, s * 0.16, 'F');
+    for (const [ox, oy] of [[-0.25, -0.04], [-0.083, -0.187], [0.083, -0.187], [0.25, -0.04]]) {
+      doc.circle(cx + ox * s, y + s / 2 + oy * s, s * 0.088, 'F');
+    }
+  };
+
   const drawBlank = (x: number, y: number, s: number) => {
     doc.setDrawColor(0, 0, 0, 0.45);
     doc.setLineWidth(Math.max(0.3, s * 0.03));
@@ -107,6 +121,7 @@ function buildSheetPdf(pages: PdfPage[], paper: Paper, orient: Orient): jsPDF {
         if (x + s > pageW - pad + 0.5) break; // safety, rows are pre-wrapped to fit
         if (cell.t === 'note') drawTile(x, y, s, cell.cmyk, cell.main, cell.sub);
         else if (cell.t === 'arrow') drawArrow(x, y, s, cell.dir);
+        else if (cell.t === 'pause') drawPause(x, y, s);
         else drawBlank(x, y, s);
         x += s + gap;
       }
@@ -140,6 +155,7 @@ export function docToPages(doc: SheetDoc, blanks?: Set<number>): PdfPage[] {
           cells: row.cells.map<PdfCell>(cell => {
             const item = cell.item;
             if (item.type === 'arrow') return { t: 'arrow', dir: item.dir };
+            if (item.type === 'pause') return { t: 'pause' };
             if (blanks?.has(cell.index)) return { t: 'blank' };
             const n = noteById(item.noteId)!;
             const d = displayNote(n, doc.accidentalStyle);

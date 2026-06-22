@@ -42,7 +42,9 @@ export function QuizCanvas({ doc, unknown, playingIndex = null }: { doc: SheetDo
                       <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}>
                         {item.type === 'note'
                           ? <Tile kind="note" note={noteById(item.noteId)!} size={doc.size} accidental={doc.accidentalStyle} />
-                          : <Tile kind="arrow" sym={arrowSym(item.dir)} size={doc.size} />}
+                          : item.type === 'pause'
+                            ? <Tile kind="pause" size={doc.size} />
+                            : <Tile kind="arrow" sym={arrowSym(item.dir)} size={doc.size} />}
                       </div>
                     );
                   })}

@@ -1,4 +1,4 @@
-import { itemsToPitches, midiToItems, midiNoteName } from './pitch';
+import { itemsToPitches, itemsToPlayback, midiToItems, midiNoteName } from './pitch';
 import type { Item } from '../designer/sheetModel';
 
 const note = (id: string): Item => ({ type: 'note', noteId: id });
@@ -28,6 +28,20 @@ test('all pitches stay within G3 (55) and G5 (79)', () => {
     expect(p.midi).toBeGreaterThanOrEqual(55);
     expect(p.midi).toBeLessThanOrEqual(79);
   }
+});
+
+test('itemsToPlayback yields rests (midi null) for pause tiles, keeping item indexes', () => {
+  const steps = itemsToPlayback([note('C'), { type: 'pause' }, note('D')]);
+  expect(steps).toEqual([
+    { index: 0, midi: 60 },
+    { index: 1, midi: null },
+    { index: 2, midi: 62 },
+  ]);
+});
+
+test('a pause does not break an arrow applying to the note after it', () => {
+  const steps = itemsToPlayback([note('C'), arrow('up'), { type: 'pause' }, note('B')]);
+  expect(steps.map(s => s.midi)).toEqual([60, null, 71]);
 });
 
 test('overrides substitute a note id for one cell', () => {

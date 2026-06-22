@@ -35,6 +35,23 @@ test('insertBreak, insertSection, deleteLast, removeAt', () => {
   expect(d.items).toEqual([{ type: 'note', noteId: 'G' }]);
 });
 
+test('insertPause appends a pause item', () => {
+  const d = reduce(defaultDoc(), { type: 'insertPause' });
+  expect(d.items).toEqual([{ type: 'pause' }]);
+});
+
+test('toggleArrow flips the direction of the arrow at an index', () => {
+  let d = defaultDoc();
+  d = reduce(d, { type: 'insertNote', noteId: 'C' });
+  d = reduce(d, { type: 'insertArrow', dir: 'up' });
+  d = reduce(d, { type: 'toggleArrow', index: 1 });
+  expect(d.items[1]).toEqual({ type: 'arrow', dir: 'down' });
+  d = reduce(d, { type: 'toggleArrow', index: 1 });
+  expect(d.items[1]).toEqual({ type: 'arrow', dir: 'up' });
+  // No-op when the targeted item is not an arrow.
+  expect(reduce(d, { type: 'toggleArrow', index: 0 }).items[0]).toEqual({ type: 'note', noteId: 'C' });
+});
+
 test('moveItem reorders items (e.g. arrow before note)', () => {
   let d = defaultDoc();
   d = reduce(d, { type: 'insertNote', noteId: 'C' });

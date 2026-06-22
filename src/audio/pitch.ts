@@ -65,6 +65,31 @@ export function itemsToPitches(items: Item[], overrides?: Record<number, string>
   return out;
 }
 
+export type PlayStep = { index: number; midi: number | null };
+
+/**
+ * Playback steps in melodic order, including pause tiles as rests (midi null).
+ * Notes follow the same octave placement as `itemsToPitches`; a pause holds the
+ * previous note and direction so an arrow still applies to the note after it.
+ */
+export function itemsToPlayback(items: Item[]): PlayStep[] {
+  const out: PlayStep[] = [];
+  let prev: number | null = null;
+  let dir: 0 | 1 | -1 = 0;
+  items.forEach((it, index) => {
+    if (it.type === 'arrow') { dir = it.dir === 'up' ? 1 : -1; return; }
+    if (it.type === 'pause') { out.push({ index, midi: null }); return; }
+    if (it.type !== 'note') return; // breaks/sections don't sound
+    const pc = pcOf(it.noteId);
+    if (pc < 0) { dir = 0; return; }
+    const midi = place(pc, prev, dir);
+    out.push({ index, midi });
+    prev = midi;
+    dir = 0;
+  });
+  return out;
+}
+
 /**
  * Standard MIDI note name for a placed tile, e.g. ('Cs', 61) → "C#4". The octave
  * follows the convention used by `place` (MIDI 60 = middle C = "C4"); the letter

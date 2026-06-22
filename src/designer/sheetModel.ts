@@ -4,6 +4,7 @@ import type { Paper, Orient, TilesPerRow } from '../geometry';
 export type Item =
   | { type: 'note'; noteId: string }
   | { type: 'arrow'; dir: 'up' | 'down' }
+  | { type: 'pause' }
   | { type: 'break' }
   | { type: 'section'; text: string };
 
@@ -28,6 +29,8 @@ export function defaultDoc(): SheetDoc {
 export type Action =
   | { type: 'insertNote'; noteId: string }
   | { type: 'insertArrow'; dir: 'up' | 'down' }
+  | { type: 'toggleArrow'; index: number }
+  | { type: 'insertPause' }
   | { type: 'sharpenLast' }
   | { type: 'flattenLast' }
   | { type: 'insertBreak' }
@@ -62,6 +65,8 @@ export function reduce(doc: SheetDoc, action: Action): SheetDoc {
   switch (action.type) {
     case 'insertNote':    return { ...doc, items: [...doc.items, { type: 'note', noteId: action.noteId }] };
     case 'insertArrow':   return { ...doc, items: [...doc.items, { type: 'arrow', dir: action.dir }] };
+    case 'toggleArrow':   return { ...doc, items: doc.items.map((it, i) => i === action.index && it.type === 'arrow' ? { ...it, dir: it.dir === 'up' ? 'down' : 'up' } : it) };
+    case 'insertPause':   return { ...doc, items: [...doc.items, { type: 'pause' }] };
     case 'sharpenLast':   return { ...doc, items: shiftLastNote(doc.items, 1) };
     case 'flattenLast':   return { ...doc, items: shiftLastNote(doc.items, -1) };
     case 'insertBreak':   return { ...doc, items: [...doc.items, { type: 'break' }] };
