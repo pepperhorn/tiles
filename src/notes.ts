@@ -12,7 +12,7 @@ export const NOTES: Note[] = [
   { id: 'G',  main: 'G',        sub: '',        hex: '#6bc6a0' },
   { id: 'Gs', main: 'G♯',  sub: 'A♭', hex: '#7ee8df' },
   { id: 'A',  main: 'A',        sub: '',        hex: '#88a7f8' },
-  { id: 'Bb', main: 'B♭',  sub: '',        hex: '#cc97e8' },
+  { id: 'Bb', main: 'A♯',  sub: 'B♭', hex: '#cc97e8' },
   { id: 'B',  main: 'B',        sub: '',        hex: '#e277b1' },
 ];
 
@@ -37,7 +37,7 @@ export function semitone(id: string, delta: number): string {
 export type AccidentalStyle = 'sharp' | 'flat';
 
 // Resolve which enharmonic spelling is predominant (main) vs small (sub).
-// Naturals (and single-name accidentals like Bb) are unaffected.
+// Naturals (no enharmonic spelling) are unaffected.
 // note.main is the sharp spelling, note.sub the flat spelling.
 export function displayNote(note: Note, style: AccidentalStyle): { main: string; sub: string } {
   if (!note.sub) return { main: note.main, sub: note.sub };

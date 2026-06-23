@@ -1,10 +1,16 @@
-import { NOTES, SYMBOLS, semitone, noteById } from './notes';
+import { NOTES, SYMBOLS, semitone, noteById, displayNote } from './notes';
 
 test('palette has 12 notes ported verbatim', () => {
   expect(NOTES).toHaveLength(12);
   expect(noteById('C')!.hex).toBe('#f86e6e');
   expect(noteById('G')!.hex).toBe('#6bc6a0');
   expect(noteById('Cs')!.main).toBe('C♯');
+});
+
+test('the Bb tile carries its A♯ enharmonic spelling', () => {
+  const bb = noteById('Bb')!;
+  expect(displayNote(bb, 'sharp')).toEqual({ main: 'A♯', sub: 'B♭' });
+  expect(displayNote(bb, 'flat')).toEqual({ main: 'B♭', sub: 'A♯' });
 });
 
 test('symbols are the two direction arrows', () => {
