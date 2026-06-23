@@ -1,7 +1,9 @@
-import { lazy, Suspense, useMemo, useReducer, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { DesignerMode } from './designer/DesignerMode';
 import { readQuizFromHash, readEditFromHash, DEFAULT_PRESET, type QuizPreset } from './quiz/encode';
-import { reduce, defaultDoc } from './designer/sheetModel';
+import { defaultDoc, type SheetDoc } from './designer/sheetModel';
+import { historyReducer, initHistory } from './designer/history';
+import { autosaveSlot } from './storage';
 import { NOTES } from './notes';
 
 // Designer is the default tab, so it loads eagerly. The other tabs (and the
@@ -18,11 +20,28 @@ const ModeFallback = () => (
 
 type Mode = 'designer' | 'generator' | 'quiz' | 'viewer';
 
+// Recover the last auto-saved working document (if any), tolerating older/partial dumps.
+function restoreAutosave(): SheetDoc | null {
+  const saved = autosaveSlot.load() as Partial<SheetDoc> | undefined;
+  if (!saved || !Array.isArray(saved.items)) return null;
+  return { ...defaultDoc(), ...saved };
+}
+
 export default function App() {
   const [mode, setMode] = useState<Mode>('designer');
-  // A shared sheet doc; an #edit= link seeds it so receipts can reopen a design.
+  // A shared sheet doc with undo/redo; an #edit= link seeds it (receipts reopen a
+  // design), otherwise the last auto-saved session is restored.
   const editDoc = useMemo(() => readEditFromHash(window.location.hash), []);
-  const [doc, dispatch] = useReducer(reduce, undefined, () => editDoc ?? defaultDoc());
+  const [history, dispatch] = useReducer(historyReducer, undefined, () => initHistory(editDoc ?? restoreAutosave() ?? defaultDoc()));
+  const doc = history.present;
+
+  // Auto-save the working document to localStorage every 10s (crash recovery).
+  const docRef = useRef(doc);
+  useEffect(() => { docRef.current = doc; }, [doc]);
+  useEffect(() => {
+    const id = window.setInterval(() => { autosaveSlot.save(docRef.current); }, 10000);
+    return () => clearInterval(id);
+  }, []);
 
   // Embed mode: #quiz=<base64url> renders only the standalone quiz player, whose
   // difficulty preset the taker can adjust.
@@ -63,7 +82,16 @@ export default function App() {
       </header>
       <main className="app-body flex-1 min-h-0">
         <Suspense fallback={<ModeFallback />}>
-          {mode === 'designer' && <DesignerMode doc={doc} dispatch={dispatch} />}
+          {mode === 'designer' && (
+            <DesignerMode
+              doc={doc}
+              dispatch={dispatch}
+              onUndo={() => dispatch({ type: 'undo' })}
+              onRedo={() => dispatch({ type: 'redo' })}
+              canUndo={history.past.length > 0}
+              canRedo={history.future.length > 0}
+            />
+          )}
           {mode === 'generator' && <GeneratorMode />}
           {mode === 'quiz' && <QuizMode doc={doc} />}
           {mode === 'viewer' && <QuizViewerTab doc={doc} />}

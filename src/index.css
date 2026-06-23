@@ -22,6 +22,10 @@
   --primary: var(--t8);    /* go/confirm green */
 }
 
+/* Every tile box carries a light hairline border to separate it from neighbours
+   and to frame the unfilled (white) pause/rest tile. */
+.tile { border: 1px solid rgba(20, 18, 16, .18); box-sizing: border-box; }
+
 .guides .tile { outline: .4px dashed rgba(0,0,0,.22); outline-offset: -.2px; }
 
 @keyframes overlayPop {
@@ -113,9 +117,10 @@ body { background: var(--paper); color: var(--ink); }
 }
 
 /* Outline action buttons ------------------------------------------------ */
-.btn-save, .btn-load, .btn-export-json, .btn-import-json,
+.btn-save, .btn-load, .btn-export-json, .btn-import-json, .btn-import-midi,
 .btn-pdf, .btn-png, .btn-webp, .btn-print,
 .btn-play, .btn-stop, .btn-speaker,
+.btn-new-sheet, .btn-undo, .btn-redo, .btn-toggle-tools,
 .btn-transpose-up, .btn-transpose-down,
 .btn-download-png, .btn-download-webp,
 .btn-shuffle, .btn-reset, .btn-embed, .btn-load-json, .btn-use-current,
@@ -128,16 +133,18 @@ body { background: var(--paper); color: var(--ink); }
   font-weight: 700;
   transition: transform .08s ease, box-shadow .08s ease;
 }
-.btn-save:hover, .btn-load:hover, .btn-export-json:hover, .btn-import-json:hover,
+.btn-save:hover, .btn-load:hover, .btn-export-json:hover, .btn-import-json:hover, .btn-import-midi:hover,
 .btn-pdf:hover, .btn-png:hover, .btn-webp:hover, .btn-print:hover,
 .btn-play:hover, .btn-stop:hover, .btn-speaker:hover,
+.btn-new-sheet:hover, .btn-undo:hover, .btn-redo:hover, .btn-toggle-tools:hover,
 .btn-transpose-up:hover, .btn-transpose-down:hover,
 .btn-download-png:hover, .btn-download-webp:hover,
 .btn-shuffle:hover, .btn-reset:hover, .btn-embed:hover, .btn-load-json:hover, .btn-use-current:hover,
 .btn-play-song:hover, .btn-play-answers:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
-.btn-save:active, .btn-load:active, .btn-export-json:active, .btn-import-json:active,
+.btn-save:active, .btn-load:active, .btn-export-json:active, .btn-import-json:active, .btn-import-midi:active,
 .btn-pdf:active, .btn-png:active, .btn-webp:active, .btn-print:active,
 .btn-play:active, .btn-stop:active, .btn-speaker:active,
+.btn-new-sheet:active, .btn-undo:active, .btn-redo:active, .btn-toggle-tools:active,
 .btn-transpose-up:active, .btn-transpose-down:active,
 .btn-download-png:active, .btn-download-webp:active,
 .btn-shuffle:active, .btn-reset:active, .btn-embed:active, .btn-load-json:active, .btn-use-current:active,
@@ -145,6 +152,11 @@ body { background: var(--paper); color: var(--ink); }
 
 /* Speaker toggle when on */
 .btn-speaker[aria-pressed='true'] { background: var(--accent); }
+
+/* Disabled toolbar buttons (e.g. undo/redo at history ends) read as inert. */
+.btn-undo:disabled, .btn-redo:disabled {
+  opacity: .4; box-shadow: var(--shadow-sm) !important; transform: none !important; cursor: default;
+}
 
 /* Primary / go buttons -------------------------------------------------- */
 .btn-download-pdf, .btn-submit {
@@ -163,7 +175,7 @@ body { background: var(--paper); color: var(--ink); }
 
 /* Segmented toggles — keep their active fill, just go sharp + chunky ----- */
 .btn-size, .btn-paper, .btn-orient, .btn-type, .btn-mode,
-.palette-sharp-toggle, .palette-flat-toggle {
+.palette-sharp-toggle, .palette-flat-toggle, .palette-autoupdown {
   border-radius: 0;
   border-width: 2px;
   border-color: var(--ink);
@@ -172,7 +184,7 @@ body { background: var(--paper); color: var(--ink); }
 
 /* Note palette + quiz picker + symbol keys ------------------------------ */
 .palette-note, .pick-note,
-.palette-up, .palette-down, .palette-break, .palette-section {
+.palette-up, .palette-down, .palette-break, .palette-pause, .palette-section {
   border-radius: 0;
   border: 2px solid var(--ink);
   box-shadow: 2px 2px 0 var(--ink);

@@ -7,13 +7,10 @@ type TileProps =
 
 const shadow = { textShadow: '0 1px 0 rgba(0,0,0,.22), 0 2px 4px rgba(0,0,0,.38)' } as const;
 
-// A pause/rest tile: a warm-grey square carrying a white animal paw print.
-export const PAUSE_HEX = '#a8a29e';
-
-/** A simple paw print — one large pad and four toe beans — drawn in white. */
+/** A simple paw print — one large pad and four toe beans — as a black/white outline (no fill). */
 export function PawIcon({ size }: { size: number }) {
   return (
-    <svg className="tile-paw" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <svg className="tile-paw" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} aria-hidden="true">
       <ellipse cx="12" cy="16" rx="5" ry="4" />
       <circle cx="6" cy="11" r="2.1" />
       <circle cx="10" cy="7.5" r="2.1" />
@@ -26,16 +23,15 @@ export function PawIcon({ size }: { size: number }) {
 export function Tile(props: TileProps) {
   const { size, onClick } = props;
   const common = {
-    className: 'tile flex flex-col items-center justify-center text-white leading-none text-center select-none',
+    className: 'tile flex flex-col items-center justify-center leading-none text-center select-none',
     onClick,
     role: onClick ? ('button' as const) : undefined,
   };
   if (props.kind === 'pause') {
+    // A rest: an unfilled (white) box carrying a black paw-print outline.
     return (
-      <div {...common} style={{ width: size, height: size, background: PAUSE_HEX, cursor: onClick ? 'pointer' : 'default' }}>
-        <div className="tile-pause" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,.35))' }}>
-          <PawIcon size={size * 0.56} />
-        </div>
+      <div {...common} className={`${common.className} tile-pause`} style={{ width: size, height: size, background: '#fff', color: 'var(--ink)', cursor: onClick ? 'pointer' : 'default' }}>
+        <PawIcon size={size * 0.56} />
       </div>
     );
   }
@@ -48,9 +44,9 @@ export function Tile(props: TileProps) {
   }
   return (
     <div {...common} style={{ width: size, height: size, background: bg, cursor: onClick ? 'pointer' : 'default' }}>
-      <div className="tile-main font-bold" style={{ ...shadow, fontSize: size * (sub ? 0.4 : 0.46) }}>{main}</div>
+      <div className="tile-main text-white font-bold" style={{ ...shadow, fontSize: size * (sub ? 0.4 : 0.46) }}>{main}</div>
       {sub && (
-        <div className="tile-sub font-semibold opacity-90" style={{ ...shadow, fontSize: size * 0.22, marginTop: 2 }}>{sub}</div>
+        <div className="tile-sub text-white font-semibold opacity-90" style={{ ...shadow, fontSize: size * 0.22, marginTop: 2 }}>{sub}</div>
       )}
     </div>
   );

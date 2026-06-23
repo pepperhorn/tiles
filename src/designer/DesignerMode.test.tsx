@@ -2,12 +2,22 @@ import { useReducer } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DesignerMode } from './DesignerMode';
-import { reduce, defaultDoc } from './sheetModel';
+import { defaultDoc } from './sheetModel';
+import { historyReducer, initHistory } from './history';
 
-// DesignerMode now receives doc/dispatch from App; provide them in a harness.
+// DesignerMode receives doc/dispatch + undo/redo from App; provide them in a harness.
 function DesignerHarness() {
-  const [doc, dispatch] = useReducer(reduce, undefined, defaultDoc);
-  return <DesignerMode doc={doc} dispatch={dispatch} />;
+  const [history, dispatch] = useReducer(historyReducer, undefined, () => initHistory(defaultDoc()));
+  return (
+    <DesignerMode
+      doc={history.present}
+      dispatch={dispatch}
+      onUndo={() => dispatch({ type: 'undo' })}
+      onRedo={() => dispatch({ type: 'redo' })}
+      canUndo={history.past.length > 0}
+      canRedo={history.future.length > 0}
+    />
+  );
 }
 
 test('typing a note letter adds a tile to the canvas', async () => {
@@ -45,6 +55,26 @@ test('new sheet asks for confirmation before clearing the sheet', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'New sheet' }));
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'New sheet' }));
   expect(document.querySelector('.row-tiles .tile')).toBeFalsy();
+});
+
+test('undo and redo from the toolbar step through note edits', async () => {
+  render(<DesignerHarness />);
+  await userEvent.click(screen.getByRole('button', { name: 'C' }));
+  await userEvent.click(screen.getByRole('button', { name: 'E' }));
+  expect(document.querySelectorAll('.row-tiles .tile')).toHaveLength(2);
+
+  await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+  expect(document.querySelectorAll('.row-tiles .tile')).toHaveLength(1);
+
+  await userEvent.click(screen.getByRole('button', { name: 'Redo' }));
+  expect(document.querySelectorAll('.row-tiles .tile')).toHaveLength(2);
+});
+
+test('undo is disabled until there is history', async () => {
+  render(<DesignerHarness />);
+  expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
+  await userEvent.click(screen.getByRole('button', { name: 'C' }));
+  expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
 });
 
 test('auto up/down inserts an arrow between consecutive notes', async () => {
