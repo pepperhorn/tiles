@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   DndContext, DragOverlay, MouseSensor, TouchSensor, useSensor, useSensors,
   useDraggable, useDroppable, closestCenter,
@@ -30,6 +30,9 @@ function TileButton({ index, item, size, accidental, onRemove, onToggleArrow }: 
   onRemove: (index: number) => void; onToggleArrow?: (index: number) => void;
 }) {
   const pending = useRef<number | null>(null);
+  // Don't let a pending single-tap toggle fire after this tile unmounts (e.g. a
+  // neighbour was deleted within the 260ms window, shifting indexes).
+  useEffect(() => () => { if (pending.current != null) clearTimeout(pending.current); }, []);
   const onClick = () => {
     if (!onToggleArrow || item.type !== 'arrow') { onRemove(index); return; }
     if (pending.current != null) {
