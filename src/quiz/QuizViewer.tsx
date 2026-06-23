@@ -114,6 +114,9 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
                     if (item.type === 'arrow') {
                       return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}><Tile kind="arrow" sym={arrowSym(item.dir)} size={source.size} /></div>;
                     }
+                    if (item.type === 'pause') {
+                      return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}><Tile kind="pause" size={source.size} /></div>;
+                    }
                     if (!blankSet.has(cell.index)) {
                       return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}><Tile kind="note" note={noteById(item.noteId)!} size={source.size} accidental={source.accidentalStyle} /></div>;
                     }

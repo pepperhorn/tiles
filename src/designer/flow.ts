@@ -1,6 +1,6 @@
 import type { Item } from './sheetModel';
 
-export type TileItem = Extract<Item, { type: 'note' | 'arrow' }>;
+export type TileItem = Extract<Item, { type: 'note' | 'arrow' | 'pause' }>;
 export type Cell = { item: TileItem; index: number };
 export type Row =
   | { kind: 'section'; text: string; index: number }

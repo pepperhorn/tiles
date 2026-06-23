@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   DndContext, DragOverlay, MouseSensor, TouchSensor, useSensor, useSensors,
   useDraggable, useDroppable, closestCenter,
@@ -12,14 +12,39 @@ import { HeaderZone } from './HeaderZone';
 import { useFitWidth } from '../useFitWidth';
 import type { Item, SheetDoc, HeaderField } from './sheetModel';
 
-type TileItem = Extract<Item, { type: 'note' | 'arrow' }>;
+type TileItem = Extract<Item, { type: 'note' | 'arrow' | 'pause' }>;
 
 const arrowSym = (dir: 'up' | 'down') => SYMBOLS.find(s => s.id === (dir === 'up' ? 'arrowUp' : 'arrowDown'))!;
 
 function innerTile(item: TileItem, size: number, accidental: SheetDoc['accidentalStyle'], onClick?: () => void) {
-  return item.type === 'note'
-    ? <Tile kind="note" note={noteById(item.noteId)!} size={size} accidental={accidental} onClick={onClick} />
-    : <Tile kind="arrow" sym={arrowSym(item.dir)} size={size} onClick={onClick} />;
+  if (item.type === 'note') return <Tile kind="note" note={noteById(item.noteId)!} size={size} accidental={accidental} onClick={onClick} />;
+  if (item.type === 'pause') return <Tile kind="pause" size={size} onClick={onClick} />;
+  return <Tile kind="arrow" sym={arrowSym(item.dir)} size={size} onClick={onClick} />;
+}
+
+// Wraps a tile with tap handling: notes/pauses remove on tap; arrows (when a
+// toggle handler is supplied) flip direction on a single tap and delete on a
+// double tap. The double-tap timer lives in a ref read only inside the handler.
+function TileButton({ index, item, size, accidental, onRemove, onToggleArrow }: {
+  index: number; item: TileItem; size: number; accidental: SheetDoc['accidentalStyle'];
+  onRemove: (index: number) => void; onToggleArrow?: (index: number) => void;
+}) {
+  const pending = useRef<number | null>(null);
+  // Don't let a pending single-tap toggle fire after this tile unmounts (e.g. a
+  // neighbour was deleted within the 260ms window, shifting indexes).
+  useEffect(() => () => { if (pending.current != null) clearTimeout(pending.current); }, []);
+  const onClick = () => {
+    if (!onToggleArrow || item.type !== 'arrow') { onRemove(index); return; }
+    if (pending.current != null) {
+      clearTimeout(pending.current); pending.current = null;
+      onRemove(index);
+      return;
+    }
+    pending.current = window.setTimeout(() => { pending.current = null; onToggleArrow(index); }, 260);
+  };
+  // display:contents wrapper carries the click without adding a layout box; the
+  // surrounding slot already shows the grab cursor.
+  return <span className="contents" onClick={onClick}>{innerTile(item, size, accidental)}</span>;
 }
 
 // A draggable + droppable tile slot (only rendered inside a DndContext).
@@ -51,13 +76,14 @@ function DropSection({ index, text, isOver, onEdit }: { index: number; text: str
   );
 }
 
-export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, onEditSection, onMove, playingIndex = null }: {
+export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, onEditSection, onMove, onToggleArrow, playingIndex = null }: {
   doc: SheetDoc;
   onRemove: (index: number) => void;
   editable?: boolean;
   onEditField?: (f: HeaderField) => void;
   onEditSection?: (index: number) => void;
   onMove?: (from: number, to: number) => void;
+  onToggleArrow?: (index: number) => void;
   playingIndex?: number | null;
 }) {
   const dims = sheetDimsMm(doc.paper, doc.orientation);
@@ -98,7 +124,7 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
               {row.cells.map(cell =>
                 dnd
                   ? <DragSlot key={cell.index} index={cell.index} isOver={overIndex === cell.index} isPlaying={playingIndex === cell.index}>
-                      {innerTile(cell.item, doc.size, doc.accidentalStyle, () => onRemove(cell.index))}
+                      <TileButton index={cell.index} item={cell.item} size={doc.size} accidental={doc.accidentalStyle} onRemove={onRemove} onToggleArrow={onToggleArrow} />
                     </DragSlot>
                   : <div key={cell.index} className={`tile-slot ${playingIndex === cell.index ? 'is-playing' : ''}`}>
                       {innerTile(cell.item, doc.size, doc.accidentalStyle, () => onRemove(cell.index))}
@@ -120,7 +146,7 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={reset}>
             {body}
             <DragOverlay>
-              {activeItem && (activeItem.type === 'note' || activeItem.type === 'arrow')
+              {activeItem && (activeItem.type === 'note' || activeItem.type === 'arrow' || activeItem.type === 'pause')
                 ? innerTile(activeItem, doc.size, doc.accidentalStyle)
                 : null}
             </DragOverlay>

@@ -5,6 +5,7 @@ import { Palette } from './Palette';
 import { DesignerControls } from './DesignerControls';
 import { HeaderEditOverlay } from './HeaderEditOverlay';
 import { EditOverlay } from './EditOverlay';
+import { ConfirmOverlay } from './ConfirmOverlay';
 import { useKeyboard, type KeyResult } from './useKeyboard';
 import { TabBar } from '../components/Tabs';
 import { tabPanelClass, type TabDef } from '../components/tabPanel';
@@ -14,11 +15,12 @@ import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
 import { serializeDoc, parseSheetJson } from './json';
 import { usePiano } from '../audio/usePiano';
-import { itemsToPitches, midiToItems } from '../audio/pitch';
+import { itemsToPitches, itemsToPlayback, midiToItems } from '../audio/pitch';
 import { defaultDoc } from './sheetModel';
 import { midiFileToMelody } from '../audio/midiFile';
 import { ucfirst } from '../text';
 import { cmsEnabled, emailReceipt } from '../cms';
+import { PawIcon } from '../Tile';
 
 const TABS: TabDef[] = [
   { id: 'notes', label: 'Notes' },
@@ -36,11 +38,16 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
   const [editingField, setEditingField] = useState<HeaderField | null>(null);
   const [sectionEdit, setSectionEdit] = useState<number | null>(null);
   const [speaker, setSpeaker] = useState(false);
+  const [autoUpDown, setAutoUpDown] = useState(false);
+  const [tempo, setTempo] = useState(120);
+  const [toolsOpen, setToolsOpen] = useState(true);
+  const [confirmNew, setConfirmNew] = useState(false);
   const [email, setEmail] = useState('');
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const piano = usePiano();
   const playSheet = () => piano.playSequence(
-    itemsToPitches(doc.items).map(p => ({ midi: p.midi, dur: 0.5, index: p.index })),
+    // 60 / bpm seconds per tile (each tile is one beat); pauses sound as rests.
+    itemsToPlayback(doc.items).map(p => ({ midi: p.midi, dur: 60 / tempo, index: p.index })),
     setPlayingIndex,
   );
   const stopAudio = () => { piano.stop(); setPlayingIndex(null); };
@@ -55,12 +62,24 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
       setSectionEdit(idx);
       return;
     }
-    dispatch(r);
-    // Speaker on: sound each note as it's added (palette tap or keyboard).
-    if (speaker && r.type === 'insertNote') {
-      const placed = itemsToPitches([...doc.items, { type: 'note', noteId: r.noteId }]).at(-1);
-      if (placed) void piano.playNote(placed.midi);
+    if (r.type === 'insertNote') {
+      // Auto up/down: drop a ↑ arrow between consecutive notes; tap it on the
+      // sheet to flip direction, double-tap to delete.
+      const items = [...doc.items];
+      if (autoUpDown && doc.items.at(-1)?.type === 'note') {
+        dispatch({ type: 'insertArrow', dir: 'up' });
+        items.push({ type: 'arrow', dir: 'up' });
+      }
+      dispatch(r);
+      items.push({ type: 'note', noteId: r.noteId });
+      // Speaker on: sound the note as it's added (palette tap or keyboard).
+      if (speaker) {
+        const placed = itemsToPitches(items).at(-1);
+        if (placed) void piano.playNote(placed.midi);
+      }
+      return;
     }
+    dispatch(r);
   };
   useKeyboard(handle, true);
 
@@ -118,6 +137,13 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
       setExportMsg(String(err instanceof Error ? err.message : err));
     }
   };
+  const onNewSheet = () => {
+    if (playingIndex !== null) stopAudio();
+    dispatch({ type: 'load', doc: defaultDoc() });
+    setName('');
+    setExportMsg('');
+    setConfirmNew(false);
+  };
   const onSave = () => name.trim() && designStore.save(name.trim(), doc);
   const onLoad = () => {
     const d = designStore.load(name.trim());
@@ -171,7 +197,19 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
   return (
     // Mobile/tablet: preview on top (fits width, scrolls), tools a tabbed panel
     // capped at 45% height below. Desktop (lg+): tools sidebar + preview.
-    <div className="designer-mode flex flex-col lg:grid lg:grid-cols-[360px_1fr] h-full lg:h-full">
+    <div className={`designer-mode relative flex flex-col lg:grid h-full lg:h-full ${toolsOpen ? 'lg:grid-cols-[360px_1fr]' : 'lg:grid-cols-[1fr]'}`}>
+      <button
+        className="btn-toggle-tools no-print absolute top-2 right-2 z-30 flex items-center gap-1 rounded-lg border border-slate-300 bg-white/90 px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur"
+        aria-pressed={toolsOpen}
+        aria-label={toolsOpen ? 'Hide tools' : 'Show tools'}
+        title={toolsOpen ? 'Hide tools' : 'Show tools'}
+        onClick={() => setToolsOpen(o => !o)}
+      >
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {toolsOpen ? <path d="m9 6 6 6-6 6" /> : <path d="m15 6-6 6 6 6" />}
+        </svg>
+        {toolsOpen ? 'Hide tools' : 'Tools'}
+      </button>
       <main className="stage order-1 lg:order-2 flex-1 lg:flex-none min-h-0 overflow-auto p-4 lg:p-8 border-b border-slate-200 lg:border-b-0" ref={stageRef}>
         <DesignerCanvas
           doc={doc}
@@ -180,15 +218,25 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
           onEditSection={setSectionEdit}
           onRemove={(i) => dispatch({ type: 'removeAt', index: i })}
           onMove={(from, to) => dispatch({ type: 'moveItem', from, to })}
+          onToggleArrow={(i) => dispatch({ type: 'toggleArrow', index: i })}
           playingIndex={playingIndex}
         />
       </main>
 
-      <div className="designer-panel no-print order-2 lg:order-1 basis-[45%] lg:basis-auto shrink-0 lg:shrink min-h-0 flex flex-col overflow-hidden lg:overflow-y-auto bg-white lg:border-r lg:border-slate-200">
+      <div className={`designer-panel no-print order-2 lg:order-1 basis-[45%] lg:basis-auto shrink-0 lg:shrink min-h-0 flex-col overflow-hidden lg:overflow-y-auto bg-white lg:border-r lg:border-slate-200 ${toolsOpen ? 'flex' : 'hidden'}`}>
         <TabBar tabs={TABS} active={tab} onSelect={setTab} />
         <div className="panel-scroll flex-1 min-h-0 overflow-y-auto lg:overflow-visible lg:flex lg:flex-col lg:gap-4 lg:p-4">
           <div className={`panel-notes ${tabPanelClass(tab === 'notes')} p-4 lg:p-0`}>
             <div className="designer-toolbar mb-3 flex flex-wrap items-center gap-2">
+              <button
+                className="btn-new-sheet rounded-lg border px-2.5 py-2 text-sm font-semibold text-slate-700"
+                aria-label="New sheet"
+                title="New sheet"
+                onClick={() => setConfirmNew(true)}
+              >New</button>
+
+              <span className="toolbar-sep mx-0.5 self-stretch w-px bg-slate-300" aria-hidden="true" />
+
               <button
                 className={`btn-speaker rounded-lg border p-2 ${speaker ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
                 aria-pressed={speaker}
@@ -225,10 +273,34 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
 
               <button className="palette-up rounded-lg border px-2.5 py-2 text-sm text-slate-700" aria-label="Up arrow" onClick={() => handle({ type: 'insertArrow', dir: 'up' })}>↑</button>
               <button className="palette-down rounded-lg border px-2.5 py-2 text-sm text-slate-700" aria-label="Down arrow" onClick={() => handle({ type: 'insertArrow', dir: 'down' })}>↓</button>
+              <button
+                className={`palette-autoupdown rounded-lg border px-2.5 py-2 text-sm font-semibold ${autoUpDown ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
+                aria-pressed={autoUpDown}
+                aria-label="Auto up/down arrows"
+                title="Auto-insert arrows between notes — tap an arrow to flip, double-tap to delete"
+                onClick={() => setAutoUpDown(a => !a)}
+              >↕</button>
+              <button className="palette-pause rounded-lg border px-2.5 py-2 text-sm text-slate-700" aria-label="Pause" title="Pause (rest)" onClick={() => handle({ type: 'insertPause' })}>
+                <PawIcon size={16} />
+              </button>
               <button className="palette-break rounded-lg border px-2.5 py-2 text-sm text-slate-700" aria-label="Line break" onClick={() => handle({ type: 'insertBreak' })}>⏎</button>
 
               {piano.status === 'loading' && <span className="text-xs text-slate-400">loading piano…</span>}
               {piano.status === 'error' && <span className="text-xs text-red-500">audio unavailable</span>}
+            </div>
+            <div className="designer-tempo mb-3 flex items-center gap-2">
+              <label className="text-sm font-medium text-slate-600 whitespace-nowrap" htmlFor="dTempo">Tempo</label>
+              <input
+                id="dTempo"
+                className="input-tempo flex-1 accent-slate-900"
+                type="range"
+                min={60}
+                max={240}
+                step={5}
+                value={tempo}
+                onChange={e => setTempo(Number(e.target.value))}
+              />
+              <span className="tempo-value w-16 text-right text-sm tabular-nums text-slate-500">{tempo} bpm</span>
             </div>
             <Palette onAction={handle} accidentalStyle={doc.accidentalStyle} />
           </div>
@@ -283,6 +355,16 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
           </div>
         </div>
       </div>
+
+      {confirmNew && (
+        <ConfirmOverlay
+          title="Start a new sheet?"
+          message="This clears the current sheet. Save or export it first if you want to keep it."
+          confirmLabel="New sheet"
+          onConfirm={onNewSheet}
+          onCancel={() => setConfirmNew(false)}
+        />
+      )}
 
       {editingField && (
         <HeaderEditOverlay
