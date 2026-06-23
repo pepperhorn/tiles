@@ -24,3 +24,20 @@ export function createStore<T>(key: string): Store<T> {
 
 export const templateStore = createStore('crf_note_tiles_templates_v1');
 export const designStore = createStore('crf_sheet_designs_v1');
+
+/** Single-slot store for the designer's auto-saved working document (crash recovery). */
+export function createSlot<T>(key: string) {
+  return {
+    save: (value: T): boolean => {
+      try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+      catch { return false; }
+    },
+    load: (): T | undefined => {
+      try { const raw = localStorage.getItem(key); return raw ? (JSON.parse(raw) as T) : undefined; }
+      catch { return undefined; }
+    },
+    clear: (): void => { try { localStorage.removeItem(key); } catch { /* ignore */ } },
+  };
+}
+
+export const autosaveSlot = createSlot('crf_sheet_autosave_v1');

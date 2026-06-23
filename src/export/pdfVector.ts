@@ -19,7 +19,6 @@ type PdfHeader = { part: string; tempoStyle: string; title: string; subtitle: st
 export type PdfPage = { header?: PdfHeader; rows: PdfRow[] };
 
 const ARROW_CMYK = hexToCmyk('#64748b');
-const PAUSE_CMYK = hexToCmyk('#a8a29e');
 // Helvetica (jsPDF's built-in) lacks ♯/♭ glyphs — use ASCII for print safety.
 const ascii = (s: string) => s.replace(/♯/g, '#').replace(/♭/g, 'b');
 const mm = (px: number) => px / MM;
@@ -45,9 +44,17 @@ function buildSheetPdf(pages: PdfPage[], paper: Paper, orient: Orient): jsPDF {
     doc.text(str, cx, cy, { align: 'center', baseline: 'middle' });
   };
 
+  // A light hairline border around a tile box (matches the on-screen .tile border).
+  const tileBorder = (x: number, y: number, s: number) => {
+    doc.setDrawColor(0, 0, 0, 0.18);
+    doc.setLineWidth(Math.max(0.15, s * 0.012));
+    doc.roundedRect(x, y, s, s, s * 0.12, s * 0.12, 'S');
+  };
+
   const drawTile = (x: number, y: number, s: number, cmyk: Cmyk, main: string, sub: string) => {
     fill(cmyk);
     doc.roundedRect(x, y, s, s, s * 0.12, s * 0.12, 'F');
+    tileBorder(x, y, s);
     doc.setFont('helvetica', 'bold');
     const cx = x + s / 2;
     if (sub) {
@@ -61,6 +68,7 @@ function buildSheetPdf(pages: PdfPage[], paper: Paper, orient: Orient): jsPDF {
   const drawArrow = (x: number, y: number, s: number, dir: 'up' | 'down') => {
     fill(ARROW_CMYK);
     doc.roundedRect(x, y, s, s, s * 0.12, s * 0.12, 'F');
+    tileBorder(x, y, s);
     doc.setDrawColor(CMYK_WHITE[0], CMYK_WHITE[1], CMYK_WHITE[2], CMYK_WHITE[3]);
     doc.setLineWidth(Math.max(0.4, s * 0.06));
     const cx = x + s / 2, top = y + s * 0.28, bot = y + s * 0.72, hw = s * 0.18;
@@ -69,15 +77,18 @@ function buildSheetPdf(pages: PdfPage[], paper: Paper, orient: Orient): jsPDF {
     else { doc.line(cx, bot, cx - hw, bot - hw); doc.line(cx, bot, cx + hw, bot - hw); }
   };
 
-  // A paw print drawn in white: one large pad and four toe beans (matches the on-screen tile).
+  // A rest: an unfilled (white) box with a black paw-print OUTLINE — one large pad
+  // and four toe beans (matches the on-screen tile).
   const drawPause = (x: number, y: number, s: number) => {
-    fill(PAUSE_CMYK);
-    doc.roundedRect(x, y, s, s, s * 0.12, s * 0.12, 'F');
     fill(CMYK_WHITE);
+    doc.roundedRect(x, y, s, s, s * 0.12, s * 0.12, 'F');
+    tileBorder(x, y, s);
+    doc.setDrawColor(CMYK_BLACK[0], CMYK_BLACK[1], CMYK_BLACK[2], CMYK_BLACK[3]);
+    doc.setLineWidth(Math.max(0.25, s * 0.035));
     const cx = x + s / 2;
-    doc.ellipse(cx, y + s * 0.66, s * 0.2, s * 0.16, 'F');
+    doc.ellipse(cx, y + s * 0.66, s * 0.2, s * 0.16, 'S');
     for (const [ox, oy] of [[-0.25, -0.04], [-0.083, -0.187], [0.083, -0.187], [0.25, -0.04]]) {
-      doc.circle(cx + ox * s, y + s / 2 + oy * s, s * 0.088, 'F');
+      doc.circle(cx + ox * s, y + s / 2 + oy * s, s * 0.088, 'S');
     }
   };
 

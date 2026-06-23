@@ -28,7 +28,14 @@ const TABS: TabDef[] = [
   { id: 'file', label: 'Save & export' },
 ];
 
-export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (action: Action) => void }) {
+export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo }: {
+  doc: SheetDoc;
+  dispatch: (action: Action) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+}) {
   const stageRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const midiInputRef = useRef<HTMLInputElement>(null);
@@ -234,6 +241,31 @@ export function DesignerMode({ doc, dispatch }: { doc: SheetDoc; dispatch: (acti
                 title="New sheet"
                 onClick={() => setConfirmNew(true)}
               >New</button>
+
+              <span className="toolbar-sep mx-0.5 self-stretch w-px bg-slate-300" aria-hidden="true" />
+
+              <button
+                className="btn-undo rounded-lg border p-2 text-slate-700"
+                aria-label="Undo"
+                title="Undo"
+                disabled={!canUndo}
+                onClick={onUndo}
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 14 4 9l5-5" /><path d="M4 9h11a5 5 0 0 1 0 10h-1" />
+                </svg>
+              </button>
+              <button
+                className="btn-redo rounded-lg border p-2 text-slate-700"
+                aria-label="Redo"
+                title="Redo"
+                disabled={!canRedo}
+                onClick={onRedo}
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m15 14 5-5-5-5" /><path d="M20 9H9a5 5 0 0 0 0 10h1" />
+                </svg>
+              </button>
 
               <span className="toolbar-sep mx-0.5 self-stretch w-px bg-slate-300" aria-hidden="true" />
 
