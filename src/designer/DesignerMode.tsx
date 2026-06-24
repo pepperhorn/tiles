@@ -168,7 +168,9 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo }
   const onSave = () => name.trim() && designStore.save(name.trim(), doc);
   const onLoad = () => {
     const d = designStore.load(name.trim());
-    if (d) dispatch({ type: 'load', doc: d as SheetDoc });
+    // Backfill defaults so designs saved before a field existed (e.g. songKey)
+    // load cleanly — same tolerance as autosave restore and JSON import.
+    if (d) dispatch({ type: 'load', doc: { ...defaultDoc(), ...(d as Partial<SheetDoc>) } });
   };
 
   const onExportJson = () => {

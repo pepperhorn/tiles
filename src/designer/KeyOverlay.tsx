@@ -12,7 +12,9 @@ const QUALITIES: KeyQuality[] = ['major', 'minor'];
 export function KeyOverlay({ doc, dispatch, onClose }: {
   doc: SheetDoc; dispatch: (a: Action) => void; onClose: () => void;
 }) {
-  const { songKey } = doc;
+  // Tolerate a doc missing songKey entirely (older saved designs), matching
+  // formatKey's `SongKey | undefined` contract.
+  const songKey: SongKey = doc.songKey ?? { root: null, quality: null };
   const setKey = (patch: Partial<SongKey>) =>
     dispatch({ type: 'setKey', key: { ...songKey, ...patch } });
 
