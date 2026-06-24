@@ -118,7 +118,7 @@ body { background: var(--paper); color: var(--ink); }
 
 /* Outline action buttons — TIER 1, full brutalist (primary creative tools) --- */
 .btn-play, .btn-stop, .btn-speaker,
-.btn-new-sheet, .btn-undo, .btn-redo, .btn-toggle-tools, .btn-key,
+.btn-new-sheet, .btn-undo, .btn-redo, .btn-key,
 .btn-transpose-up, .btn-transpose-down,
 .btn-download-png, .btn-download-webp,
 .btn-shuffle, .btn-reset, .btn-embed, .btn-load-json, .btn-use-current,
@@ -132,13 +132,13 @@ body { background: var(--paper); color: var(--ink); }
   transition: transform .08s ease, box-shadow .08s ease;
 }
 .btn-play:hover, .btn-stop:hover, .btn-speaker:hover,
-.btn-new-sheet:hover, .btn-undo:hover, .btn-redo:hover, .btn-toggle-tools:hover, .btn-key:hover,
+.btn-new-sheet:hover, .btn-undo:hover, .btn-redo:hover, .btn-key:hover,
 .btn-transpose-up:hover, .btn-transpose-down:hover,
 .btn-download-png:hover, .btn-download-webp:hover,
 .btn-shuffle:hover, .btn-reset:hover, .btn-embed:hover, .btn-load-json:hover, .btn-use-current:hover,
 .btn-play-song:hover, .btn-play-answers:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
 .btn-play:active, .btn-stop:active, .btn-speaker:active,
-.btn-new-sheet:active, .btn-undo:active, .btn-redo:active, .btn-toggle-tools:active, .btn-key:active,
+.btn-new-sheet:active, .btn-undo:active, .btn-redo:active, .btn-key:active,
 .btn-transpose-up:active, .btn-transpose-down:active,
 .btn-download-png:active, .btn-download-webp:active,
 .btn-shuffle:active, .btn-reset:active, .btn-embed:active, .btn-load-json:active, .btn-use-current:active,
@@ -180,6 +180,22 @@ body { background: var(--paper); color: var(--ink); }
 }
 .designer-toolbar button:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
 .designer-toolbar button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+/* Show/hide-tools toggle: a C-colour tile echoing the favicon, with a white
+   wrench. Dimmed (desaturated) when the panel is hidden so "lit = tools open". */
+.btn-toggle-tools {
+  width: 2.35rem; height: 2.35rem;
+  display: grid; place-items: center;
+  border-radius: 9px;
+  border: 1px solid rgba(0, 0, 0, .15);
+  background: var(--t1);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, box-shadow .08s ease, filter .12s ease;
+}
+.btn-toggle-tools:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.btn-toggle-tools:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.btn-toggle-tools[aria-pressed='false'] { filter: grayscale(.4) brightness(1.04); }
 
 /* Speaker toggle when on */
 .btn-speaker[aria-pressed='true'] { background: var(--accent); }
