@@ -67,6 +67,7 @@ Buttons come in two deliberate tiers so the UI has hierarchy:
 | **Notes toolbar** | any `button` inside `.designer-toolbar` | Auto-unified to one outline + `--shadow-sm` (see rule in `index.css`) |
 | **Inline mini-action** | `.btn-apply-all .btn-sel-all .btn-sel-none .btn-reset-counts .btn-tpl-save .btn-tpl-load .btn-tpl-del .btn-diff-shuffle` | Space Mono uppercase ink text trigger, underline on hover (no box). For small in-group actions — **not** web-link blue |
 | **Input** | `.input-name .input-email .overlay-input .num .tpl-* …` | Square, 2px ink border, white fill |
+| **Range slider** | `.input-tempo .mix-slider .diff-slider` | `accent-color: var(--ink)` so every tab's slider shares one tint — never `accent-slate-*` |
 | **Overlay card** | `.overlay-card` + `.overlay-pop` | 3px border, `--shadow`, pop-in animation (square — never add `rounded-*`/`shadow-2xl`) |
 | **Overlay action** | `.overlay-done .confirm-ok` (dark `--ink` fill) · `.overlay-clear .confirm-cancel` (paper) | Square 2px ink, hard press; the modal's confirm/cancel pair |
 

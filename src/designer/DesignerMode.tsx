@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { SheetDoc, HeaderField, Action, Item } from './sheetModel';
 import { DesignerCanvas } from './DesignerCanvas';
 import { Palette } from './Palette';
@@ -65,11 +65,11 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
     itemsToPlayback(doc.items).map(p => ({ midi: p.midi, dur: 60 / tempo, index: p.index })),
     setPlayingIndex,
   );
-  const stopAudio = useCallback(() => { stopPiano(); setPlayingIndex(null); }, [stopPiano]);
+  const stopAudio = () => { stopPiano(); setPlayingIndex(null); };
 
-  // Memoised so the global keydown listener in useKeyboard rebinds only when the
-  // state it closes over changes — not on every unrelated re-render.
-  const handle = useCallback((r: KeyResult) => {
+  // useKeyboard reads handle through a ref, so it can stay a plain per-render
+  // closure (always seeing current state) without rebinding the listener.
+  const handle = (r: KeyResult) => {
     // Editing during playback stops it (the glow cursor would go stale).
     if (playingIndex !== null) stopAudio();
     if (r.type === 'newSection') {
@@ -108,7 +108,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
       return;
     }
     dispatch(r);
-  }, [playingIndex, stopAudio, autoUpDown, speaker, doc.items, dispatch, playNote]);
+  };
   useKeyboard(handle, true);
 
   usePageRule(doc.paper, doc.orientation);

@@ -44,10 +44,10 @@
    against the note letter so there's no strange gap. */
 .note-accidental { margin-left: -0.18em; }
 
-/* Key overlay pickers: selected root/quality fill with the signature yellow,
-   matching the sound on/off toggle's pressed state. */
-.key-root-grid .pick-note[aria-pressed='true'],
-.key-quality .btn-mode[aria-pressed='true'] { background: var(--accent); }
+/* Key overlay root picker: the selected note fills the signature yellow.
+   (The quality toggles are .btn-mode, filled by the shared segmented-toggle
+   rule, so they don't need their own selector here.) */
+.key-root-grid .pick-note[aria-pressed='true'] { background: var(--accent); }
 
 .guides .tile { outline: .4px dashed rgba(0,0,0,.22); outline-offset: -.2px; }
 
@@ -317,9 +317,9 @@ body { background: var(--paper); color: var(--ink); }
 .btn-download-pdf:active, .btn-submit:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
 
 /* Segmented toggles — square + chunky, fill with --accent when selected ---
-   The pressed/selected state is driven entirely by aria-pressed (or, for the
-   notes-toolbar toggles, aria-pressed via the speaker rule) so no component
-   needs to hand-roll a slate fill. */
+   The selected state is driven entirely by [aria-pressed='true'] below, so no
+   component needs to hand-roll a slate fill. (.btn-speaker keeps its own
+   matching accent rule since it lives among the flat notes-toolbar toggles.) */
 .btn-size, .btn-paper, .btn-orient, .btn-type, .btn-mode,
 .palette-sharp-toggle, .palette-flat-toggle, .palette-autoupdown {
   border-radius: 0;
