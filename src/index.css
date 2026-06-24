@@ -44,6 +44,11 @@
    against the note letter so there's no strange gap. */
 .note-accidental { margin-left: -0.18em; }
 
+/* Key overlay pickers: selected root/quality fill with the signature yellow,
+   matching the sound on/off toggle's pressed state. */
+.key-root-grid .pick-note[aria-pressed='true'],
+.key-quality .btn-mode[aria-pressed='true'] { background: var(--accent); }
+
 .guides .tile { outline: .4px dashed rgba(0,0,0,.22); outline-offset: -.2px; }
 
 /* Drag-and-drop placeholder: a dashed grey target for empty sections and the
@@ -53,19 +58,11 @@
   box-sizing: border-box;
   border: 2px dashed #94a3b8;
   background: rgba(148, 163, 184, .10);
-  animation: dropZoneIn .16s ease-out both, dropZonePulse 1.5s ease-in-out .16s infinite;
-}
-.drop-zone.is-over {
-  border-style: dashed;
   animation: dropZoneIn .16s ease-out both;
 }
 @keyframes dropZoneIn {
   from { opacity: 0; transform: scale(.82); }
   to   { opacity: 1; transform: scale(1); }
-}
-@keyframes dropZonePulse {
-  0%, 100% { border-color: #94a3b8; background: rgba(148, 163, 184, .10); }
-  50%      { border-color: #64748b; background: rgba(148, 163, 184, .20); }
 }
 
 /* A tile that just landed from a drag: a quick settle wiggle so the move reads

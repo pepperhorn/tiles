@@ -177,11 +177,14 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
     <div className="sheet-body flex w-fit flex-col gap-1.5 mx-auto">
       {rows.map((row, ri) => {
         if (row.kind === 'section') {
-          const sectionNode = dnd
-            ? <DropSection index={row.index} text={row.text} isOver={overId === row.index} dragColor={dragColor} onEdit={onEditSection ? () => onEditSection(row.index) : undefined} />
-            : <div className="row-section font-semibold text-slate-700 mt-2">{row.text}</div>;
           // An empty section gets its own dashed drop target so notes can land in it.
           const showZone = dragging && sectionIsEmpty(doc.items, row.index);
+          // While that zone is shown, the header is NOT a droppable — otherwise the
+          // header (insert before) and the zone (insert after) compete and a tile
+          // can land under the wrong heading.
+          const sectionNode = dnd && !showZone
+            ? <DropSection index={row.index} text={row.text} isOver={overId === row.index} dragColor={dragColor} onEdit={onEditSection ? () => onEditSection(row.index) : undefined} />
+            : <div className="row-section font-semibold text-slate-700 mt-2">{row.text}</div>;
           return (
             <Fragment key={ri}>
               {sectionNode}

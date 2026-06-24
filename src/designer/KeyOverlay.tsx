@@ -43,8 +43,7 @@ export function KeyOverlay({ doc, dispatch, onClose }: {
                 key={n.id}
                 type="button"
                 aria-pressed={sel}
-                className="pick-note flex aspect-square items-center justify-center text-sm font-bold text-slate-900"
-                style={{ background: sel ? 'var(--accent)' : '#fff' }}
+                className="pick-note flex aspect-square items-center justify-center bg-white text-sm font-bold text-slate-900"
                 onClick={() => setKey({ root: sel ? null : n.id })}
               >{displayNote(n, doc.accidentalStyle).main}</button>
             );
@@ -60,7 +59,6 @@ export function KeyOverlay({ doc, dispatch, onClose }: {
                 type="button"
                 aria-pressed={sel}
                 className={`btn-mode flex-1 border px-3 py-2 text-sm font-semibold capitalize ${sel ? 'text-slate-900 border-slate-900' : 'text-slate-600'}`}
-                style={sel ? { background: 'var(--accent)' } : undefined}
                 onClick={() => setKey({ quality: sel ? null : q })}
               >{q}</button>
             );

@@ -96,7 +96,13 @@ export function reduce(doc: SheetDoc, action: Action): SheetDoc {
     case 'removeAt':      return { ...doc, items: doc.items.filter((_, i) => i !== action.index) };
     case 'moveItem':      return { ...doc, items: moveItem(doc.items, action.from, action.to) };
     case 'setHeader':     return { ...doc, [action.field]: action.value };
-    case 'setKey':        return { ...doc, songKey: action.key };
+    case 'setKey': {
+      // No-op when the key is unchanged so re-tapping a selection doesn't record
+      // a redundant undo step (history.changed compares songKey by reference).
+      const k = action.key, cur = doc.songKey;
+      if (cur && cur.root === k.root && cur.quality === k.quality) return doc;
+      return { ...doc, songKey: k };
+    }
     case 'setLayout':     return { ...doc, ...action.patch };
     case 'transpose': {
       const items = doc.items.map(it => it.type === 'note' ? { ...it, noteId: semitone(it.noteId, action.delta) } : it);
