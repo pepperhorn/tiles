@@ -130,7 +130,10 @@ body { background: var(--paper); color: var(--ink); }
 }
 .brut-tab:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
 .brut-tab:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
-.brut-tab[aria-pressed='true'] { background: var(--accent); box-shadow: var(--shadow); }
+/* The masthead tab is the one deliberate exception to "selected = --accent":
+   it fills ink (white text) so the primary nav reads as a dark anchor and gives
+   the eye a break from the yellow-filled controls below it. */
+.brut-tab[aria-pressed='true'] { background: var(--ink); color: var(--paper); box-shadow: var(--shadow); }
 
 /* Workspace: plain white behind the sheet (the hard shadow gives definition). */
 .stage {

@@ -40,7 +40,9 @@ transition: transform .08s ease, box-shadow .08s ease;
 ```
 
 Selected/pressed state = **fill with `--accent`** (or keep the segmented group's
-fill), never a colour-only/underline treatment.
+fill), never a colour-only/underline treatment. The **one exception** is the
+masthead tab (`.brut-tab`), which fills **`--ink` with `--paper` text** so the
+primary nav reads as a dark anchor and breaks up the yellow-filled controls.
 
 ### Two tiers of emphasis
 
@@ -61,7 +63,7 @@ Buttons come in two deliberate tiers so the UI has hierarchy:
 | **Tier 1 outline action** | `.btn-play .btn-new-sheet .btn-key .btn-undo …` | 2px ink border, square, `--shadow-sm`, hard press |
 | **Tier 2 soft action** | `.btn-save .btn-load .btn-pdf .btn-print .btn-email …` | Rounded 8px, 1.5px hairline border, soft blurred shadow, quiet press |
 | **Primary / go** | `.btn-download-pdf .btn-submit` | 2.5px border, `--primary` fill, `--shadow`, uppercase |
-| **Masthead tab** | `.brut-tab` | 2.5px border, Space Mono, `--accent` fill when `aria-pressed` |
+| **Masthead tab** | `.brut-tab` | 2.5px border, Space Mono; **inverse `--ink` fill + `--paper` text** when `aria-pressed` (the deliberate non-yellow selected state) |
 | **Segmented toggle** | `.btn-size .btn-paper .btn-orient .btn-type .btn-mode .palette-sharp-toggle .palette-flat-toggle .palette-autoupdown` | Square, 2px border; **selected fills `--accent`** purely via `[aria-pressed='true']` in `index.css` — the component only sets `aria-pressed`, never a fill class. Connected groups stay shadow-less |
 | **Note / symbol tile** | `.palette-note .palette-up .palette-pause .palette-break …` | Square, 2px border, 2px tile shadow |
 | **Notes toolbar** | any `button` inside `.designer-toolbar` | Auto-unified to one outline + `--shadow-sm` (see rule in `index.css`) |
