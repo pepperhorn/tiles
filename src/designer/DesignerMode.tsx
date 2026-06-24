@@ -3,6 +3,7 @@ import type { SheetDoc, HeaderField, Action, Item } from './sheetModel';
 import { DesignerCanvas } from './DesignerCanvas';
 import { Palette } from './Palette';
 import { DesignerControls } from './DesignerControls';
+import { KeySelect } from './KeySelect';
 import { HeaderEditOverlay } from './HeaderEditOverlay';
 import { EditOverlay } from './EditOverlay';
 import { ConfirmOverlay } from './ConfirmOverlay';
@@ -319,6 +320,9 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo }
 
               {piano.status === 'loading' && <span className="text-xs text-slate-400">loading piano…</span>}
               {piano.status === 'error' && <span className="text-xs text-red-500">audio unavailable</span>}
+            </div>
+            <div className="designer-key mb-3">
+              <KeySelect doc={doc} dispatch={dispatch} />
             </div>
             <div className="designer-tempo mb-3 flex items-center gap-2">
               <label className="text-sm font-medium text-slate-600 whitespace-nowrap" htmlFor="dTempo">Tempo</label>

@@ -1,4 +1,4 @@
-import { defaultDoc, reduce } from './sheetModel';
+import { defaultDoc, reduce, formatKey } from './sheetModel';
 
 test('insertNote appends a note item', () => {
   const d = reduce(defaultDoc(), { type: 'insertNote', noteId: 'C' });
@@ -80,6 +80,24 @@ test('setHeader and setLayout patch the doc', () => {
   expect(d.tilesPerRow).toBe(6);
   d = reduce(d, { type: 'setLayout', patch: { accidentalStyle: 'flat' } });
   expect(d.accidentalStyle).toBe('flat');
+});
+
+test('setKey sets the song key', () => {
+  const d = reduce(defaultDoc(), { type: 'setKey', key: { root: 'G', quality: 'minor' } });
+  expect(d.songKey).toEqual({ root: 'G', quality: 'minor' });
+});
+
+test('default doc has no key set', () => {
+  expect(defaultDoc().songKey).toEqual({ root: null, quality: null });
+});
+
+test('formatKey spells the root per accidental style and appends quality', () => {
+  expect(formatKey({ root: 'C', quality: 'major' }, 'sharp')).toBe('C major');
+  expect(formatKey({ root: 'Bb', quality: 'minor' }, 'sharp')).toBe('A♯ minor');
+  expect(formatKey({ root: 'Bb', quality: 'minor' }, 'flat')).toBe('B♭ minor');
+  // No quality → just the root; no root → empty (hidden).
+  expect(formatKey({ root: 'F', quality: null }, 'sharp')).toBe('F');
+  expect(formatKey({ root: null, quality: null }, 'sharp')).toBe('');
 });
 
 test('load replaces the whole document', () => {

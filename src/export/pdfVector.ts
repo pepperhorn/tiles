@@ -3,7 +3,7 @@ import { MM, PAD, pageBox, resolveCols, type Paper, type Orient } from '../geome
 import { noteById, displayNote } from '../notes';
 import { flowRows } from '../designer/flow';
 import { hexToCmyk, CMYK_BLACK, CMYK_WHITE, type Cmyk } from './cmyk';
-import type { SheetDoc } from '../designer/sheetModel';
+import { formatKey, type SheetDoc } from '../designer/sheetModel';
 import type { SheetPlan } from '../generator/useGeneratorState';
 
 // Print-first PDF: drawn as VECTOR with DeviceCMYK colors (text/lines as pure
@@ -15,7 +15,7 @@ type PdfCell =
   | { t: 'pause' }
   | { t: 'blank' };
 type PdfRow = { t: 'section'; text: string } | { t: 'tiles'; size: number; gap: number; cells: PdfCell[] };
-type PdfHeader = { part: string; tempoStyle: string; title: string; subtitle: string; composer: string };
+type PdfHeader = { songKey: string; part: string; tempoStyle: string; title: string; subtitle: string; composer: string };
 export type PdfPage = { header?: PdfHeader; rows: PdfRow[] };
 
 const ARROW_CMYK = hexToCmyk('#64748b');
@@ -108,8 +108,11 @@ function buildSheetPdf(pages: PdfPage[], paper: Paper, orient: Orient): jsPDF {
       const h = page.header;
       doc.setFont('helvetica', 'normal');
       textColor(CMYK_BLACK);
-      if (h.part) { doc.setFontSize(9); doc.text(h.part, pad, y + 3); }
-      if (h.tempoStyle) { doc.setFontSize(8); doc.text(h.tempoStyle, pad, y + 7.5); }
+      // Left column stacks key → part → tempo/style, collapsing gaps when blank.
+      let ly = y + 3;
+      if (h.songKey) { doc.setFontSize(9); doc.text(h.songKey, pad, ly); ly += 4.5; }
+      if (h.part) { doc.setFontSize(9); doc.text(h.part, pad, ly); ly += 4.5; }
+      if (h.tempoStyle) { doc.setFontSize(8); doc.text(h.tempoStyle, pad, ly); }
       if (h.composer) { doc.setFontSize(9); doc.text(h.composer, pageW - pad, y + 3, { align: 'right' }); }
       if (h.title) { doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text(h.title, pageW / 2, y + 4, { align: 'center' }); }
       if (h.subtitle) { doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.text(h.subtitle, pageW / 2, y + 9.5, { align: 'center' }); }
@@ -173,7 +176,7 @@ export function docToPages(doc: SheetDoc, blanks?: Set<number>): PdfPage[] {
             return { t: 'note', cmyk: hexToCmyk(n.hex), main: ascii(d.main), sub: ascii(d.sub) };
           }),
         });
-  const header: PdfHeader = { part: doc.part, tempoStyle: doc.tempoStyle, title: doc.title, subtitle: doc.subtitle, composer: doc.composer };
+  const header: PdfHeader = { songKey: ascii(formatKey(doc.songKey, doc.accidentalStyle)), part: doc.part, tempoStyle: doc.tempoStyle, title: doc.title, subtitle: doc.subtitle, composer: doc.composer };
   return [{ header, rows }];
 }
 

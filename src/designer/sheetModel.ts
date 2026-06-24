@@ -1,4 +1,4 @@
-import { semitone, noteById, type AccidentalStyle } from '../notes';
+import { semitone, noteById, displayNote, type AccidentalStyle } from '../notes';
 import type { Paper, Orient, TilesPerRow } from '../geometry';
 
 export type Item =
@@ -10,8 +10,15 @@ export type Item =
 
 export type HeaderField = 'part' | 'title' | 'subtitle' | 'composer' | 'tempoStyle';
 
+// Musical key of a sheet. `root` is a note id (same set as the tiles) or null
+// for "no key set"; `quality` is major/minor or null. Default is no key so
+// versions of the same song aren't all silently lumped together as C.
+export type KeyQuality = 'major' | 'minor';
+export type SongKey = { root: string | null; quality: KeyQuality | null };
+
 export type SheetDoc = {
   part: string; title: string; subtitle: string; composer: string; tempoStyle: string;
+  songKey: SongKey;
   tilesPerRow: TilesPerRow; size: number; paper: Paper; orientation: Orient;
   accidentalStyle: AccidentalStyle;
   items: Item[];
@@ -20,10 +27,22 @@ export type SheetDoc = {
 export function defaultDoc(): SheetDoc {
   return {
     part: '', title: '', subtitle: '', composer: '', tempoStyle: '',
+    songKey: { root: null, quality: null },
     tilesPerRow: 'auto', size: 64, paper: 'A4', orientation: 'portrait',
     accidentalStyle: 'sharp',
     items: [],
   };
+}
+
+// Human-readable key label, e.g. "C major", "A♯ minor", or "F" (quality unset).
+// The root is spelled to match the sheet's sharp/flat preference. Returns '' when
+// no root is set, so callers can hide the field entirely.
+export function formatKey(key: SongKey | undefined, style: AccidentalStyle): string {
+  if (!key?.root) return '';
+  const note = noteById(key.root);
+  if (!note) return '';
+  const root = displayNote(note, style).main;
+  return key.quality ? `${root} ${key.quality}` : root;
 }
 
 export type Action =
@@ -40,6 +59,7 @@ export type Action =
   | { type: 'removeAt'; index: number }
   | { type: 'moveItem'; from: number; to: number }
   | { type: 'setHeader'; field: HeaderField; value: string }
+  | { type: 'setKey'; key: SongKey }
   | { type: 'setLayout'; patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation' | 'accidentalStyle'>> }
   | { type: 'transpose'; delta: number }
   | { type: 'load'; doc: SheetDoc };
@@ -76,6 +96,7 @@ export function reduce(doc: SheetDoc, action: Action): SheetDoc {
     case 'removeAt':      return { ...doc, items: doc.items.filter((_, i) => i !== action.index) };
     case 'moveItem':      return { ...doc, items: moveItem(doc.items, action.from, action.to) };
     case 'setHeader':     return { ...doc, [action.field]: action.value };
+    case 'setKey':        return { ...doc, songKey: action.key };
     case 'setLayout':     return { ...doc, ...action.patch };
     case 'transpose':     return { ...doc, items: doc.items.map(it => it.type === 'note' ? { ...it, noteId: semitone(it.noteId, action.delta) } : it) };
     case 'load':          return action.doc;
