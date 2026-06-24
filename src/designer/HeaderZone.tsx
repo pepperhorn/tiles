@@ -1,4 +1,5 @@
 import type { SheetDoc, HeaderField } from './sheetModel';
+import { formatKey } from './sheetModel';
 
 export function HeaderZone({ doc, editable, onEditField = () => {} }: {
   doc: SheetDoc; editable: boolean; onEditField?: (f: HeaderField) => void;
@@ -22,10 +23,14 @@ export function HeaderZone({ doc, editable, onEditField = () => {} }: {
     return val ? <span className={`${cls} block ${align} break-words`}>{val}</span> : null;
   };
 
+  // Spelled with the sheet's sharp/flat preference; hidden entirely when unset.
+  const keyLabel = formatKey(doc.songKey, doc.accidentalStyle);
+
   return (
     <header className="sheet-header mb-4">
       <div className="header-top grid grid-cols-[minmax(0,1fr)_minmax(0,1.8fr)_minmax(0,1fr)] items-start gap-3">
         <div className="header-left min-w-0 text-sm text-slate-600">
+          {keyLabel && <span className="header-key block text-left font-semibold text-slate-700">{keyLabel}</span>}
           {display('part', 'Part / instrument', 'header-part font-semibold', 'text-left')}
           {display('tempoStyle', 'LH: tempo · style', 'header-tempo mt-1', 'text-left')}
         </div>

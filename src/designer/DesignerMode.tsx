@@ -3,6 +3,7 @@ import type { SheetDoc, HeaderField, Action, Item } from './sheetModel';
 import { DesignerCanvas } from './DesignerCanvas';
 import { Palette } from './Palette';
 import { DesignerControls } from './DesignerControls';
+import { KeyOverlay } from './KeyOverlay';
 import { HeaderEditOverlay } from './HeaderEditOverlay';
 import { EditOverlay } from './EditOverlay';
 import { ConfirmOverlay } from './ConfirmOverlay';
@@ -15,10 +16,11 @@ import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
 import { serializeDoc, parseSheetJson } from './json';
 import { usePiano } from '../audio/usePiano';
-import { itemsToPitches, itemsToPlayback, midiToItems } from '../audio/pitch';
+import { itemsToPitches, itemsToPlayback, midiToItems, chromaDir } from '../audio/pitch';
 import { defaultDoc } from './sheetModel';
 import { midiFileToMelody } from '../audio/midiFile';
 import { ucfirst } from '../text';
+import { formatKey } from './sheetModel';
 import { cmsEnabled, emailReceipt } from '../cms';
 import { PawIcon } from '../Tile';
 
@@ -49,6 +51,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo }
   const [tempo, setTempo] = useState(120);
   const [toolsOpen, setToolsOpen] = useState(true);
   const [confirmNew, setConfirmNew] = useState(false);
+  const [keyOpen, setKeyOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const piano = usePiano();
@@ -70,12 +73,23 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo }
       return;
     }
     if (r.type === 'insertNote') {
-      // Auto up/down: drop a ↑ arrow between consecutive notes; tap it on the
-      // sheet to flip direction, double-tap to delete.
+      // Auto up/down: mark only where the melodic line changes chromatic
+      // direction — one ↑ at the start of an ascending run, one ↓ at the start
+      // of a descending run — instead of an arrow between every note. Tap an
+      // arrow on the sheet to flip it, double-tap to delete.
       const items = [...doc.items];
-      if (autoUpDown && doc.items.at(-1)?.type === 'note') {
-        dispatch({ type: 'insertArrow', dir: 'up' });
-        items.push({ type: 'arrow', dir: 'up' });
+      if (autoUpDown) {
+        const notes = doc.items.filter((it): it is Extract<Item, { type: 'note' }> => it.type === 'note');
+        const prev = notes.at(-1);
+        if (prev) {
+          const newDir = chromaDir(prev.noteId, r.noteId);
+          const runDir = notes.length >= 2 ? chromaDir(notes.at(-2)!.noteId, prev.noteId) : 0;
+          if (newDir !== 0 && newDir !== runDir) {
+            const dir = newDir === 1 ? 'up' : 'down';
+            dispatch({ type: 'insertArrow', dir });
+            items.push({ type: 'arrow', dir });
+          }
+        }
       }
       dispatch(r);
       items.push({ type: 'note', noteId: r.noteId });
@@ -154,7 +168,9 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo }
   const onSave = () => name.trim() && designStore.save(name.trim(), doc);
   const onLoad = () => {
     const d = designStore.load(name.trim());
-    if (d) dispatch({ type: 'load', doc: d as SheetDoc });
+    // Backfill defaults so designs saved before a field existed (e.g. songKey)
+    // load cleanly — same tolerance as autosave restore and JSON import.
+    if (d) dispatch({ type: 'load', doc: { ...defaultDoc(), ...(d as Partial<SheetDoc>) } });
   };
 
   const onExportJson = () => {
@@ -320,6 +336,20 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo }
               {piano.status === 'loading' && <span className="text-xs text-slate-400">loading piano…</span>}
               {piano.status === 'error' && <span className="text-xs text-red-500">audio unavailable</span>}
             </div>
+            <div className="designer-key mb-3">
+              <button
+                type="button"
+                className="btn-key flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm"
+                aria-label="Key"
+                onClick={() => setKeyOpen(true)}
+              >
+                <span className="font-medium text-slate-600">Key</span>
+                {(() => {
+                  const label = formatKey(doc.songKey, doc.accidentalStyle);
+                  return <span className={label ? 'font-semibold text-slate-900' : 'text-slate-400'}>{label || 'choose'}</span>;
+                })()}
+              </button>
+            </div>
             <div className="designer-tempo mb-3 flex items-center gap-2">
               <label className="text-sm font-medium text-slate-600 whitespace-nowrap" htmlFor="dTempo">Tempo</label>
               <input
@@ -396,6 +426,10 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo }
           onConfirm={onNewSheet}
           onCancel={() => setConfirmNew(false)}
         />
+      )}
+
+      {keyOpen && (
+        <KeyOverlay doc={doc} dispatch={dispatch} onClose={() => setKeyOpen(false)} />
       )}
 
       {editingField && (

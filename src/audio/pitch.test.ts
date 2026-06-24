@@ -1,8 +1,16 @@
-import { itemsToPitches, itemsToPlayback, midiToItems, midiNoteName } from './pitch';
+import { itemsToPitches, itemsToPlayback, midiToItems, midiNoteName, chromaDir } from './pitch';
 import type { Item } from '../designer/sheetModel';
 
 const note = (id: string): Item => ({ type: 'note', noteId: id });
 const arrow = (dir: 'up' | 'down'): Item => ({ type: 'arrow', dir });
+
+test('chromaDir picks the shortest-path direction between pitch classes', () => {
+  expect(chromaDir('C', 'E')).toBe(1);    // up a major third
+  expect(chromaDir('C', 'A')).toBe(-1);   // down a minor third (nearer than up a sixth)
+  expect(chromaDir('C', 'C')).toBe(0);    // same pitch class
+  expect(chromaDir('C', 'Fs')).toBe(1);   // tritone resolves up
+  expect(chromaDir('B', 'C')).toBe(1);    // wraps up a semitone
+});
 
 test('first note lands between C4 (60) and B4 (71)', () => {
   expect(itemsToPitches([note('C')])[0].midi).toBe(60);
