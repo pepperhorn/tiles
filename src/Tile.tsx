@@ -50,7 +50,7 @@ export function Tile(props: TileProps) {
   if (props.kind === 'pause') {
     // A rest: an unfilled (white) box carrying a black paw-print outline.
     return (
-      <div {...common} className={`${common.className} tile-pause`} style={{ width: size, height: size, background: '#fff', color: 'var(--ink)', cursor: onClick ? 'pointer' : 'default' }}>
+      <div {...common} className={`${common.className} tile-pause`} style={{ width: size, height: size, background: '#fff', color: 'var(--ink)', border: '2px dashed var(--ink)', cursor: onClick ? 'pointer' : 'default' }}>
         <PawIcon size={size * 0.56} />
       </div>
     );
