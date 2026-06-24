@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
-import { MM, PAD, pageBox, resolveCols, type Paper, type Orient } from '../geometry';
+import { MM, PAD, TILE_GAP, type Paper, type Orient } from '../geometry';
 import { noteById, displayNote } from '../notes';
-import { flowRows } from '../designer/flow';
+import { sheetLayout } from '../designer/layout';
 import { hexToCmyk, CMYK_BLACK, CMYK_WHITE, type Cmyk } from './cmyk';
 import { formatKey, type SheetDoc } from '../designer/sheetModel';
 import type { SheetPlan } from '../generator/useGeneratorState';
@@ -159,13 +159,11 @@ export function buildSheetPdfString(pages: PdfPage[], paper: Paper, orient: Orie
 // --- Model builders ---------------------------------------------------------
 
 export function docToPages(doc: SheetDoc, blanks?: Set<number>): PdfPage[] {
-  const { w: pageW } = pageBox(doc.paper, doc.orientation);
-  const cols = resolveCols(doc.tilesPerRow, doc.size, 6, pageW);
-  const rows = flowRows(doc.items, cols).map<PdfRow>(row =>
+  const rows = sheetLayout(doc).rows.map<PdfRow>(row =>
     row.kind === 'section'
       ? { t: 'section', text: ascii(row.text) }
       : {
-          t: 'tiles', size: doc.size, gap: 6,
+          t: 'tiles', size: doc.size, gap: TILE_GAP,
           cells: row.cells.map<PdfCell>(cell => {
             const item = cell.item;
             if (item.type === 'arrow') return { t: 'arrow', dir: item.dir };
