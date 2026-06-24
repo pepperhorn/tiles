@@ -51,7 +51,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
   const [editingField, setEditingField] = useState<HeaderField | null>(null);
   const [sectionEdit, setSectionEdit] = useState<number | null>(null);
   const [speaker, setSpeaker] = useState(true);
-  const [autoUpDown, setAutoUpDown] = useState(false);
+  const [autoUpDown, setAutoUpDown] = useState(true);
   const [tempo, setTempo] = useState(120);
   const [confirmNew, setConfirmNew] = useState(false);
   const [keyOpen, setKeyOpen] = useState(false);

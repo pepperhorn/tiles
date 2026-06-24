@@ -26,8 +26,12 @@ test('typing a note letter adds a tile to the canvas', async () => {
   expect(document.querySelector('.row-tiles .tile')).toBeTruthy();
 });
 
+// Auto up/down is on by default; turn it off in tests that count plain notes.
+const disableAuto = () => userEvent.click(screen.getByRole('button', { name: 'Auto up/down arrows' }));
+
 test('palette tap then tiles-per-row control re-wraps', async () => {
   render(<DesignerHarness />);
+  await disableAuto();
   await userEvent.click(screen.getByRole('button', { name: 'C' }));
   await userEvent.click(screen.getByRole('button', { name: 'E' }));
   const tpr = screen.getByLabelText(/tiles per row/i);
@@ -43,6 +47,7 @@ test('the pause button adds a paw rest tile', async () => {
 
 test('new sheet asks for confirmation before clearing the sheet', async () => {
   render(<DesignerHarness />);
+  await disableAuto();
   await userEvent.keyboard('cde');
   expect(document.querySelectorAll('.row-tiles .tile')).toHaveLength(3);
 
@@ -59,6 +64,7 @@ test('new sheet asks for confirmation before clearing the sheet', async () => {
 
 test('undo and redo from the toolbar step through note edits', async () => {
   render(<DesignerHarness />);
+  await disableAuto();
   await userEvent.click(screen.getByRole('button', { name: 'C' }));
   await userEvent.click(screen.getByRole('button', { name: 'E' }));
   expect(document.querySelectorAll('.row-tiles .tile')).toHaveLength(2);
@@ -83,8 +89,7 @@ const arrowGlyphs = () =>
     .map(e => e.getAttribute('aria-label') === 'down arrow' ? '↓' : '↑');
 
 async function enableAutoAndEnter(letters: string) {
-  render(<DesignerHarness />);
-  await userEvent.click(screen.getByRole('button', { name: 'Auto up/down arrows' }));
+  render(<DesignerHarness />); // auto up/down is on by default
   for (const ch of letters) await userEvent.click(screen.getByRole('button', { name: ch }));
 }
 

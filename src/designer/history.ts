@@ -24,7 +24,8 @@ function changed(a: SheetDoc, b: SheetDoc): boolean {
     || a.composer !== b.composer || a.tempoStyle !== b.tempoStyle
     || a.tilesPerRow !== b.tilesPerRow || a.size !== b.size
     || a.paper !== b.paper || a.orientation !== b.orientation
-    || a.accidentalStyle !== b.accidentalStyle;
+    || a.accidentalStyle !== b.accidentalStyle
+    || a.songKey !== b.songKey;
 }
 
 export function historyReducer(state: History, action: HistoryAction): History {

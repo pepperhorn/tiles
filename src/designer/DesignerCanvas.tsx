@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   DndContext, DragOverlay, MouseSensor, TouchSensor, useSensor, useSensors,
   useDraggable, useDroppable, closestCenter,
@@ -48,7 +48,7 @@ function TileButton({ index, item, size, accidental, onRemove, onToggleArrow }: 
 }
 
 // A draggable + droppable tile slot (only rendered inside a DndContext).
-function DragSlot({ index, isOver, isPlaying, dragColor, children }: { index: number; isOver: boolean; isPlaying: boolean; dragColor: string; children: ReactNode }) {
+function DragSlot({ index, isOver, isPlaying, isDropped, dragColor, children }: { index: number; isOver: boolean; isPlaying: boolean; isDropped: boolean; dragColor: string; children: ReactNode }) {
   const { setNodeRef: dragRef, listeners, attributes, isDragging } = useDraggable({ id: index });
   const { setNodeRef: dropRef } = useDroppable({ id: index });
   const setRef = (n: HTMLDivElement | null) => { dragRef(n); dropRef(n); };
@@ -64,7 +64,7 @@ function DragSlot({ index, isOver, isPlaying, dragColor, children }: { index: nu
       {...attributes}
       {...listeners}
       style={overStyle}
-      className={`tile-slot cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-40' : ''} ${isPlaying ? 'is-playing' : ''}`}
+      className={`tile-slot cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-40' : ''} ${isPlaying ? 'is-playing' : ''} ${isDropped ? 'just-dropped' : ''}`}
     >
       {children}
     </div>
@@ -87,6 +87,26 @@ function DropSection({ index, text, isOver, dragColor, onEdit }: { index: number
   );
 }
 
+// A dashed placeholder you can drop into: empty sections and the blank space at
+// the end of a row. Only rendered while dragging; animates in (see .drop-zone).
+function DropZone({ insertIndex, size, isOver, dragColor }: { insertIndex: number; size: number; isOver: boolean; dragColor: string }) {
+  const { setNodeRef } = useDroppable({ id: `zone:${insertIndex}` });
+  const style: CSSProperties = isOver
+    ? { width: size, height: size, background: dragColor, borderColor: 'var(--ink)' }
+    : { width: size, height: size };
+  return <div ref={setNodeRef} style={style} className={`drop-zone ${isOver ? 'is-over' : ''}`} aria-hidden="true" />;
+}
+
+// A section is "empty" when no tile follows it before the next section / the end.
+function sectionIsEmpty(items: Item[], s: number): boolean {
+  for (let i = s + 1; i < items.length; i++) {
+    const t = items[i].type;
+    if (t === 'section') return true;
+    if (t === 'note' || t === 'arrow' || t === 'pause') return false;
+  }
+  return true;
+}
+
 export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, onEditSection, onMove, onToggleArrow, playingIndex = null }: {
   doc: SheetDoc;
   onRemove: (index: number) => void;
@@ -105,7 +125,12 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
 
   const dnd = !!onMove;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [overIndex, setOverIndex] = useState<number | null>(null);
+  // Drop target id: a tile's item index (number) or a `zone:<insertIndex>` string.
+  const [overId, setOverId] = useState<string | number | null>(null);
+  // Index a tile just landed on, so it can play a short settle wiggle.
+  const [dropped, setDropped] = useState<number | null>(null);
+  const dropTimer = useRef<number | null>(null);
+  const dragging = dnd && activeIndex !== null;
 
   // Mouse drags after a small move; touch drags after a short press (so taps and scrolling still work).
   const sensors = useSensors(
@@ -113,15 +138,32 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
   );
 
-  const reset = () => { setActiveIndex(null); setOverIndex(null); };
+  const reset = () => { setActiveIndex(null); setOverId(null); };
   const onDragStart = (e: DragStartEvent) => setActiveIndex(Number(e.active.id));
-  const onDragOver = (e: DragOverEvent) => setOverIndex(e.over ? Number(e.over.id) : null);
+  const onDragOver = (e: DragOverEvent) => setOverId(e.over ? e.over.id as string | number : null);
+  // Flag the landing index so it wiggles, then clear after the animation runs.
+  const flagDrop = (to: number) => {
+    setDropped(to);
+    if (dropTimer.current != null) clearTimeout(dropTimer.current);
+    dropTimer.current = window.setTimeout(() => { setDropped(null); dropTimer.current = null; }, 360);
+  };
   const onDragEnd = (e: DragEndEvent) => {
     const from = Number(e.active.id);
-    const to = e.over != null ? Number(e.over.id) : null;
-    if (to != null && from !== to) onMove!(from, to);
+    const over = e.over?.id;
+    if (over != null) {
+      if (typeof over === 'string' && over.startsWith('zone:')) {
+        // Absolute insertion index → the post-removal target moveItem expects.
+        const k = Number(over.slice(5));
+        const to = from < k ? k - 1 : k;
+        if (to !== from) { onMove!(from, to); flagDrop(to); }
+      } else if (Number(over) !== from) {
+        onMove!(from, Number(over));
+        flagDrop(Number(over));
+      }
+    }
     reset();
   };
+  useEffect(() => () => { if (dropTimer.current != null) clearTimeout(dropTimer.current); }, []);
 
   // The drop highlight is tinted to the dragged tile's own colour (yellow accent
   // for non-note items: arrows and pauses), so it reads differently from the
@@ -133,24 +175,43 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
 
   const body = (
     <div className="sheet-body flex w-fit flex-col gap-1.5 mx-auto">
-      {rows.map((row, ri) =>
-        row.kind === 'section'
-          ? (dnd
-              ? <DropSection key={ri} index={row.index} text={row.text} isOver={overIndex === row.index} dragColor={dragColor} onEdit={onEditSection ? () => onEditSection(row.index) : undefined} />
-              : <div key={ri} className="row-section font-semibold text-slate-700 mt-2">{row.text}</div>)
-          : (
-            <div key={ri} className="row-tiles flex flex-wrap" style={{ gap: 6 }}>
-              {row.cells.map(cell =>
-                dnd
-                  ? <DragSlot key={cell.index} index={cell.index} isOver={overIndex === cell.index} isPlaying={playingIndex === cell.index} dragColor={dragColor}>
-                      <TileButton index={cell.index} item={cell.item} size={doc.size} accidental={doc.accidentalStyle} onRemove={onRemove} onToggleArrow={onToggleArrow} />
-                    </DragSlot>
-                  : <div key={cell.index} className={`tile-slot ${playingIndex === cell.index ? 'is-playing' : ''}`}>
-                      {innerTile(cell.item, doc.size, doc.accidentalStyle, () => onRemove(cell.index))}
-                    </div>
+      {rows.map((row, ri) => {
+        if (row.kind === 'section') {
+          const sectionNode = dnd
+            ? <DropSection index={row.index} text={row.text} isOver={overId === row.index} dragColor={dragColor} onEdit={onEditSection ? () => onEditSection(row.index) : undefined} />
+            : <div className="row-section font-semibold text-slate-700 mt-2">{row.text}</div>;
+          // An empty section gets its own dashed drop target so notes can land in it.
+          const showZone = dragging && sectionIsEmpty(doc.items, row.index);
+          return (
+            <Fragment key={ri}>
+              {sectionNode}
+              {showZone && (
+                <div className="row-tiles flex" style={{ gap: 6 }}>
+                  <DropZone insertIndex={row.index + 1} size={doc.size} isOver={overId === `zone:${row.index + 1}`} dragColor={dragColor} />
+                </div>
               )}
-            </div>
-          ))}
+            </Fragment>
+          );
+        }
+        const lastIdx = row.cells[row.cells.length - 1].index;
+        // A blank-space target at the end of a row that has room (or the last row).
+        const endZoneIndex = lastIdx + 1;
+        const showEndZone = dragging && (row.cells.length < cols || ri === rows.length - 1);
+        return (
+          <div key={ri} className="row-tiles flex flex-wrap" style={{ gap: 6 }}>
+            {row.cells.map(cell =>
+              dnd
+                ? <DragSlot key={cell.index} index={cell.index} isOver={overId === cell.index} isPlaying={playingIndex === cell.index} isDropped={dropped === cell.index} dragColor={dragColor}>
+                    <TileButton index={cell.index} item={cell.item} size={doc.size} accidental={doc.accidentalStyle} onRemove={onRemove} onToggleArrow={onToggleArrow} />
+                  </DragSlot>
+                : <div key={cell.index} className={`tile-slot ${playingIndex === cell.index ? 'is-playing' : ''}`}>
+                    {innerTile(cell.item, doc.size, doc.accidentalStyle, () => onRemove(cell.index))}
+                  </div>
+            )}
+            {showEndZone && <DropZone insertIndex={endZoneIndex} size={doc.size} isOver={overId === `zone:${endZoneIndex}`} dragColor={dragColor} />}
+          </div>
+        );
+      })}
       {doc.items.length === 0 && <div className="empty text-slate-600 text-sm">Tap notes below or type A–G to begin.</div>}
     </div>
   );
@@ -162,7 +223,9 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
         {dnd ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={reset}>
             {body}
-            <DragOverlay>
+            {/* No snap-back: the overlay vanishes at the drop point instead of
+                animating to the dragged tile's old home; the landed tile wiggles. */}
+            <DragOverlay dropAnimation={null}>
               {activeItem && (activeItem.type === 'note' || activeItem.type === 'arrow' || activeItem.type === 'pause')
                 ? innerTile(activeItem, doc.size, doc.accidentalStyle)
                 : null}

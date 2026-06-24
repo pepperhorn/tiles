@@ -33,30 +33,53 @@ export function KeyOverlay({ doc, dispatch, onClose }: {
         className="overlay-card overlay-pop w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        <span className="overlay-label block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Key</span>
-        <div className="key-fields flex gap-2">
-          <select
-            className="select-key-root flex-1 rounded-lg border border-slate-300 px-3 py-2 text-base outline-none focus:border-slate-900"
-            aria-label="Key root"
-            value={songKey.root ?? ''}
-            onChange={e => setKey({ root: e.target.value || null })}
-          >
-            <option value="">— root</option>
-            {NOTES.map(n => (
-              <option key={n.id} value={n.id}>{displayNote(n, doc.accidentalStyle).main}</option>
-            ))}
-          </select>
-          <select
-            className="select-key-quality flex-1 rounded-lg border border-slate-300 px-3 py-2 text-base outline-none focus:border-slate-900"
-            aria-label="Key quality"
-            value={songKey.quality ?? ''}
-            onChange={e => setKey({ quality: (e.target.value || null) as KeyQuality | null })}
-          >
-            <option value="">— major/minor</option>
-            {QUALITIES.map(q => (
-              <option key={q} value={q}>{q}</option>
-            ))}
-          </select>
+        {/* Themed pickers (not native <select>) so the popup stays on-brand. */}
+        <span className="overlay-label block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Root</span>
+        <div className="key-root-grid grid grid-cols-6 gap-1.5" role="group" aria-label="Key root">
+          {NOTES.map(n => {
+            const sel = songKey.root === n.id;
+            return (
+              <button
+                key={n.id}
+                type="button"
+                aria-pressed={sel}
+                className="pick-note flex aspect-square items-center justify-center text-sm font-bold text-slate-900"
+                style={{ background: sel ? 'var(--accent)' : '#fff' }}
+                onClick={() => setKey({ root: sel ? null : n.id })}
+              >{displayNote(n, doc.accidentalStyle).main}</button>
+            );
+          })}
+        </div>
+        <span className="overlay-label mt-3 block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Quality</span>
+        <div className="key-quality flex gap-2" role="group" aria-label="Key quality">
+          {QUALITIES.map(q => {
+            const sel = songKey.quality === q;
+            return (
+              <button
+                key={q}
+                type="button"
+                aria-pressed={sel}
+                className={`btn-mode flex-1 border px-3 py-2 text-sm font-semibold capitalize ${sel ? 'text-slate-900 border-slate-900' : 'text-slate-600'}`}
+                style={sel ? { background: 'var(--accent)' } : undefined}
+                onClick={() => setKey({ quality: sel ? null : q })}
+              >{q}</button>
+            );
+          })}
+        </div>
+        <span className="overlay-label mt-3 block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Transpose</span>
+        <div className="key-transpose flex gap-2" role="group" aria-label="Transpose">
+          <button
+            type="button"
+            className="btn-transpose-down flex-1 px-3 py-2 text-sm font-semibold"
+            aria-label="Transpose down a semitone"
+            onClick={() => dispatch({ type: 'transpose', delta: -1 })}
+          >− semitone</button>
+          <button
+            type="button"
+            className="btn-transpose-up flex-1 px-3 py-2 text-sm font-semibold"
+            aria-label="Transpose up a semitone"
+            onClick={() => dispatch({ type: 'transpose', delta: 1 })}
+          >+ semitone</button>
         </div>
         <div className="overlay-actions mt-3 flex justify-between">
           <button

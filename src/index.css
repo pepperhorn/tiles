@@ -29,6 +29,9 @@
 /* Sheet tiles share the palette/toolbar look: 2px ink border + tight offset
    shadow, so the picker and the sheet read as one consistent tile style. */
 .sheet .tile { border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+/* Dashed-border tiles (arrows + paw rests) skip the hard offset shadow — it
+   reads strangely against the open dashed frame. */
+.sheet .tile-arrow, .sheet .tile-pause { box-shadow: none; }
 
 /* All note text (sheet + palette) carries a 2px ink outline; the white fill
    paints on top so the glyph stays legible over any tile colour. */
@@ -42,6 +45,38 @@
 .note-accidental { margin-left: -0.18em; }
 
 .guides .tile { outline: .4px dashed rgba(0,0,0,.22); outline-offset: -.2px; }
+
+/* Drag-and-drop placeholder: a dashed grey target for empty sections and the
+   blank space at a row's end. Eases in (and gently breathes) so it doesn't just
+   pop into place; tints to the dragged tile's colour when hovered. */
+.drop-zone {
+  box-sizing: border-box;
+  border: 2px dashed #94a3b8;
+  background: rgba(148, 163, 184, .10);
+  animation: dropZoneIn .16s ease-out both, dropZonePulse 1.5s ease-in-out .16s infinite;
+}
+.drop-zone.is-over {
+  border-style: dashed;
+  animation: dropZoneIn .16s ease-out both;
+}
+@keyframes dropZoneIn {
+  from { opacity: 0; transform: scale(.82); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes dropZonePulse {
+  0%, 100% { border-color: #94a3b8; background: rgba(148, 163, 184, .10); }
+  50%      { border-color: #64748b; background: rgba(148, 163, 184, .20); }
+}
+
+/* A tile that just landed from a drag: a quick settle wiggle so the move reads
+   as "snapped into place" rather than teleporting. */
+.tile-slot.just-dropped { animation: tileDrop .34s ease-out; }
+@keyframes tileDrop {
+  0%   { transform: scale(1.12) rotate(-4deg); }
+  40%  { transform: scale(1) rotate(3deg); }
+  70%  { transform: rotate(-1.5deg); }
+  100% { transform: rotate(0); }
+}
 
 @keyframes overlayPop {
   from { opacity: 0; transform: translateY(8px) scale(.98); }

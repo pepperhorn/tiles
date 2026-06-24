@@ -98,7 +98,13 @@ export function reduce(doc: SheetDoc, action: Action): SheetDoc {
     case 'setHeader':     return { ...doc, [action.field]: action.value };
     case 'setKey':        return { ...doc, songKey: action.key };
     case 'setLayout':     return { ...doc, ...action.patch };
-    case 'transpose':     return { ...doc, items: doc.items.map(it => it.type === 'note' ? { ...it, noteId: semitone(it.noteId, action.delta) } : it) };
+    case 'transpose': {
+      const items = doc.items.map(it => it.type === 'note' ? { ...it, noteId: semitone(it.noteId, action.delta) } : it);
+      // A set key root rides along with the notes so the key stays correct.
+      const root = doc.songKey?.root ?? null;
+      const songKey = root ? { ...doc.songKey, root: semitone(root, action.delta) } : doc.songKey;
+      return { ...doc, items, songKey };
+    }
     case 'load':          return action.doc;
   }
 }
