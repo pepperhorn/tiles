@@ -31,7 +31,7 @@ export function Palette({
         })}
       </div>
 
-      <button className="palette-section rounded-lg py-2 border text-sm" aria-label="Section" onClick={() => onAction({ type: 'newSection' })}>＋ Section</button>
+      <button className="palette-section py-2 text-sm" aria-label="Section" onClick={() => onAction({ type: 'newSection' })}>＋ Section</button>
     </div>
   );
 }

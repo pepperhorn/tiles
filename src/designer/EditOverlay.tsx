@@ -20,13 +20,13 @@ export function EditOverlay({ label, value, placeholder, onChange, onClose }: {
       onClick={onClose}
     >
       <div
-        className="overlay-card overlay-pop w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl"
+        className="overlay-card overlay-pop w-full max-w-md bg-white p-4"
         onClick={e => e.stopPropagation()}
       >
         <label className="overlay-label block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">{label}</label>
         <input
           ref={inputRef}
-          className="overlay-input w-full rounded-lg border border-slate-300 px-3 py-2 text-base outline-none focus:border-slate-900"
+          className="overlay-input w-full px-3 py-2 text-base outline-none"
           value={value}
           placeholder={placeholder ?? label}
           autoCapitalize="sentences"
@@ -35,7 +35,7 @@ export function EditOverlay({ label, value, placeholder, onChange, onClose }: {
         <div className="overlay-actions mt-3 flex justify-end">
           <button
             type="button"
-            className="overlay-done rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+            className="overlay-done px-4 py-2 text-sm"
             onClick={onClose}
           >
             Done

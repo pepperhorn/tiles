@@ -30,7 +30,7 @@ export function KeyOverlay({ doc, dispatch, onClose }: {
       onClick={onClose}
     >
       <div
-        className="overlay-card overlay-pop w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl"
+        className="overlay-card overlay-pop w-full max-w-md bg-white p-4"
         onClick={e => e.stopPropagation()}
       >
         {/* Themed pickers (not native <select>) so the popup stays on-brand. */}
@@ -58,7 +58,7 @@ export function KeyOverlay({ doc, dispatch, onClose }: {
                 key={q}
                 type="button"
                 aria-pressed={sel}
-                className={`btn-mode flex-1 border px-3 py-2 text-sm font-semibold capitalize ${sel ? 'text-slate-900 border-slate-900' : 'text-slate-600'}`}
+                className="btn-mode flex-1 px-3 py-2 text-sm font-semibold capitalize"
                 onClick={() => setKey({ quality: sel ? null : q })}
               >{q}</button>
             );
@@ -82,14 +82,14 @@ export function KeyOverlay({ doc, dispatch, onClose }: {
         <div className="overlay-actions mt-3 flex justify-between">
           <button
             type="button"
-            className="overlay-clear rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600"
+            className="overlay-clear px-4 py-2 text-sm"
             onClick={() => dispatch({ type: 'setKey', key: { root: null, quality: null } })}
           >
             Clear
           </button>
           <button
             type="button"
-            className="overlay-done rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+            className="overlay-done px-4 py-2 text-sm"
             onClick={onClose}
           >
             Done

@@ -25,7 +25,7 @@ export function DesignerControls({ doc, dispatch }: { doc: SheetDoc; dispatch: (
         <label className="text-sm font-medium text-slate-600 whitespace-nowrap" htmlFor="dTilesPerRow">Tiles per row</label>
         <input
           id="dTilesPerRow"
-          className="input-tpr border rounded px-2 py-1 text-sm w-20"
+          className="input-tpr px-2 py-1 text-sm w-20"
           type="number"
           min={1}
           placeholder="auto"
@@ -40,7 +40,8 @@ export function DesignerControls({ doc, dispatch }: { doc: SheetDoc; dispatch: (
           {SIZES.map(s => (
             <button
               key={s}
-              className={`btn-size rounded px-2 py-1 text-xs border ${doc.size === s ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
+              className="btn-size px-2 py-1 text-xs"
+              aria-pressed={doc.size === s}
               onClick={() => setLayout({ size: s })}
             >{s}</button>
           ))}
@@ -53,7 +54,8 @@ export function DesignerControls({ doc, dispatch }: { doc: SheetDoc; dispatch: (
           {PAPERS.map(p => (
             <button
               key={p}
-              className={`btn-paper rounded px-2 py-1 text-xs border ${doc.paper === p ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
+              className="btn-paper px-2 py-1 text-xs"
+              aria-pressed={doc.paper === p}
               onClick={() => setLayout({ paper: p })}
             >{p}</button>
           ))}
@@ -66,7 +68,8 @@ export function DesignerControls({ doc, dispatch }: { doc: SheetDoc; dispatch: (
           {ORIENTS.map(o => (
             <button
               key={o}
-              className={`btn-orient rounded px-2 py-1 text-xs border capitalize ${doc.orientation === o ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
+              className="btn-orient px-2 py-1 text-xs capitalize"
+              aria-pressed={doc.orientation === o}
               onClick={() => setLayout({ orientation: o })}
             >{o}</button>
           ))}
@@ -76,8 +79,8 @@ export function DesignerControls({ doc, dispatch }: { doc: SheetDoc; dispatch: (
       <div className="control-transpose flex items-center gap-2">
         <span className="text-sm font-medium text-slate-600">Transpose</span>
         <div className="transpose-options flex gap-1">
-          <button className="btn-transpose-down rounded px-2 py-1 text-xs border text-slate-600" aria-label="Transpose down a semitone" onClick={() => dispatch({ type: 'transpose', delta: -1 })}>− semitone</button>
-          <button className="btn-transpose-up rounded px-2 py-1 text-xs border text-slate-600" aria-label="Transpose up a semitone" onClick={() => dispatch({ type: 'transpose', delta: 1 })}>+ semitone</button>
+          <button className="btn-transpose-down px-2 py-1 text-xs" aria-label="Transpose down a semitone" onClick={() => dispatch({ type: 'transpose', delta: -1 })}>− semitone</button>
+          <button className="btn-transpose-up px-2 py-1 text-xs" aria-label="Transpose up a semitone" onClick={() => dispatch({ type: 'transpose', delta: 1 })}>+ semitone</button>
         </div>
       </div>
       <p className="shortcuts-hint basis-full text-xs text-slate-400">A–G note · # sharp · b flat · ↑↓ arrow · Enter break · [ section</p>

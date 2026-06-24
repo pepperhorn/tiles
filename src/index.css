@@ -150,22 +150,43 @@ body { background: var(--paper); color: var(--ink); }
 .tab-btn {
   border-radius: 0;
   border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
   font-family: 'Space Mono', monospace;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
+.tab-btn[aria-selected='true'] { background: var(--accent); }
 
 /* Uppercase mono labels ------------------------------------------------- */
-.lbl, .palette-spelling-label, .section-title {
+.lbl {
   font-family: 'Space Mono', monospace;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--ink);
 }
 
+/* Range sliders share one ink thumb/track tint across every tab. */
+.input-tempo, .mix-slider, .diff-slider { accent-color: var(--ink); }
+
+/* Inline mini-actions — small Space Mono text triggers that sit inside a group
+   (Apply to all / Select all / template Save·Load·Delete). Ink, not web-link
+   blue; underline on hover. Delete is the one warm-coloured action. */
+.btn-apply-all, .btn-sel-all, .btn-sel-none, .btn-reset-counts,
+.btn-tpl-save, .btn-tpl-load, .btn-diff-shuffle {
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: var(--ink);
+}
+.btn-tpl-del { font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; color: var(--t1); }
+.btn-apply-all:hover, .btn-sel-all:hover, .btn-sel-none:hover, .btn-reset-counts:hover,
+.btn-tpl-save:hover, .btn-tpl-load:hover, .btn-tpl-del:hover, .btn-diff-shuffle:hover { text-decoration: underline; }
+
 /* Outline action buttons — TIER 1, full brutalist (primary creative tools) --- */
 .btn-play, .btn-stop, .btn-speaker,
-.btn-new-sheet, .btn-undo, .btn-redo,
+.btn-new-sheet, .btn-undo, .btn-redo, .btn-key,
 .btn-transpose-up, .btn-transpose-down,
 .btn-download-png, .btn-download-webp,
 .btn-shuffle, .btn-reset, .btn-embed, .btn-load-json, .btn-use-current,
@@ -179,13 +200,13 @@ body { background: var(--paper); color: var(--ink); }
   transition: transform .08s ease, box-shadow .08s ease;
 }
 .btn-play:hover, .btn-stop:hover, .btn-speaker:hover,
-.btn-new-sheet:hover, .btn-undo:hover, .btn-redo:hover,
+.btn-new-sheet:hover, .btn-undo:hover, .btn-redo:hover, .btn-key:hover,
 .btn-transpose-up:hover, .btn-transpose-down:hover,
 .btn-download-png:hover, .btn-download-webp:hover,
 .btn-shuffle:hover, .btn-reset:hover, .btn-embed:hover, .btn-load-json:hover, .btn-use-current:hover,
 .btn-play-song:hover, .btn-play-answers:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
 .btn-play:active, .btn-stop:active, .btn-speaker:active,
-.btn-new-sheet:active, .btn-undo:active, .btn-redo:active,
+.btn-new-sheet:active, .btn-undo:active, .btn-redo:active, .btn-key:active,
 .btn-transpose-up:active, .btn-transpose-down:active,
 .btn-download-png:active, .btn-download-webp:active,
 .btn-shuffle:active, .btn-reset:active, .btn-embed:active, .btn-load-json:active, .btn-use-current:active,
@@ -295,14 +316,23 @@ body { background: var(--paper); color: var(--ink); }
 .btn-download-pdf:hover, .btn-submit:hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 var(--ink); }
 .btn-download-pdf:active, .btn-submit:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
 
-/* Segmented toggles — keep their active fill, just go sharp + chunky ----- */
+/* Segmented toggles — square + chunky, fill with --accent when selected ---
+   The pressed/selected state is driven entirely by aria-pressed (or, for the
+   notes-toolbar toggles, aria-pressed via the speaker rule) so no component
+   needs to hand-roll a slate fill. */
 .btn-size, .btn-paper, .btn-orient, .btn-type, .btn-mode,
 .palette-sharp-toggle, .palette-flat-toggle, .palette-autoupdown {
   border-radius: 0;
-  border-width: 2px;
-  border-color: var(--ink);
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
   font-weight: 700;
 }
+.btn-size[aria-pressed='true'], .btn-paper[aria-pressed='true'],
+.btn-orient[aria-pressed='true'], .btn-type[aria-pressed='true'],
+.btn-mode[aria-pressed='true'],
+.palette-sharp-toggle[aria-pressed='true'], .palette-flat-toggle[aria-pressed='true'],
+.palette-autoupdown[aria-pressed='true'] { background: var(--accent); }
 
 /* Note palette + quiz picker + symbol keys ------------------------------ */
 .palette-note, .pick-note,
@@ -337,6 +367,23 @@ body { background: var(--paper); color: var(--ink); }
 /* Overlay card + score block ------------------------------------------- */
 .overlay-card { border-radius: 0; border: 3px solid var(--ink); box-shadow: var(--shadow); }
 .quiz-score { border-radius: 0; border: 2.5px solid var(--ink); background: var(--accent) !important; box-shadow: var(--shadow-sm); }
+
+/* Overlay action buttons — square brutalist pair: a dark "confirm/done" and a
+   paper "cancel/clear", matching the controls behind the modal. */
+.overlay-done, .confirm-ok,
+.overlay-clear, .confirm-cancel {
+  border-radius: 0;
+  border: 2px solid var(--ink);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.overlay-done, .confirm-ok { background: var(--ink); color: var(--paper); }
+.overlay-clear, .confirm-cancel { background: var(--paper); color: var(--ink); }
+.overlay-done:hover, .confirm-ok:hover,
+.overlay-clear:hover, .confirm-cancel:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.overlay-done:active, .confirm-ok:active,
+.overlay-clear:active, .confirm-cancel:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
 
 /* Playback transport: glow the tile that is currently sounding. */
 .tile-slot.is-playing, .quiz-cell.is-playing {

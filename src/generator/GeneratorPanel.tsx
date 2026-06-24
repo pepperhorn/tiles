@@ -52,7 +52,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
   return (
     // Mobile/tablet: tabbed panel capped at 45% height with its own scroll.
     // Desktop (lg+): full sidebar with every group shown.
-    <aside className="generator-panel no-print order-2 lg:order-1 basis-[45%] lg:basis-auto shrink-0 lg:shrink min-h-0 flex flex-col overflow-hidden lg:overflow-y-auto bg-white lg:border-r lg:border-slate-200" style={{ fontFamily: 'Poppins, sans-serif' }}>
+    <aside className="generator-panel no-print order-2 lg:order-1 basis-[45%] lg:basis-auto shrink-0 lg:shrink min-h-0 flex flex-col overflow-hidden lg:overflow-y-auto bg-white lg:border-r lg:border-slate-200">
       <TabBar tabs={tabs} active={activeTab} onSelect={setTab} />
       <div className="panel-scroll flex-1 min-h-0 overflow-y-auto lg:overflow-visible p-5 flex flex-col gap-4">
 
@@ -62,7 +62,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
         <div className="toggle2 grid grid-cols-2 gap-1">
           {(['tiles', 'grid'] as const).map(t => (
             <button key={t}
-              className={`btn-type px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${state.type === t ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
+              className="btn-type px-3 py-1.5 text-xs"
               aria-pressed={state.type === t}
               onClick={() => set({ type: t })}>
               {t === 'tiles' ? 'Tiles' : 'Grid paper'}
@@ -77,7 +77,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
         <div className="seg-paper grid grid-cols-4 gap-1 mb-2">
           {(['A4','A3','Letter','Legal'] as const).map(p => (
             <button key={p}
-              className={`btn-paper px-2 py-1.5 rounded-lg text-xs font-semibold border transition ${state.paper === p ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
+              className="btn-paper px-2 py-1.5 text-xs"
               aria-pressed={state.paper === p}
               onClick={() => set({ paper: p })}>
               {p}
@@ -87,7 +87,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
         <div className="seg-orient grid grid-cols-2 gap-1">
           {(['portrait','landscape'] as const).map(o => (
             <button key={o}
-              className={`btn-orient px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${state.orientation === o ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
+              className="btn-orient px-3 py-1.5 text-xs"
               aria-pressed={state.orientation === o}
               onClick={() => set({ orientation: o })}>
               {o === 'portrait' ? 'Portrait' : 'Landscape'}
@@ -102,7 +102,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
         <div className="seg-size grid grid-cols-6 gap-1">
           {SIZES.map(s => (
             <button key={s.label}
-              className={`btn-size px-1 py-1.5 rounded-lg text-xs font-semibold border transition ${state.size === s.size ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
+              className="btn-size px-1 py-1.5 text-xs"
               aria-pressed={state.size === s.size}
               onClick={() => set({ size: s.size, sizeLabel: s.label })}>
               {s.label}
@@ -120,14 +120,14 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
           <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Grid paper</span>
           <div className="field field-grid-pages flex items-center justify-between gap-2 mt-2">
             <label htmlFor="gridPages" className="text-sm">Grid sheets</label>
-            <input id="gridPages" className="num w-20 border rounded-lg px-2 py-1 text-center text-sm border-slate-200"
+            <input id="gridPages" className="num w-20 px-2 py-1 text-center text-sm"
               type="number" min={1} max={50}
               value={state.gridPages}
               onChange={e => set({ gridPages: Math.max(1, parseInt(e.target.value) || 1) })} />
           </div>
           <div className="field field-clearance flex items-center justify-between gap-2 mt-2">
             <label htmlFor="clearance" className="text-sm">Tile clearance (px)</label>
-            <input id="clearance" className="num w-20 border rounded-lg px-2 py-1 text-center text-sm border-slate-200"
+            <input id="clearance" className="num w-20 px-2 py-1 text-center text-sm"
               type="number" min={0} max={40}
               value={state.clearance}
               onChange={e => set({ clearance: Math.max(0, parseInt(e.target.value) || 0) })} />
@@ -142,7 +142,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
           <div className="seg-mode grid grid-cols-2 gap-1">
             {(['rows','pages'] as const).map(m => (
               <button key={m}
-                className={`btn-mode px-2 py-1.5 rounded-lg text-xs font-semibold border transition ${state.mode === m ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
+                className="btn-mode px-2 py-1.5 text-xs"
                 aria-pressed={state.mode === m}
                 onClick={() => set({ mode: m })}>
                 {m === 'rows' ? 'By rows' : 'By full pages'}
@@ -151,13 +151,13 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
           </div>
           <div className="field field-all-count flex items-center justify-between gap-2 mt-2">
             <label htmlFor="allCount" className="text-sm">Set all notes to</label>
-            <input id="allCount" className="num w-20 border rounded-lg px-2 py-1 text-center text-sm border-slate-200"
+            <input id="allCount" className="num w-20 px-2 py-1 text-center text-sm"
               type="number" min={0} max={999}
               value={allCount}
               onChange={e => setAllCount(Math.max(0, parseInt(e.target.value) || 0))} />
           </div>
           <div className="miniactions flex gap-2 mt-2">
-            <button className="btn-apply-all text-xs font-semibold text-blue-600 hover:underline"
+            <button className="btn-apply-all text-xs"
               onClick={() => set({ counts: Object.fromEntries(NOTES.map(n => [n.id, allCount])) })}>
               Apply to all
             </button>
@@ -171,7 +171,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
         <div className="field tpr-field flex items-center justify-between gap-2">
           <label htmlFor="tilesPerRow">Tiles per row</label>
           <input
-            id="tilesPerRow" className="num w-20 border rounded-lg px-2 py-1 text-center"
+            id="tilesPerRow" className="num w-20 px-2 py-1 text-center"
             type="text" inputMode="numeric"
             value={state.tilesPerRow === 'auto' ? '' : String(state.tilesPerRow)}
             placeholder="Auto"
@@ -194,7 +194,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
           </div>
           <div className="field field-margin flex items-center justify-between gap-2 mt-2">
             <label htmlFor="optGap" className="text-sm">Cutting margin (px/side)</label>
-            <input id="optGap" className="num w-20 border rounded-lg px-2 py-1 text-center text-sm border-slate-200"
+            <input id="optGap" className="num w-20 px-2 py-1 text-center text-sm"
               type="number" min={0} max={20}
               value={state.margin}
               onChange={e => set({ margin: Math.max(0, parseInt(e.target.value) || 0) })} />
@@ -207,15 +207,15 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
         <div className={`group group-notes ${tc('notes')}`}>
           <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Notes &amp; counts</span>
           <div className="miniactions flex gap-2 mb-2">
-            <button className="btn-sel-all text-xs font-semibold text-blue-600 hover:underline"
+            <button className="btn-sel-all text-xs"
               onClick={() => set({ on: Object.fromEntries(NOTES.map(n => [n.id, true])) })}>
               Select all
             </button>
-            <button className="btn-sel-none text-xs font-semibold text-blue-600 hover:underline"
+            <button className="btn-sel-none text-xs"
               onClick={() => set({ on: Object.fromEntries(NOTES.map(n => [n.id, false])) })}>
               Select none
             </button>
-            <button className="btn-reset text-xs font-semibold text-blue-600 hover:underline"
+            <button className="btn-reset-counts text-xs"
               onClick={() => set({
                 counts: Object.fromEntries(NOTES.map(n => [n.id, 2])),
                 on: Object.fromEntries(NOTES.map(n => [n.id, true])),
@@ -233,7 +233,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
                 <span className="note-name text-sm font-semibold">
                   {note.main}{note.sub ? <span className="note-sub text-xs text-slate-400 font-normal"> / {note.sub}</span> : null}
                 </span>
-                <input className="note-count num w-full border rounded-lg px-1 py-0.5 text-center text-xs border-slate-200"
+                <input className="note-count num w-full px-1 py-0.5 text-center text-xs"
                   type="number" min={0} max={999}
                   aria-label={`${note.main} count`}
                   value={state.counts[note.id] ?? 2}
@@ -248,12 +248,12 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
       <div className={`group group-templates ${tc('output')}`}>
         <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Templates</span>
         <div className="field field-tpl-save flex items-center gap-2">
-          <input id="tplName" className="tpl-name-input flex-1 border rounded-lg px-3 py-1.5 text-sm border-slate-200"
+          <input id="tplName" className="tpl-name-input flex-1 px-3 py-1.5 text-sm"
             type="text" placeholder="Name this setup"
             value={tplName}
             autoCapitalize="sentences"
             onChange={e => setTplName(ucfirst(e.target.value))} />
-          <button className="btn-tpl-save text-xs font-semibold text-blue-600 hover:underline"
+          <button className="btn-tpl-save text-xs"
             onClick={() => {
               if (!tplName.trim()) { setTplMsg('Give the template a name first.'); return; }
               templateStore.save(tplName.trim(), state);
@@ -264,14 +264,14 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
           </button>
         </div>
         <div className="field field-tpl-load flex items-center gap-2 mt-2">
-          <select className="tpl-select flex-1 border rounded-lg px-2 py-1.5 text-sm border-slate-200 bg-white"
+          <select className="tpl-select flex-1 px-2 py-1.5 text-sm bg-white"
             value={selectedTpl}
             onChange={e => setSelectedTpl(e.target.value)}>
             {tplList.length === 0
               ? <option value="" disabled>No saved templates</option>
               : tplList.map(name => <option key={name} value={name}>{name}</option>)}
           </select>
-          <button className="btn-tpl-load text-xs font-semibold text-blue-600 hover:underline"
+          <button className="btn-tpl-load text-xs"
             onClick={() => {
               if (!selectedTpl) { setTplMsg('Pick a template to load.'); return; }
               const saved = templateStore.load(selectedTpl);
@@ -282,7 +282,7 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
             }}>
             Load
           </button>
-          <button className="btn-tpl-del text-xs font-semibold text-red-500 hover:underline"
+          <button className="btn-tpl-del text-xs"
             onClick={() => {
               if (!selectedTpl) { setTplMsg('Pick a template to delete.'); return; }
               templateStore.remove(selectedTpl);
@@ -298,19 +298,19 @@ export function GeneratorPanel({ state, set, setState, totalTiles, sheetCount, o
 
       {/* Export buttons */}
       <div className={`group group-export flex flex-col gap-2 ${tc('output')}`}>
-        <button className="btn-download-pdf w-full py-2 rounded-xl bg-emerald-700 text-white font-bold text-sm hover:bg-emerald-800 transition"
+        <button className="btn-download-pdf w-full py-2 text-sm"
           onClick={onExport.pdf}>
           Download PDF
         </button>
-        <button className="btn-download-png w-full py-2 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition"
+        <button className="btn-download-png w-full py-2 text-sm"
           onClick={onExport.png}>
           Download PNG
         </button>
-        <button className="btn-download-webp w-full py-2 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition"
+        <button className="btn-download-webp w-full py-2 text-sm"
           onClick={onExport.webp}>
           Download WebP
         </button>
-        <button className="btn-print w-full py-2 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition"
+        <button className="btn-print w-full py-2 text-sm"
           onClick={onExport.print}>
           Print instead…
         </button>

@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef } from 'react';
  * Scales a fixed-width preview down so its WIDTH fits the parent's content box,
  * leaving vertical overflow to scroll. Uses CSS `zoom` (affects layout, so no
  * leftover whitespace) and never upscales past 1. Applied imperatively to avoid
- * re-render churn; export code can temporarily reset it via withSheetsUnzoomed.
+ * re-render churn; export code can temporarily reset it via withExportReady.
  */
 export function useFitWidth(naturalW: number) {
   const ref = useRef<HTMLDivElement>(null);

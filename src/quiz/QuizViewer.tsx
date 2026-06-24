@@ -126,12 +126,12 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
                     const isSel = selected === cell.index;
                     const ring = verdict === 'correct' ? '0 0 0 3px #16a34a'
                       : verdict === 'retry' ? '0 0 0 3px #d97706'
-                      : isSel ? '0 0 0 3px #0f172a' : 'none';
+                      : isSel ? '0 0 0 3px var(--ink)' : 'none';
                     return (
                       <button
                         key={cell.index}
-                        className={`tile-slot quiz-cell rounded-lg ${isSel ? 'quiz-cell-selected' : ''} ${playing ? 'is-playing' : ''}`}
-                        style={{ width: source.size, height: source.size, boxSizing: 'border-box', boxShadow: ring, border: given ? 'none' : '2px dashed #94a3b8', borderRadius: 8 }}
+                        className={`tile-slot quiz-cell ${isSel ? 'quiz-cell-selected' : ''} ${playing ? 'is-playing' : ''}`}
+                        style={{ width: source.size, height: source.size, boxSizing: 'border-box', boxShadow: ring, border: given ? 'none' : '2px dashed #94a3b8', borderRadius: 0 }}
                         aria-label={`Blank ${cell.index}${given ? `, answered ${given}` : ''}`}
                         onClick={() => { setSelected(cell.index); setVerdicts(null); }}
                       >
@@ -154,10 +154,10 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
         <div className="group group-difficulty">
           <div className="diff-head flex items-center justify-between">
             <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400">Difficulty</span>
-            <button className="btn-shuffle text-xs font-semibold text-blue-600 hover:underline" onClick={() => onPreset({ ...preset, seed: preset.seed + 1 })}>⟳ Shuffle</button>
+            <button className="btn-diff-shuffle text-xs" onClick={() => onPreset({ ...preset, seed: preset.seed + 1 })}>⟳ Shuffle</button>
           </div>
           <input
-            className="diff-slider w-full mt-2 accent-slate-900"
+            className="diff-slider w-full mt-2"
             type="range" min={25} max={90} step={5}
             value={Math.round(preset.knownPct * 100)}
             aria-label="Difficulty (percent shown)"
@@ -171,9 +171,9 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
       <div className="group group-audio">
         <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Listen</span>
         <div className="audio-actions grid grid-cols-2 gap-2">
-          <button className="btn-play-song rounded-lg border px-3 py-2 text-sm font-semibold" onClick={() => playSong(false)}>▶ Song</button>
-          <button className="btn-play-answers rounded-lg border px-3 py-2 text-sm font-semibold" onClick={() => playSong(true)}>▶ With my answers</button>
-          <button className="btn-stop rounded-lg border px-3 py-2 text-sm col-span-2" onClick={stopAudio}>■ Stop</button>
+          <button className="btn-play-song px-3 py-2 text-sm font-semibold" onClick={() => playSong(false)}>▶ Song</button>
+          <button className="btn-play-answers px-3 py-2 text-sm font-semibold" onClick={() => playSong(true)}>▶ With my answers</button>
+          <button className="btn-stop px-3 py-2 text-sm col-span-2" onClick={stopAudio}>■ Stop</button>
         </div>
         {piano.status === 'loading' && <p className="text-xs text-slate-400 mt-1">Loading piano…</p>}
         {piano.status === 'error' && <p className="text-xs text-red-500 mt-1">Audio unavailable.</p>}
@@ -189,7 +189,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
             return (
               <button
                 key={n.id}
-                className="pick-note flex aspect-square flex-col items-center justify-center rounded-lg text-white font-extrabold leading-none border border-black/15 shadow-sm transition hover:brightness-95 active:brightness-90 disabled:opacity-40"
+                className="pick-note flex aspect-square flex-col items-center justify-center text-white font-extrabold leading-none hover:brightness-95 active:brightness-90 disabled:opacity-40"
                 style={{ background: n.hex, textShadow: '1px 1px 0 rgba(0,0,0,.5), -1px 1px 0 rgba(0,0,0,.5), 1px -1px 0 rgba(0,0,0,.5), -1px -1px 0 rgba(0,0,0,.5)' }}
                 disabled={selected == null}
                 aria-label={n.id}
@@ -204,14 +204,14 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
       </div>
 
       <div className="group group-grade grid gap-2">
-        <button className="btn-submit rounded-xl bg-emerald-700 py-2 text-sm font-bold text-white hover:bg-emerald-800" onClick={submit}>
+        <button className="btn-submit py-2 text-sm" onClick={submit}>
           Submit for assessment
         </button>
-        <button className="btn-reset rounded-lg border py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50" onClick={reset}>
+        <button className="btn-reset py-2 text-sm" onClick={reset}>
           Clear answers
         </button>
         {verdicts && (
-          <div className="quiz-score rounded-lg bg-slate-50 p-3 text-center">
+          <div className="quiz-score p-3 text-center">
             <div className="score-pct text-2xl font-extrabold text-slate-900">{pct}%</div>
             <div className="score-detail text-xs text-slate-500">{correctCount} of {total} correct</div>
             {correctCount < total && <div className="score-fix text-xs text-amber-600 mt-1">Try again on the highlighted cells.</div>}

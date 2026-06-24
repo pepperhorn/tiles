@@ -30,6 +30,17 @@ export function QuizMode({ doc }: { doc: SheetDoc }) {
   const sheetEl = () => stageRef.current?.querySelector('.sheet') as HTMLElement | null;
   const baseName = () => `${doc.title?.trim() || 'CRF Sheet'} — Quiz`;
   const exporting = (fn: () => Promise<void> | void) => withExportReady(stageRef.current, fn);
+  // PNG and WebP differ only by MIME type, so they share one rasteriser.
+  const rasterExport = (type: 'image/png' | 'image/webp') => exporting(async () => {
+    try {
+      const el = sheetEl();
+      if (el) {
+        const { exportRaster } = await import('../export/raster');
+        await exportRaster(el, type, baseName());
+      }
+      setExportMsg('');
+    } catch (err) { setExportMsg('Export failed: ' + String(err)); console.error(err); }
+  });
   const onExport = {
     pdf: async () => {
       try {
@@ -38,26 +49,8 @@ export function QuizMode({ doc }: { doc: SheetDoc }) {
         setExportMsg('');
       } catch (err) { setExportMsg('Export failed: ' + String(err)); console.error(err); }
     },
-    png: () => exporting(async () => {
-      try {
-        const el = sheetEl();
-        if (el) {
-          const { exportRaster } = await import('../export/raster');
-          await exportRaster(el, 'image/png', baseName());
-        }
-        setExportMsg('');
-      } catch (err) { setExportMsg('Export failed: ' + String(err)); console.error(err); }
-    }),
-    webp: () => exporting(async () => {
-      try {
-        const el = sheetEl();
-        if (el) {
-          const { exportRaster } = await import('../export/raster');
-          await exportRaster(el, 'image/webp', baseName());
-        }
-        setExportMsg('');
-      } catch (err) { setExportMsg('Export failed: ' + String(err)); console.error(err); }
-    }),
+    png: () => rasterExport('image/png'),
+    webp: () => rasterExport('image/webp'),
     print: () => window.print(),
   };
 
@@ -76,7 +69,7 @@ export function QuizMode({ doc }: { doc: SheetDoc }) {
             <span className="mix-pct text-sm font-semibold text-slate-700">{Math.round(knownPct * 100)}% known</span>
           </div>
           <input
-            className="mix-slider w-full mt-3 accent-slate-900"
+            className="mix-slider w-full mt-3"
             type="range" min={25} max={90} step={5}
             value={Math.round(knownPct * 100)}
             aria-label="Percent known"
@@ -93,22 +86,22 @@ export function QuizMode({ doc }: { doc: SheetDoc }) {
         </div>
 
         <button
-          className="btn-shuffle rounded-xl border border-slate-200 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          className="btn-shuffle py-2 text-sm font-semibold"
           onClick={() => setSeed(s => s + 1)}
         >
           ⟳ Shuffle blanks
         </button>
 
         <div className="group group-audio grid grid-cols-2 gap-2">
-          <button className="btn-play rounded-lg border px-3 py-2 text-sm font-semibold" onClick={playSong}>▶ Play song</button>
-          <button className="btn-stop rounded-lg border px-3 py-2 text-sm" onClick={stopAudio}>■ Stop</button>
+          <button className="btn-play px-3 py-2 text-sm font-semibold" onClick={playSong}>▶ Play song</button>
+          <button className="btn-stop px-3 py-2 text-sm" onClick={stopAudio}>■ Stop</button>
         </div>
 
         <div className="group group-export grid grid-cols-2 gap-2">
-          <button className="btn-pdf rounded-lg border px-3 py-1 text-sm" onClick={onExport.pdf}>PDF</button>
-          <button className="btn-png rounded-lg border px-3 py-1 text-sm" onClick={onExport.png}>PNG</button>
-          <button className="btn-webp rounded-lg border px-3 py-1 text-sm" onClick={onExport.webp}>WebP</button>
-          <button className="btn-print rounded-lg border px-3 py-1 text-sm" onClick={onExport.print}>Print</button>
+          <button className="btn-pdf px-3 py-1 text-sm" onClick={onExport.pdf}>PDF</button>
+          <button className="btn-png px-3 py-1 text-sm" onClick={onExport.png}>PNG</button>
+          <button className="btn-webp px-3 py-1 text-sm" onClick={onExport.webp}>WebP</button>
+          <button className="btn-print px-3 py-1 text-sm" onClick={onExport.print}>Print</button>
           {exportMsg && <p className="quiz-export-msg col-span-2 text-xs text-red-500 mt-1" role="alert">{exportMsg}</p>}
         </div>
       </aside>
