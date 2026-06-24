@@ -30,13 +30,17 @@ const TABS: TabDef[] = [
   { id: 'file', label: 'Save & export' },
 ];
 
-export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo }: {
+export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, toolsOpen = true }: {
   doc: SheetDoc;
   dispatch: (action: Action) => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  // The show/hide-tools toggle lives in the app header now; the panel just
+  // follows this flag. Defaults open so the standalone test harness still
+  // renders the tools.
+  toolsOpen?: boolean;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,7 +53,6 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo }
   const [speaker, setSpeaker] = useState(false);
   const [autoUpDown, setAutoUpDown] = useState(false);
   const [tempo, setTempo] = useState(120);
-  const [toolsOpen, setToolsOpen] = useState(true);
   const [confirmNew, setConfirmNew] = useState(false);
   const [keyOpen, setKeyOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -221,18 +224,6 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo }
     // Mobile/tablet: preview on top (fits width, scrolls), tools a tabbed panel
     // capped at 45% height below. Desktop (lg+): tools sidebar + preview.
     <div className={`designer-mode relative flex flex-col lg:grid h-full lg:h-full ${toolsOpen ? 'lg:grid-cols-[360px_1fr]' : 'lg:grid-cols-[1fr]'}`}>
-      <button
-        className="btn-toggle-tools no-print absolute top-2 right-2 z-30 flex items-center gap-1 rounded-lg border border-slate-300 bg-white/90 px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur"
-        aria-pressed={toolsOpen}
-        aria-label={toolsOpen ? 'Hide tools' : 'Show tools'}
-        title={toolsOpen ? 'Hide tools' : 'Show tools'}
-        onClick={() => setToolsOpen(o => !o)}
-      >
-        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          {toolsOpen ? <path d="m9 6 6 6-6 6" /> : <path d="m15 6-6 6 6 6" />}
-        </svg>
-        {toolsOpen ? 'Hide tools' : 'Tools'}
-      </button>
       <main className="stage order-1 lg:order-2 flex-1 lg:flex-none min-h-0 overflow-auto p-4 lg:p-8 border-b border-slate-200 lg:border-b-0" ref={stageRef}>
         <DesignerCanvas
           doc={doc}
