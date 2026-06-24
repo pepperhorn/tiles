@@ -42,11 +42,24 @@ transition: transform .08s ease, box-shadow .08s ease;
 Selected/pressed state = **fill with `--accent`** (or keep the segmented group's
 fill), never a colour-only/underline treatment.
 
+### Two tiers of emphasis
+
+Buttons come in two deliberate tiers so the UI has hierarchy:
+
+- **Tier 1 — full brutalist** (primary creative tools): square corners, 2px ink
+  border, hard `--shadow-sm`/`--shadow` offset, the translate press above. Toolbar,
+  transport, key, transpose, primary/go.
+- **Tier 2 — softer** (utility / file & export actions): rounded corners (`8px`),
+  hairline border (`1.5px rgba(ink,.28)`), a gentle **blurred** shadow, and a quiet
+  press (no hard translate). Used for Save / Load / Import-Export / Print / Email.
+  Keep tier 2 reserved for secondary actions — it should never out-shout tier 1.
+
 ## Button & control families (pick one, don't invent)
 
 | Family | Classes (examples) | Look |
 | --- | --- | --- |
-| **Outline action** | `.btn-save .btn-load .btn-play .btn-new-sheet .btn-key …` | 2px ink border, square, `--shadow-sm`, hover/active press |
+| **Tier 1 outline action** | `.btn-play .btn-new-sheet .btn-key .btn-undo …` | 2px ink border, square, `--shadow-sm`, hard press |
+| **Tier 2 soft action** | `.btn-save .btn-load .btn-pdf .btn-print .btn-email …` | Rounded 8px, 1.5px hairline border, soft blurred shadow, quiet press |
 | **Primary / go** | `.btn-download-pdf .btn-submit` | 2.5px border, `--primary` fill, `--shadow`, uppercase |
 | **Masthead tab** | `.brut-tab` | 2.5px border, Space Mono, `--accent` fill when `aria-pressed` |
 | **Segmented toggle** | `.btn-size .btn-paper .palette-sharp-toggle .palette-flat-toggle .palette-autoupdown` | Square, 2px border, fill on `aria-pressed`; connected groups stay shadow-less |
