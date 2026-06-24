@@ -29,6 +29,9 @@ function restoreAutosave(): SheetDoc | null {
 
 export default function App() {
   const [mode, setMode] = useState<Mode>('designer');
+  // Show/hide the designer's tools panel. Lives here so the toggle can sit in
+  // the app header (far right) rather than floating over the sheet.
+  const [toolsOpen, setToolsOpen] = useState(true);
   // A shared sheet doc with undo/redo; an #edit= link seeds it (receipts reopen a
   // design), otherwise the last auto-saved session is restored.
   const editDoc = useMemo(() => readEditFromHash(window.location.hash), []);
@@ -75,6 +78,20 @@ export default function App() {
             {tab('quiz', 'Quiz')}
             {tab('viewer', 'Quiz Viewer')}
           </nav>
+          {mode === 'designer' && (
+            <button
+              className="btn-toggle-tools no-print ml-auto flex items-center gap-1 rounded-lg border border-slate-300 bg-white/90 px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm"
+              aria-pressed={toolsOpen}
+              aria-label={toolsOpen ? 'Hide tools' : 'Show tools'}
+              title={toolsOpen ? 'Hide tools' : 'Show tools'}
+              onClick={() => setToolsOpen(o => !o)}
+            >
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {toolsOpen ? <path d="m9 6 6 6-6 6" /> : <path d="m15 6-6 6 6 6" />}
+              </svg>
+              {toolsOpen ? 'Hide tools' : 'Tools'}
+            </button>
+          )}
         </div>
         <div className="spectrum" aria-hidden="true">
           {NOTES.map(n => <i key={n.id} style={{ background: n.hex }} />)}
@@ -90,6 +107,7 @@ export default function App() {
               onRedo={() => dispatch({ type: 'redo' })}
               canUndo={history.past.length > 0}
               canRedo={history.future.length > 0}
+              toolsOpen={toolsOpen}
             />
           )}
           {mode === 'generator' && <GeneratorMode />}
