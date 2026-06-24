@@ -77,11 +77,10 @@ test('undo is disabled until there is history', async () => {
   expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
 });
 
-// The arrow tiles render their glyph in .tile-main, in melodic order.
+// Arrow tiles render as vector SVGs labelled by direction, in melodic order.
 const arrowGlyphs = () =>
-  Array.from(document.querySelectorAll('.row-tiles .tile-main'))
-    .map(e => e.textContent)
-    .filter(t => t === '↑' || t === '↓');
+  Array.from(document.querySelectorAll('.row-tiles .tile-arrow'))
+    .map(e => e.getAttribute('aria-label') === 'down arrow' ? '↓' : '↑');
 
 async function enableAutoAndEnter(letters: string) {
   render(<DesignerHarness />);

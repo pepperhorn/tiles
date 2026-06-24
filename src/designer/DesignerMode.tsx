@@ -50,7 +50,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
   const [tab, setTab] = useState('notes');
   const [editingField, setEditingField] = useState<HeaderField | null>(null);
   const [sectionEdit, setSectionEdit] = useState<number | null>(null);
-  const [speaker, setSpeaker] = useState(false);
+  const [speaker, setSpeaker] = useState(true);
   const [autoUpDown, setAutoUpDown] = useState(false);
   const [tempo, setTempo] = useState(120);
   const [confirmNew, setConfirmNew] = useState(false);
@@ -99,7 +99,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
       // Speaker on: sound the note as it's added (palette tap or keyboard).
       if (speaker) {
         const placed = itemsToPitches(items).at(-1);
-        if (placed) void piano.playNote(placed.midi);
+        if (placed) void piano.playNote(placed.midi).catch(() => {});
       }
       return;
     }
@@ -319,7 +319,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
                 title="Auto-insert arrows between notes — tap an arrow to flip, double-tap to delete"
                 onClick={() => setAutoUpDown(a => !a)}
               >↕</button>
-              <button className="palette-pause rounded-lg border px-2.5 py-2 text-sm text-slate-700" aria-label="Pause" title="Pause (rest)" onClick={() => handle({ type: 'insertPause' })}>
+              <button className="palette-pause inline-flex items-center justify-center rounded-lg border px-2 py-2.5 text-slate-700" aria-label="Pause" title="Pause (rest)" onClick={() => handle({ type: 'insertPause' })}>
                 <PawIcon size={16} />
               </button>
               <button className="palette-break rounded-lg border px-2.5 py-2 text-sm text-slate-700" aria-label="Line break" onClick={() => handle({ type: 'insertBreak' })}>⏎</button>
@@ -327,10 +327,10 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
               {piano.status === 'loading' && <span className="text-xs text-slate-400">loading piano…</span>}
               {piano.status === 'error' && <span className="text-xs text-red-500">audio unavailable</span>}
             </div>
-            <div className="designer-key mb-3">
+            <div className="designer-tempo mb-3 flex items-center gap-2">
               <button
                 type="button"
-                className="btn-key flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm"
+                className="btn-key flex shrink-0 items-center gap-1.5 px-1 py-1.5 text-sm"
                 aria-label="Key"
                 onClick={() => setKeyOpen(true)}
               >
@@ -340,12 +340,11 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
                   return <span className={label ? 'font-semibold text-slate-900' : 'text-slate-400'}>{label || 'choose'}</span>;
                 })()}
               </button>
-            </div>
-            <div className="designer-tempo mb-3 flex items-center gap-2">
+              <span className="tempo-sep h-5 w-px bg-slate-300" aria-hidden="true" />
               <label className="text-sm font-medium text-slate-600 whitespace-nowrap" htmlFor="dTempo">Tempo</label>
               <input
                 id="dTempo"
-                className="input-tempo flex-1 accent-slate-900"
+                className="input-tempo min-w-0 flex-1 accent-slate-900"
                 type="range"
                 min={60}
                 max={240}
@@ -353,7 +352,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
                 value={tempo}
                 onChange={e => setTempo(Number(e.target.value))}
               />
-              <span className="tempo-value w-16 text-right text-sm tabular-nums text-slate-500">{tempo} bpm</span>
+              <span className="tempo-value w-16 shrink-0 whitespace-nowrap text-right text-sm tabular-nums text-slate-500">{tempo} bpm</span>
             </div>
             <Palette onAction={handle} accidentalStyle={doc.accidentalStyle} />
           </div>

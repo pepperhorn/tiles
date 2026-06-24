@@ -1,4 +1,5 @@
 import { NOTES, displayNote, type AccidentalStyle } from '../notes';
+import { NoteText } from '../Tile';
 import type { KeyResult } from './useKeyboard';
 
 export function Palette({
@@ -16,15 +17,15 @@ export function Palette({
           return (
             <button
               key={n.id}
-              className="palette-note flex aspect-square flex-col items-center justify-center overflow-hidden rounded-lg text-white font-extrabold leading-none border border-black/15 shadow-sm transition hover:brightness-95 active:brightness-90"
-              style={{ background: n.hex, textShadow: '1px 1px 0 rgba(0,0,0,.5), -1px 1px 0 rgba(0,0,0,.5), 1px -1px 0 rgba(0,0,0,.5), -1px -1px 0 rgba(0,0,0,.5), 0 2px 3px rgba(0,0,0,.35)' }}
+              className="palette-note flex aspect-square flex-col items-center justify-center overflow-hidden text-white leading-none transition hover:brightness-95 active:brightness-90"
+              style={{ background: n.hex, textShadow: '0 1px 0 rgba(0,0,0,.22), 0 2px 4px rgba(0,0,0,.38)' }}
               aria-label={n.id}
               onClick={() => onAction({ type: 'insertNote', noteId: n.id })}
             >
               {/* Accidental tiles carry a 2nd line (enharmonic sub); shrink the
                   main name so both lines fit the square instead of stretching it. */}
-              <span className={`palette-note-main ${d.sub ? 'text-lg' : 'text-2xl'}`}>{d.main}</span>
-              {d.sub && <span className="palette-note-sub text-xs font-bold opacity-95 mt-0.5">{d.sub}</span>}
+              <span className={`palette-note-main ${d.sub ? 'has-sub' : ''}`}><NoteText text={d.main} /></span>
+              {d.sub && <span className="palette-note-sub opacity-95 mt-0.5"><NoteText text={d.sub} /></span>}
             </button>
           );
         })}

@@ -20,6 +20,26 @@ export function PawIcon({ size }: { size: number }) {
   );
 }
 
+/** Up/down direction arrow as a stroke-only vector glyph (no fill), matching the paw outline style. */
+export function ArrowIcon({ dir, size }: { dir: 'up' | 'down'; size: number }) {
+  return (
+    <svg className="tile-arrow-glyph" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {dir === 'up'
+        ? <><path d="M12 20V4" /><path d="M5 11l7-7 7 7" /></>
+        : <><path d="M12 4v16" /><path d="M5 13l7 7 7-7" /></>}
+    </svg>
+  );
+}
+
+/** Render a note name, peeling a trailing ♯/♭ into its own span so we can tuck it
+ *  tight against the letter (the music-symbol glyphs fall back to a font with a
+ *  wide left bearing, which otherwise leaves a strange gap). */
+export function NoteText({ text }: { text: string }) {
+  const acc = text.slice(-1);
+  if (acc !== '♯' && acc !== '♭') return <>{text}</>;
+  return <>{text.slice(0, -1)}<span className="note-accidental">{acc}</span></>;
+}
+
 export function Tile(props: TileProps) {
   const { size, onClick } = props;
   const common = {
@@ -35,18 +55,22 @@ export function Tile(props: TileProps) {
       </div>
     );
   }
-  let bg: string, main: string, sub: string;
-  if (props.kind === 'note') {
-    const disp = displayNote(props.note, props.accidental ?? 'sharp');
-    bg = props.note.hex; main = disp.main; sub = disp.sub;
-  } else {
-    bg = props.sym.hex; main = props.sym.glyph; sub = '';
+  if (props.kind === 'arrow') {
+    // A direction marker: white box, black dashed border, stroke-only arrow glyph.
+    const dir = props.sym.id === 'arrowUp' ? 'up' : 'down';
+    return (
+      <div {...common} aria-label={`${dir} arrow`} className={`${common.className} tile-arrow`} style={{ width: size, height: size, background: '#fff', color: 'var(--ink)', border: '2px dashed var(--ink)', cursor: onClick ? 'pointer' : 'default' }}>
+        <ArrowIcon dir={dir} size={size * 0.56} />
+      </div>
+    );
   }
+  const disp = displayNote(props.note, props.accidental ?? 'sharp');
+  const bg = props.note.hex, main = disp.main, sub = disp.sub;
   return (
     <div {...common} style={{ width: size, height: size, background: bg, cursor: onClick ? 'pointer' : 'default' }}>
-      <div className="tile-main text-white font-bold" style={{ ...shadow, fontSize: size * (sub ? 0.4 : 0.46) }}>{main}</div>
+      <div className="tile-main text-white font-bold" style={{ ...shadow, fontSize: size * (sub ? 0.5 : 0.575) }}><NoteText text={main} /></div>
       {sub && (
-        <div className="tile-sub text-white font-semibold opacity-90" style={{ ...shadow, fontSize: size * 0.22, marginTop: 2 }}>{sub}</div>
+        <div className="tile-sub text-white font-semibold opacity-90" style={{ ...shadow, fontSize: size * 0.275, marginTop: 2 }}><NoteText text={sub} /></div>
       )}
     </div>
   );

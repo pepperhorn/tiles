@@ -26,6 +26,21 @@
    and to frame the unfilled (white) pause/rest tile. */
 .tile { border: 1px solid rgba(20, 18, 16, .18); box-sizing: border-box; }
 
+/* Sheet tiles share the palette/toolbar look: 2px ink border + tight offset
+   shadow, so the picker and the sheet read as one consistent tile style. */
+.sheet .tile { border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+
+/* All note text (sheet + palette) carries a 2px ink outline; the white fill
+   paints on top so the glyph stays legible over any tile colour. */
+.tile-main, .tile-sub,
+.palette-note-main, .palette-note-sub {
+  -webkit-text-stroke: 2px var(--ink);
+  paint-order: stroke;
+}
+/* The ♯/♭ glyphs fall back to a font with a wide left bearing; tuck them back
+   against the note letter so there's no strange gap. */
+.note-accidental { margin-left: -0.18em; }
+
 .guides .tile { outline: .4px dashed rgba(0,0,0,.22); outline-offset: -.2px; }
 
 @keyframes overlayPop {
@@ -118,7 +133,7 @@ body { background: var(--paper); color: var(--ink); }
 
 /* Outline action buttons — TIER 1, full brutalist (primary creative tools) --- */
 .btn-play, .btn-stop, .btn-speaker,
-.btn-new-sheet, .btn-undo, .btn-redo, .btn-key,
+.btn-new-sheet, .btn-undo, .btn-redo,
 .btn-transpose-up, .btn-transpose-down,
 .btn-download-png, .btn-download-webp,
 .btn-shuffle, .btn-reset, .btn-embed, .btn-load-json, .btn-use-current,
@@ -132,13 +147,13 @@ body { background: var(--paper); color: var(--ink); }
   transition: transform .08s ease, box-shadow .08s ease;
 }
 .btn-play:hover, .btn-stop:hover, .btn-speaker:hover,
-.btn-new-sheet:hover, .btn-undo:hover, .btn-redo:hover, .btn-key:hover,
+.btn-new-sheet:hover, .btn-undo:hover, .btn-redo:hover,
 .btn-transpose-up:hover, .btn-transpose-down:hover,
 .btn-download-png:hover, .btn-download-webp:hover,
 .btn-shuffle:hover, .btn-reset:hover, .btn-embed:hover, .btn-load-json:hover, .btn-use-current:hover,
 .btn-play-song:hover, .btn-play-answers:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
 .btn-play:active, .btn-stop:active, .btn-speaker:active,
-.btn-new-sheet:active, .btn-undo:active, .btn-redo:active, .btn-key:active,
+.btn-new-sheet:active, .btn-undo:active, .btn-redo:active,
 .btn-transpose-up:active, .btn-transpose-down:active,
 .btn-download-png:active, .btn-download-webp:active,
 .btn-shuffle:active, .btn-reset:active, .btn-embed:active, .btn-load-json:active, .btn-use-current:active,
@@ -177,9 +192,37 @@ body { background: var(--paper); color: var(--ink); }
   border: 2px solid var(--ink);
   box-shadow: var(--shadow-sm);
   transition: transform .08s ease, box-shadow .08s ease;
+  /* One uniform row height; glyph centred regardless of interior padding. */
+  height: 2.5rem;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Glyph / icon buttons are a fixed square so the whole row matches; only the
+   text button (New) keeps flexible width sized to its label. */
+.designer-toolbar button:not(.btn-new-sheet) {
+  width: 2.5rem;
+  padding: 0;
 }
 .designer-toolbar button:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
 .designer-toolbar button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+/* Toolbar TOGGLES (sound, ♯ ♭, auto up/down) stay flat 2D — they hold a state,
+   so no 3D brutalist shadow or press offset; just the outline + active fill. */
+.designer-toolbar .btn-speaker,
+.designer-toolbar .palette-sharp-toggle,
+.designer-toolbar .palette-flat-toggle,
+.designer-toolbar .palette-autoupdown {
+  box-shadow: none;
+}
+.designer-toolbar .btn-speaker:hover, .designer-toolbar .btn-speaker:active,
+.designer-toolbar .palette-sharp-toggle:hover, .designer-toolbar .palette-sharp-toggle:active,
+.designer-toolbar .palette-flat-toggle:hover, .designer-toolbar .palette-flat-toggle:active,
+.designer-toolbar .palette-autoupdown:hover, .designer-toolbar .palette-autoupdown:active {
+  transform: none;
+  box-shadow: none;
+}
 
 /* Show/hide-tools toggle: a C-colour tile echoing the favicon, with a white
    wrench. Dimmed (desaturated) when the panel is hidden so "lit = tools open". */
@@ -237,6 +280,12 @@ body { background: var(--paper); color: var(--ink); }
   box-shadow: 2px 2px 0 var(--ink);
   transition: transform .07s ease, box-shadow .07s ease;
 }
+/* Palette note tiles mirror the sheet tiles: font sized as a fraction of the
+   tile (via container units) with matching weights, so picker == sheet. */
+.palette-note { container-type: inline-size; }
+.palette-note-main { font-size: 62cqw; font-weight: 700; }
+.palette-note-main.has-sub { font-size: 54cqw; }
+.palette-note-sub { font-size: 30cqw; font-weight: 600; }
 .palette-note:hover, .pick-note:hover,
 .palette-up:hover, .palette-down:hover, .palette-break:hover, .palette-section:hover {
   transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink);
