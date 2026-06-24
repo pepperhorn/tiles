@@ -48,16 +48,23 @@ function TileButton({ index, item, size, accidental, onRemove, onToggleArrow }: 
 }
 
 // A draggable + droppable tile slot (only rendered inside a DndContext).
-function DragSlot({ index, isOver, isPlaying, children }: { index: number; isOver: boolean; isPlaying: boolean; children: ReactNode }) {
+function DragSlot({ index, isOver, isPlaying, dragColor, children }: { index: number; isOver: boolean; isPlaying: boolean; dragColor: string; children: ReactNode }) {
   const { setNodeRef: dragRef, listeners, attributes, isDragging } = useDraggable({ id: index });
   const { setNodeRef: dropRef } = useDroppable({ id: index });
   const setRef = (n: HTMLDivElement | null) => { dragRef(n); dropRef(n); };
+  // Drop highlight: a colour ring tinted to the dragged tile (yellow for
+  // non-notes) plus a dashed ink frame — deliberately unlike the solid black
+  // brutalist outline so the drop target stands out.
+  const overStyle = isOver
+    ? { boxShadow: `0 0 0 4px ${dragColor}`, outline: '2px dashed var(--ink)', outlineOffset: '4px' }
+    : undefined;
   return (
     <div
       ref={setRef}
       {...attributes}
       {...listeners}
-      className={`tile-slot cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-40' : ''} ${isOver ? 'ring-2 ring-slate-900 rounded-lg' : ''} ${isPlaying ? 'is-playing' : ''}`}
+      style={overStyle}
+      className={`tile-slot cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-40' : ''} ${isPlaying ? 'is-playing' : ''}`}
     >
       {children}
     </div>
@@ -65,12 +72,16 @@ function DragSlot({ index, isOver, isPlaying, children }: { index: number; isOve
 }
 
 // A section row that is also a drop target while dragging.
-function DropSection({ index, text, isOver, onEdit }: { index: number; text: string; isOver: boolean; onEdit?: () => void }) {
+function DropSection({ index, text, isOver, dragColor, onEdit }: { index: number; text: string; isOver: boolean; dragColor: string; onEdit?: () => void }) {
   const { setNodeRef } = useDroppable({ id: index });
+  const overStyle = isOver
+    ? { boxShadow: `0 0 0 3px ${dragColor}`, outline: '2px dashed var(--ink)', outlineOffset: '3px' }
+    : undefined;
   return (
     <div
       ref={setNodeRef}
-      className={`row-section font-semibold text-slate-700 mt-2 ${onEdit ? 'cursor-pointer hover:bg-slate-100/70 rounded px-1 -mx-1' : ''} ${isOver ? 'ring-2 ring-slate-900 rounded-md' : ''}`}
+      style={overStyle}
+      className={`row-section font-semibold text-slate-700 mt-2 ${onEdit ? 'cursor-pointer hover:bg-slate-100/70 rounded px-1 -mx-1' : ''}`}
       onClick={onEdit}
     >{text || <span className="text-slate-600">Section…</span>}</div>
   );
@@ -112,18 +123,26 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
     reset();
   };
 
+  // The drop highlight is tinted to the dragged tile's own colour (yellow accent
+  // for non-note items: arrows and pauses), so it reads differently from the
+  // black brutalist outline/shadow.
+  const activeItem = activeIndex != null ? doc.items[activeIndex] : undefined;
+  const dragColor = activeItem?.type === 'note'
+    ? (noteById(activeItem.noteId)?.hex ?? 'var(--accent)')
+    : 'var(--accent)';
+
   const body = (
-    <div className="sheet-body flex flex-col gap-1.5">
+    <div className="sheet-body flex w-fit flex-col gap-1.5 mx-auto">
       {rows.map((row, ri) =>
         row.kind === 'section'
           ? (dnd
-              ? <DropSection key={ri} index={row.index} text={row.text} isOver={overIndex === row.index} onEdit={onEditSection ? () => onEditSection(row.index) : undefined} />
+              ? <DropSection key={ri} index={row.index} text={row.text} isOver={overIndex === row.index} dragColor={dragColor} onEdit={onEditSection ? () => onEditSection(row.index) : undefined} />
               : <div key={ri} className="row-section font-semibold text-slate-700 mt-2">{row.text}</div>)
           : (
             <div key={ri} className="row-tiles flex flex-wrap" style={{ gap: 6 }}>
               {row.cells.map(cell =>
                 dnd
-                  ? <DragSlot key={cell.index} index={cell.index} isOver={overIndex === cell.index} isPlaying={playingIndex === cell.index}>
+                  ? <DragSlot key={cell.index} index={cell.index} isOver={overIndex === cell.index} isPlaying={playingIndex === cell.index} dragColor={dragColor}>
                       <TileButton index={cell.index} item={cell.item} size={doc.size} accidental={doc.accidentalStyle} onRemove={onRemove} onToggleArrow={onToggleArrow} />
                     </DragSlot>
                   : <div key={cell.index} className={`tile-slot ${playingIndex === cell.index ? 'is-playing' : ''}`}>
@@ -135,8 +154,6 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
       {doc.items.length === 0 && <div className="empty text-slate-600 text-sm">Tap notes below or type A–G to begin.</div>}
     </div>
   );
-
-  const activeItem = activeIndex != null ? doc.items[activeIndex] : undefined;
 
   return (
     <div className="sheets block" ref={fitRef}>
