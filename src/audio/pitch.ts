@@ -14,6 +14,21 @@ export function pcOf(noteId: string): number {
   return CHROMATIC.indexOf(noteId);
 }
 
+/**
+ * Chromatic direction from one pitch class to another by the shortest path:
+ * +1 up, -1 down, 0 for the same pitch class. A tritone (6 semitones, equally
+ * far either way) is resolved as up. Used to auto-mark where a melodic line
+ * turns around. Unknown ids yield 0.
+ */
+export function chromaDir(fromId: string, toId: string): -1 | 0 | 1 {
+  const a = pcOf(fromId), b = pcOf(toId);
+  if (a < 0 || b < 0) return 0;
+  let d = (((b - a) % 12) + 12) % 12; // 0..11
+  if (d === 0) return 0;
+  if (d > 6) d -= 12;                 // fold to -5..6 (tritone stays +6 → up)
+  return d > 0 ? 1 : -1;
+}
+
 function place(pc: number, prev: number | null, dir: 0 | 1 | -1): number {
   if (prev == null) {
     // First note: nearest octave landing in C4..B4 (FIRST_LO % 12 === 0).

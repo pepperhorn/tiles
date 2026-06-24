@@ -77,12 +77,24 @@ test('undo is disabled until there is history', async () => {
   expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
 });
 
-test('auto up/down inserts an arrow between consecutive notes', async () => {
+// The arrow tiles render their glyph in .tile-main, in melodic order.
+const arrowGlyphs = () =>
+  Array.from(document.querySelectorAll('.row-tiles .tile-main'))
+    .map(e => e.textContent)
+    .filter(t => t === '↑' || t === '↓');
+
+async function enableAutoAndEnter(letters: string) {
   render(<DesignerHarness />);
   await userEvent.click(screen.getByRole('button', { name: 'Auto up/down arrows' }));
-  await userEvent.click(screen.getByRole('button', { name: 'C' }));
-  await userEvent.click(screen.getByRole('button', { name: 'E' }));
-  // First note has no preceding arrow; the second one does.
-  const tiles = document.querySelectorAll('.row-tiles .tile');
-  expect(tiles).toHaveLength(3); // note, arrow, note
+  for (const ch of letters) await userEvent.click(screen.getByRole('button', { name: ch }));
+}
+
+test('auto up/down marks the start of an ascending run with a single ↑', async () => {
+  await enableAutoAndEnter('CEG'); // all ascending
+  expect(arrowGlyphs()).toEqual(['↑']); // one arrow at the start, none within the run
+});
+
+test('auto up/down adds a ↓ only where the line turns around', async () => {
+  await enableAutoAndEnter('CED'); // up to E, then down to D
+  expect(arrowGlyphs()).toEqual(['↑', '↓']);
 });
