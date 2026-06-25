@@ -4,23 +4,12 @@ import {
   useDraggable, useDroppable, closestCenter,
   type DragStartEvent, type DragOverEvent, type DragEndEvent,
 } from '@dnd-kit/core';
-import { Tile } from '../Tile';
-import { noteById, SYMBOLS } from '../notes';
-import { sheetDimsMm, pageBox, resolveCols, PAD } from '../geometry';
-import { flowRows } from './flow';
-import { HeaderZone } from './HeaderZone';
-import { useFitWidth } from '../useFitWidth';
+import { noteById } from '../notes';
+import { TILE_GAP } from '../geometry';
+import { sheetLayout } from './layout';
+import { SheetSurface } from './SheetSurface';
+import { innerTile, type TileItem } from './tileRender';
 import type { Item, SheetDoc, HeaderField } from './sheetModel';
-
-type TileItem = Extract<Item, { type: 'note' | 'arrow' | 'pause' }>;
-
-const arrowSym = (dir: 'up' | 'down') => SYMBOLS.find(s => s.id === (dir === 'up' ? 'arrowUp' : 'arrowDown'))!;
-
-function innerTile(item: TileItem, size: number, accidental: SheetDoc['accidentalStyle'], onClick?: () => void) {
-  if (item.type === 'note') return <Tile kind="note" note={noteById(item.noteId)!} size={size} accidental={accidental} onClick={onClick} />;
-  if (item.type === 'pause') return <Tile kind="pause" size={size} onClick={onClick} />;
-  return <Tile kind="arrow" sym={arrowSym(item.dir)} size={size} onClick={onClick} />;
-}
 
 // Wraps a tile with tap handling: notes/pauses remove on tap; arrows (when a
 // toggle handler is supplied) flip direction on a single tap and delete on a
@@ -117,11 +106,7 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
   onToggleArrow?: (index: number) => void;
   playingIndex?: number | null;
 }) {
-  const dims = sheetDimsMm(doc.paper, doc.orientation);
-  const { w: pageW } = pageBox(doc.paper, doc.orientation);
-  const cols = resolveCols(doc.tilesPerRow, doc.size, 6, pageW);
-  const rows = flowRows(doc.items, cols);
-  const fitRef = useFitWidth(pageW);
+  const { cols, rows } = sheetLayout(doc);
 
   const dnd = !!onMove;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -189,7 +174,7 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
             <Fragment key={ri}>
               {sectionNode}
               {showZone && (
-                <div className="row-tiles flex" style={{ gap: 6 }}>
+                <div className="row-tiles flex" style={{ gap: TILE_GAP }}>
                   <DropZone insertIndex={row.index + 1} size={doc.size} isOver={overId === `zone:${row.index + 1}`} dragColor={dragColor} />
                 </div>
               )}
@@ -201,7 +186,7 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
         const endZoneIndex = lastIdx + 1;
         const showEndZone = dragging && (row.cells.length < cols || ri === rows.length - 1);
         return (
-          <div key={ri} className="row-tiles flex flex-wrap" style={{ gap: 6 }}>
+          <div key={ri} className="row-tiles flex flex-wrap" style={{ gap: TILE_GAP }}>
             {row.cells.map(cell =>
               dnd
                 ? <DragSlot key={cell.index} index={cell.index} isOver={overId === cell.index} isPlaying={playingIndex === cell.index} isDropped={dropped === cell.index} dragColor={dragColor}>
@@ -220,22 +205,19 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
   );
 
   return (
-    <div className="sheets block" ref={fitRef}>
-      <div className="sheet bg-white mx-auto" style={{ width: dims.w, padding: PAD, boxShadow: '7px 7px 0 var(--ink)', borderTop: '1px solid var(--ink)', borderLeft: '1px solid var(--ink)' }}>
-        <HeaderZone doc={doc} editable={editable} onEditField={onEditField} />
-        {dnd ? (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={reset}>
-            {body}
-            {/* No snap-back: the overlay vanishes at the drop point instead of
-                animating to the dragged tile's old home; the landed tile wiggles. */}
-            <DragOverlay dropAnimation={null}>
-              {activeItem && (activeItem.type === 'note' || activeItem.type === 'arrow' || activeItem.type === 'pause')
-                ? innerTile(activeItem, doc.size, doc.accidentalStyle)
-                : null}
-            </DragOverlay>
-          </DndContext>
-        ) : body}
-      </div>
-    </div>
+    <SheetSurface doc={doc} editable={editable} onEditField={onEditField}>
+      {dnd ? (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={reset}>
+          {body}
+          {/* No snap-back: the overlay vanishes at the drop point instead of
+              animating to the dragged tile's old home; the landed tile wiggles. */}
+          <DragOverlay dropAnimation={null}>
+            {activeItem && (activeItem.type === 'note' || activeItem.type === 'arrow' || activeItem.type === 'pause')
+              ? innerTile(activeItem, doc.size, doc.accidentalStyle)
+              : null}
+          </DragOverlay>
+        </DndContext>
+      ) : body}
+    </SheetSurface>
   );
 }

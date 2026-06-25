@@ -1,6 +1,7 @@
 import { Tile } from '../Tile';
 import { noteById } from '../notes';
-import { sheetDimsMm, pageBox, PAD, type Paper, type Orient } from '../geometry';
+import { sheetDimsMm, pageBox, type Paper, type Orient } from '../geometry';
+import { sheetBoxStyle } from '../designer/layout';
 import { GridPaper } from './GridPaper';
 import { useFitWidth } from '../useFitWidth';
 import type { SheetPlan } from './useGeneratorState';
@@ -16,7 +17,7 @@ export function GeneratorSheets({ sheets, paper, orientation }: { sheets: SheetP
     <div className="sheets block" ref={fitRef}>
       {sheets.map((plan, i) => (
         <div key={i} className={`sheet bg-white mx-auto mb-6 ${plan.kind === 'tiles' && plan.guides ? 'guides' : ''}`}
-             style={{ width: dims.w, padding: PAD, boxShadow: '7px 7px 0 var(--ink)' }}>
+             style={sheetBoxStyle(dims.w)}>
           {plan.kind === 'gridpaper'
             ? <GridPaper size={plan.size} clearance={plan.clearance} pageW={pageW} pageH={pageH} />
             : (

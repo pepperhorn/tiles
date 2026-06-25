@@ -4,6 +4,7 @@ export type TilesPerRow = 'auto' | number;
 
 export const MM = 96 / 25.4;      // px per mm @96dpi
 export const PAD = 8 * MM;        // page margin, matches demo --pad
+export const TILE_GAP = 6;        // px between tiles in a flowed song row (sheet + export)
 
 export const PAPERS: Record<Paper, { short: number; long: number }> = {
   A4:     { short: 210,   long: 297 },

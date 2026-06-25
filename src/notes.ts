@@ -27,6 +27,11 @@ export const CHROMATIC = NOTES.map(n => n.id);
 const byId = new Map(NOTES.map(n => [n.id, n]));
 export function noteById(id: string): Note | undefined { return byId.get(id); }
 
+/** The arrow symbol for a melodic direction — used wherever arrow tiles render. */
+export function arrowSym(dir: 'up' | 'down'): Sym {
+  return SYMBOLS.find(s => s.id === (dir === 'up' ? 'arrowUp' : 'arrowDown'))!;
+}
+
 export function semitone(id: string, delta: number): string {
   const i = CHROMATIC.indexOf(id);
   if (i < 0) return id;

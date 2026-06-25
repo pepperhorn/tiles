@@ -1,10 +1,10 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Tile } from '../Tile';
-import { NOTES, noteById, displayNote, SYMBOLS } from '../notes';
-import { sheetDimsMm, pageBox, resolveCols, PAD } from '../geometry';
-import { flowRows } from '../designer/flow';
-import { HeaderZone } from '../designer/HeaderZone';
-import { useFitWidth } from '../useFitWidth';
+import { NOTES, noteById, displayNote } from '../notes';
+import { TILE_GAP } from '../geometry';
+import { sheetLayout } from '../designer/layout';
+import { SheetSurface } from '../designer/SheetSurface';
+import { innerTile } from '../designer/tileRender';
 import { usePiano } from '../audio/usePiano';
 import { itemsToPitches } from '../audio/pitch';
 import { gradeAnswer } from './grade';
@@ -12,7 +12,6 @@ import { chooseBlanks } from './blanks';
 import type { QuizPreset } from './encode';
 import type { SheetDoc } from '../designer/sheetModel';
 
-const arrowSym = (dir: 'up' | 'down') => SYMBOLS.find(s => s.id === (dir === 'up' ? 'arrowUp' : 'arrowDown'))!;
 const NOTE_DUR = 0.5;
 
 type Verdict = 'correct' | 'retry';
@@ -48,11 +47,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
     setSelected(null);
   }
 
-  const dims = sheetDimsMm(source.paper, source.orientation);
-  const { w: pageW } = pageBox(source.paper, source.orientation);
-  const cols = resolveCols(source.tilesPerRow, source.size, 6, pageW);
-  const rows = flowRows(source.items, cols);
-  const fitRef = useFitWidth(pageW);
+  const { rows } = sheetLayout(source);
 
   const answerNoteId = (index: number) => {
     const it = source.items[index];
@@ -99,26 +94,19 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
   const pct = total ? Math.round((correctCount / total) * 100) : 0;
 
   const sheet = (
-    <div className="sheets block" ref={fitRef}>
-      <div className="sheet bg-white mx-auto" style={{ width: dims.w, padding: PAD, boxShadow: '7px 7px 0 var(--ink)' }}>
-        <HeaderZone doc={source} editable={false} />
+    <SheetSurface doc={source}>
         <div className="sheet-body flex flex-col gap-1.5">
           {rows.map((row, ri) =>
             row.kind === 'section'
               ? <div key={ri} className="row-section font-semibold text-slate-700 mt-2">{row.text}</div>
               : (
-                <div key={ri} className="row-tiles flex flex-wrap" style={{ gap: 6 }}>
+                <div key={ri} className="row-tiles flex flex-wrap" style={{ gap: TILE_GAP }}>
                   {row.cells.map(cell => {
                     const item = cell.item;
                     const playing = playingIndex === cell.index;
-                    if (item.type === 'arrow') {
-                      return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}><Tile kind="arrow" sym={arrowSym(item.dir)} size={source.size} /></div>;
-                    }
-                    if (item.type === 'pause') {
-                      return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}><Tile kind="pause" size={source.size} /></div>;
-                    }
-                    if (!blankSet.has(cell.index)) {
-                      return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}><Tile kind="note" note={noteById(item.noteId)!} size={source.size} accidental={source.accidentalStyle} /></div>;
+                    // Everything except a blanked-out note draws as a normal tile.
+                    if (item.type !== 'note' || !blankSet.has(cell.index)) {
+                      return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}>{innerTile(item, source.size, source.accidentalStyle)}</div>;
                     }
                     // Blank cell — fillable.
                     const given = answers[cell.index];
@@ -143,8 +131,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
               ))}
           {source.items.length === 0 && <div className="empty text-slate-400 text-sm">No song loaded.</div>}
         </div>
-      </div>
-    </div>
+    </SheetSurface>
   );
 
   const controls = (
