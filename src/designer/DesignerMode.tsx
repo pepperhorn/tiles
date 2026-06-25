@@ -57,14 +57,18 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
   const [keyOpen, setKeyOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-  const piano = usePiano();
-  const playSheet = () => piano.playSequence(
+  // Destructure the stable (useCallback-memoised) members so the memoised
+  // handlers below can depend on them precisely without the whole piano object.
+  const { status: pianoStatus, playNote, playSequence, stop: stopPiano } = usePiano();
+  const playSheet = () => playSequence(
     // 60 / bpm seconds per tile (each tile is one beat); pauses sound as rests.
     itemsToPlayback(doc.items).map(p => ({ midi: p.midi, dur: 60 / tempo, index: p.index })),
     setPlayingIndex,
   );
-  const stopAudio = () => { piano.stop(); setPlayingIndex(null); };
+  const stopAudio = () => { stopPiano(); setPlayingIndex(null); };
 
+  // useKeyboard reads handle through a ref, so it can stay a plain per-render
+  // closure (always seeing current state) without rebinding the listener.
   const handle = (r: KeyResult) => {
     // Editing during playback stops it (the glow cursor would go stale).
     if (playingIndex !== null) stopAudio();
@@ -99,7 +103,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
       // Speaker on: sound the note as it's added (palette tap or keyboard).
       if (speaker) {
         const placed = itemsToPitches(items).at(-1);
-        if (placed) void piano.playNote(placed.midi).catch(() => {});
+        if (placed) void playNote(placed.midi).catch(() => {});
       }
       return;
     }
@@ -113,6 +117,20 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
   const baseName = () => doc.title?.trim() || 'CRF Sheet';
   // Reset the preview's fit-to-width zoom so exports capture at natural resolution.
   const exporting = (fn: () => Promise<void> | void) => withExportReady(stageRef.current, fn);
+  // PNG and WebP differ only by MIME type, so they share one rasteriser.
+  const rasterExport = (type: 'image/png' | 'image/webp') => exporting(async () => {
+    try {
+      const el = sheetEl();
+      if (el) {
+        const { exportRaster } = await import('../export/raster');
+        await exportRaster(el, type, baseName());
+      }
+      setExportMsg('');
+    } catch (err) {
+      setExportMsg('Export failed: ' + String(err));
+      console.error(err);
+    }
+  });
   const onExport = {
     pdf: async () => {
       try {
@@ -124,32 +142,8 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
         console.error(err);
       }
     },
-    png: () => exporting(async () => {
-      try {
-        const el = sheetEl();
-        if (el) {
-          const { exportRaster } = await import('../export/raster');
-          await exportRaster(el, 'image/png', baseName());
-        }
-        setExportMsg('');
-      } catch (err) {
-        setExportMsg('Export failed: ' + String(err));
-        console.error(err);
-      }
-    }),
-    webp: () => exporting(async () => {
-      try {
-        const el = sheetEl();
-        if (el) {
-          const { exportRaster } = await import('../export/raster');
-          await exportRaster(el, 'image/webp', baseName());
-        }
-        setExportMsg('');
-      } catch (err) {
-        setExportMsg('Export failed: ' + String(err));
-        console.error(err);
-      }
-    }),
+    png: () => rasterExport('image/png'),
+    webp: () => rasterExport('image/webp'),
     print: () => exporting(() => window.print()),
   };
   const onEmail = async () => {
@@ -243,7 +237,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
           <div className={`panel-notes ${tabPanelClass(tab === 'notes')} p-4 lg:p-0`}>
             <div className="designer-toolbar mb-3 flex flex-wrap items-center gap-2">
               <button
-                className="btn-new-sheet rounded-lg border px-2.5 py-2 text-sm font-semibold text-slate-700"
+                className="btn-new-sheet text-sm font-semibold"
                 aria-label="New sheet"
                 title="New sheet"
                 onClick={() => setConfirmNew(true)}
@@ -252,7 +246,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
               <span className="toolbar-sep mx-0.5 self-stretch w-px bg-slate-300" aria-hidden="true" />
 
               <button
-                className="btn-undo rounded-lg border p-2 text-slate-700"
+                className="btn-undo"
                 aria-label="Undo"
                 title="Undo"
                 disabled={!canUndo}
@@ -263,7 +257,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
                 </svg>
               </button>
               <button
-                className="btn-redo rounded-lg border p-2 text-slate-700"
+                className="btn-redo"
                 aria-label="Redo"
                 title="Redo"
                 disabled={!canRedo}
@@ -277,7 +271,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
               <span className="toolbar-sep mx-0.5 self-stretch w-px bg-slate-300" aria-hidden="true" />
 
               <button
-                className={`btn-speaker rounded-lg border p-2 ${speaker ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
+                className="btn-speaker"
                 aria-pressed={speaker}
                 aria-label="Sound notes as you add them"
                 title="Sound notes as you add them"
@@ -288,49 +282,49 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
                   {speaker ? <path d="M17 9a4 4 0 0 1 0 6" /> : <path d="m17 9 4 6M21 9l-4 6" />}
                 </svg>
               </button>
-              <button className="btn-play rounded-lg border p-2 text-slate-700" aria-label="Play" title="Play" onClick={playSheet}>
+              <button className="btn-play" aria-label="Play" title="Play" onClick={playSheet}>
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true"><path d="M7 5v14l12-7z" /></svg>
               </button>
-              <button className="btn-stop rounded-lg border p-2 text-slate-700" aria-label="Stop" title="Stop" onClick={stopAudio}>
+              <button className="btn-stop" aria-label="Stop" title="Stop" onClick={stopAudio}>
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" /></svg>
               </button>
 
               <span className="toolbar-sep mx-0.5 self-stretch w-px bg-slate-300" aria-hidden="true" />
 
               <button
-                className={`palette-sharp-toggle rounded-lg border px-2.5 py-2 text-sm font-semibold ${doc.accidentalStyle === 'sharp' ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
+                className="palette-sharp-toggle text-sm"
                 aria-pressed={doc.accidentalStyle === 'sharp'} aria-label="Sharp spelling"
                 onClick={() => dispatch({ type: 'setLayout', patch: { accidentalStyle: 'sharp' } })}
               >♯</button>
               <button
-                className={`palette-flat-toggle rounded-lg border px-2.5 py-2 text-sm font-semibold ${doc.accidentalStyle === 'flat' ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
+                className="palette-flat-toggle text-sm"
                 aria-pressed={doc.accidentalStyle === 'flat'} aria-label="Flat spelling"
                 onClick={() => dispatch({ type: 'setLayout', patch: { accidentalStyle: 'flat' } })}
               >♭</button>
 
               <span className="toolbar-sep mx-0.5 self-stretch w-px bg-slate-300" aria-hidden="true" />
 
-              <button className="palette-up rounded-lg border px-2.5 py-2 text-sm text-slate-700" aria-label="Up arrow" onClick={() => handle({ type: 'insertArrow', dir: 'up' })}>↑</button>
-              <button className="palette-down rounded-lg border px-2.5 py-2 text-sm text-slate-700" aria-label="Down arrow" onClick={() => handle({ type: 'insertArrow', dir: 'down' })}>↓</button>
+              <button className="palette-up text-sm" aria-label="Up arrow" onClick={() => handle({ type: 'insertArrow', dir: 'up' })}>↑</button>
+              <button className="palette-down text-sm" aria-label="Down arrow" onClick={() => handle({ type: 'insertArrow', dir: 'down' })}>↓</button>
               <button
-                className={`palette-autoupdown rounded-lg border px-2.5 py-2 text-sm font-semibold ${autoUpDown ? 'bg-slate-900 text-white border-slate-900' : 'text-slate-600'}`}
+                className="palette-autoupdown text-sm"
                 aria-pressed={autoUpDown}
                 aria-label="Auto up/down arrows"
                 title="Auto-insert arrows between notes — tap an arrow to flip, double-tap to delete"
                 onClick={() => setAutoUpDown(a => !a)}
               >↕</button>
-              <button className="palette-pause inline-flex items-center justify-center rounded-lg border px-2 py-2.5 text-slate-700" aria-label="Pause" title="Pause (rest)" onClick={() => handle({ type: 'insertPause' })}>
+              <button className="palette-pause" aria-label="Pause" title="Pause (rest)" onClick={() => handle({ type: 'insertPause' })}>
                 <PawIcon size={16} />
               </button>
-              <button className="palette-break rounded-lg border px-2.5 py-2 text-sm text-slate-700" aria-label="Line break" onClick={() => handle({ type: 'insertBreak' })}>⏎</button>
+              <button className="palette-break text-sm" aria-label="Line break" onClick={() => handle({ type: 'insertBreak' })}>⏎</button>
 
-              {piano.status === 'loading' && <span className="text-xs text-slate-400">loading piano…</span>}
-              {piano.status === 'error' && <span className="text-xs text-red-500">audio unavailable</span>}
+              {pianoStatus === 'loading' && <span className="text-xs text-slate-400">loading piano…</span>}
+              {pianoStatus === 'error' && <span className="text-xs text-red-500">audio unavailable</span>}
             </div>
             <div className="designer-tempo mb-3 flex items-center gap-2">
               <button
                 type="button"
-                className="btn-key flex shrink-0 items-center gap-1.5 px-1 py-1.5 text-sm"
+                className="btn-key flex shrink-0 items-center gap-1.5 px-2 py-1.5 text-sm"
                 aria-label="Key"
                 onClick={() => setKeyOpen(true)}
               >
@@ -344,7 +338,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
               <label className="text-sm font-medium text-slate-600 whitespace-nowrap" htmlFor="dTempo">Tempo</label>
               <input
                 id="dTempo"
-                className="input-tempo min-w-0 flex-1 accent-slate-900"
+                className="input-tempo min-w-0 flex-1"
                 type="range"
                 min={60}
                 max={240}
@@ -363,14 +357,14 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
 
           <div className={`panel-file ${tabPanelClass(tab === 'file')} p-4 lg:p-0 grid gap-3`}>
             <div className="designer-saveload grid gap-2">
-              <input className="input-name border rounded-lg px-2 py-1 text-sm" placeholder="Design name" value={name} autoCapitalize="sentences" onChange={e => setName(ucfirst(e.target.value))} />
+              <input className="input-name px-2 py-1 text-sm" placeholder="Design name" value={name} autoCapitalize="sentences" onChange={e => setName(ucfirst(e.target.value))} />
               <div className="saveload-actions flex gap-2">
-                <button className="btn-save flex-1 rounded-lg border px-3 py-1 text-sm" onClick={onSave}>Save</button>
-                <button className="btn-load flex-1 rounded-lg border px-3 py-1 text-sm" onClick={onLoad}>Load</button>
+                <button className="btn-save flex-1 px-3 py-1 text-sm" onClick={onSave}>Save</button>
+                <button className="btn-load flex-1 px-3 py-1 text-sm" onClick={onLoad}>Load</button>
               </div>
               <div className="jsonio-actions flex gap-2">
-                <button className="btn-export-json flex-1 rounded-lg border px-3 py-1 text-sm" onClick={onExportJson}>Export JSON</button>
-                <button className="btn-import-json flex-1 rounded-lg border px-3 py-1 text-sm" onClick={() => fileInputRef.current?.click()}>Import JSON</button>
+                <button className="btn-export-json flex-1 px-3 py-1 text-sm" onClick={onExportJson}>Export JSON</button>
+                <button className="btn-import-json flex-1 px-3 py-1 text-sm" onClick={() => fileInputRef.current?.click()}>Import JSON</button>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -380,7 +374,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
                 />
               </div>
               <div className="midiio-actions flex gap-2">
-                <button className="btn-import-midi flex-1 rounded-lg border px-3 py-1 text-sm" onClick={() => midiInputRef.current?.click()}>Import MIDI</button>
+                <button className="btn-import-midi flex-1 px-3 py-1 text-sm" onClick={() => midiInputRef.current?.click()}>Import MIDI</button>
                 <input
                   ref={midiInputRef}
                   type="file"
@@ -391,17 +385,17 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
               </div>
             </div>
             <div className="designer-export grid grid-cols-2 gap-2">
-              <button className="btn-pdf rounded-lg border px-3 py-1 text-sm" onClick={onExport.pdf}>PDF</button>
-              <button className="btn-png rounded-lg border px-3 py-1 text-sm" onClick={onExport.png}>PNG</button>
-              <button className="btn-webp rounded-lg border px-3 py-1 text-sm" onClick={onExport.webp}>WebP</button>
-              <button className="btn-print rounded-lg border px-3 py-1 text-sm" onClick={onExport.print}>Print</button>
+              <button className="btn-pdf px-3 py-1 text-sm" onClick={onExport.pdf}>PDF</button>
+              <button className="btn-png px-3 py-1 text-sm" onClick={onExport.png}>PNG</button>
+              <button className="btn-webp px-3 py-1 text-sm" onClick={onExport.webp}>WebP</button>
+              <button className="btn-print px-3 py-1 text-sm" onClick={onExport.print}>Print</button>
               {exportMsg && <p className="designer-export-msg col-span-2 text-xs text-red-500 mt-1" role="alert">{exportMsg}</p>}
             </div>
             {cmsEnabled && (
               <div className="designer-email grid gap-2 border-t border-slate-200 pt-3">
                 <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400">Email me a copy</span>
-                <input className="input-email border rounded-lg px-2 py-1 text-sm" type="email" inputMode="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} />
-                <button className="btn-email rounded-lg border px-3 py-1 text-sm" onClick={onEmail}>Send edit link</button>
+                <input className="input-email px-2 py-1 text-sm" type="email" inputMode="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} />
+                <button className="btn-email px-3 py-1 text-sm" onClick={onEmail}>Send edit link</button>
               </div>
             )}
           </div>

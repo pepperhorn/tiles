@@ -15,6 +15,24 @@ export function GeneratorMode() {
 
   // Reset the preview's fit-to-width zoom so exports capture at natural resolution.
   const exporting = (fn: () => Promise<void> | void) => withExportReady(stageRef.current, fn);
+  // PNG and WebP differ only by MIME type; both rasterise every sheet in turn,
+  // pausing briefly between downloads so the browser doesn't drop files.
+  const rasterExportAll = (type: 'image/png' | 'image/webp') => exporting(async () => {
+    try {
+      const { exportRaster } = await import('../export/raster');
+      const sheets = sheetEls();
+      const base = 'CRF Note Tiles';
+      for (let i = 0; i < sheets.length; i++) {
+        const name = sheets.length === 1 ? base : `${base}-${i + 1}`;
+        await exportRaster(sheets[i], type, name);
+        if (i < sheets.length - 1) await new Promise(r => setTimeout(r, 300));
+      }
+      setExportMsg('');
+    } catch (err) {
+      setExportMsg('Export failed: ' + String(err));
+      console.error(err);
+    }
+  });
   const onExport = {
     pdf: async () => {
       const { exportVectorPdf, plansToPages } = await import('../export/pdfVector');
@@ -36,38 +54,8 @@ export function GeneratorMode() {
         } catch (err) { setExportMsg('Export failed: ' + String(err)); console.error(err); }
       });
     },
-    png: () => exporting(async () => {
-      try {
-        const { exportRaster } = await import('../export/raster');
-        const sheets = sheetEls();
-        const base = 'CRF Note Tiles';
-        for (let i = 0; i < sheets.length; i++) {
-          const name = sheets.length === 1 ? base : `${base}-${i + 1}`;
-          await exportRaster(sheets[i], 'image/png', name);
-          if (i < sheets.length - 1) await new Promise(r => setTimeout(r, 300));
-        }
-        setExportMsg('');
-      } catch (err) {
-        setExportMsg('Export failed: ' + String(err));
-        console.error(err);
-      }
-    }),
-    webp: () => exporting(async () => {
-      try {
-        const { exportRaster } = await import('../export/raster');
-        const sheets = sheetEls();
-        const base = 'CRF Note Tiles';
-        for (let i = 0; i < sheets.length; i++) {
-          const name = sheets.length === 1 ? base : `${base}-${i + 1}`;
-          await exportRaster(sheets[i], 'image/webp', name);
-          if (i < sheets.length - 1) await new Promise(r => setTimeout(r, 300));
-        }
-        setExportMsg('');
-      } catch (err) {
-        setExportMsg('Export failed: ' + String(err));
-        console.error(err);
-      }
-    }),
+    png: () => rasterExportAll('image/png'),
+    webp: () => rasterExportAll('image/webp'),
     print: () => exporting(() => window.print()),
   };
 

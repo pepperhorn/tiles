@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Action } from './sheetModel';
 
 const NOTE_LETTERS = new Set(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
@@ -20,15 +20,20 @@ export function keyToAction(e: { key: string }): KeyResult | null {
 }
 
 export function useKeyboard(handle: (r: KeyResult) => void, enabled: boolean) {
+  // Keep the latest handler in a ref so the window listener binds exactly once
+  // (toggling only with `enabled`) instead of tearing down and re-adding on
+  // every edit — handle is a fresh closure each render by design.
+  const handleRef = useRef(handle);
+  useEffect(() => { handleRef.current = handle; });
   useEffect(() => {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
       const r = keyToAction(e);
-      if (r) { e.preventDefault(); handle(r); }
+      if (r) { e.preventDefault(); handleRef.current(r); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [handle, enabled]);
+  }, [enabled]);
 }

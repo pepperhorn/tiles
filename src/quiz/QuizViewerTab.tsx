@@ -38,12 +38,12 @@ export function QuizViewerTab({ doc }: { doc: SheetDoc }) {
         Source: {loaded ? (loaded.title?.trim() || 'uploaded JSON') : 'current design'} · {noteIndexes(source.items).length} notes
       </div>
       <div className="config-load flex gap-2">
-        <button className="btn-load-json flex-1 rounded-lg border px-3 py-1 text-sm" onClick={() => fileRef.current?.click()}>Load JSON…</button>
-        {loaded && <button className="btn-use-current flex-1 rounded-lg border px-3 py-1 text-sm" onClick={() => setLoaded(null)}>Use current</button>}
+        <button className="btn-load-json flex-1 px-3 py-1 text-sm" onClick={() => fileRef.current?.click()}>Load JSON…</button>
+        {loaded && <button className="btn-use-current flex-1 px-3 py-1 text-sm" onClick={() => setLoaded(null)}>Use current</button>}
         <input ref={fileRef} type="file" accept="application/json,.json" className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ''; }} />
       </div>
-      <button className="btn-embed rounded-lg border px-3 py-1 text-sm font-semibold" onClick={copyLink}>Copy embed link</button>
+      <button className="btn-embed px-3 py-1 text-sm font-semibold" onClick={copyLink}>Copy embed link</button>
       {msg && <div className="config-msg text-xs text-slate-500 break-all">{msg}</div>}
     </div>
   );

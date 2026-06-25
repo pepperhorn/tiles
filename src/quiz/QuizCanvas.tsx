@@ -33,7 +33,7 @@ export function QuizCanvas({ doc, unknown, playingIndex = null }: { doc: SheetDo
                       return (
                         <div
                           key={cell.index}
-                          className={`tile-slot quiz-blank rounded-lg ${playing ? 'is-playing' : ''}`}
+                          className={`tile-slot quiz-blank ${playing ? 'is-playing' : ''}`}
                           style={{ width: doc.size, height: doc.size, border: '2px dashed #94a3b8', boxSizing: 'border-box' }}
                         />
                       );

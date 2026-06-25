@@ -24,7 +24,7 @@ export function ConfirmOverlay({ title, message, confirmLabel = 'Confirm', cance
       onClick={onCancel}
     >
       <div
-        className="overlay-card overlay-pop w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl"
+        className="overlay-card overlay-pop w-full max-w-md bg-white p-4"
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -35,14 +35,14 @@ export function ConfirmOverlay({ title, message, confirmLabel = 'Confirm', cance
         <div className="overlay-actions mt-4 flex justify-end gap-2">
           <button
             type="button"
-            className="confirm-cancel rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600"
+            className="confirm-cancel px-4 py-2 text-sm"
             onClick={onCancel}
           >
             {cancelLabel}
           </button>
           <button
             type="button"
-            className="confirm-ok rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+            className="confirm-ok px-4 py-2 text-sm"
             onClick={onConfirm}
           >
             {confirmLabel}

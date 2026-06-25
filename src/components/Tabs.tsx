@@ -18,9 +18,7 @@ export function TabBar({ tabs, active, onSelect, className = '' }: {
           type="button"
           role="tab"
           aria-selected={active === t.id}
-          className={`tab-btn flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
-            active === t.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
-          }`}
+          className="tab-btn flex-1 px-2 py-1.5 text-xs font-semibold"
           onClick={() => onSelect(t.id)}
         >
           {t.label}
