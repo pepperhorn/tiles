@@ -102,3 +102,20 @@ test('auto up/down adds a ↓ only where the line turns around', async () => {
   await enableAutoAndEnter('CED'); // up to E, then down to D
   expect(arrowGlyphs()).toEqual(['↑', '↓']);
 });
+
+test('the input-mode toggle swaps the tile palette for the colour-coded keyboard', async () => {
+  render(<DesignerHarness />);
+  // Tiles mode is the default: the 6-col palette grid is shown, no keyboard.
+  expect(screen.getByRole('button', { name: 'C' })).toBeInTheDocument();
+  expect(screen.queryByRole('group', { name: /note keyboard/i })).toBeNull();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Keyboard' }));
+  // Keyboard mode: piano keys appear (G3 key), and tapping one adds a tile.
+  expect(screen.getByRole('group', { name: /note keyboard/i })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'G4' }));
+  expect(document.querySelector('.row-tiles .tile')).toBeTruthy();
+
+  // Back to tiles mode restores the palette.
+  await userEvent.click(screen.getByRole('button', { name: 'Tiles' }));
+  expect(screen.queryByRole('group', { name: /note keyboard/i })).toBeNull();
+});

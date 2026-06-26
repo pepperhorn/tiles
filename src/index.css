@@ -323,7 +323,7 @@ body { background: var(--paper); color: var(--ink); }
    The selected state is driven entirely by [aria-pressed='true'] below, so no
    component needs to hand-roll a slate fill. (.btn-speaker keeps its own
    matching accent rule since it lives among the flat notes-toolbar toggles.) */
-.btn-size, .btn-paper, .btn-orient, .btn-type, .btn-mode,
+.btn-size, .btn-paper, .btn-orient, .btn-type, .btn-mode, .btn-inputmode,
 .palette-sharp-toggle, .palette-flat-toggle, .palette-autoupdown {
   border-radius: 0;
   border: 2px solid var(--ink);
@@ -333,9 +333,24 @@ body { background: var(--paper); color: var(--ink); }
 }
 .btn-size[aria-pressed='true'], .btn-paper[aria-pressed='true'],
 .btn-orient[aria-pressed='true'], .btn-type[aria-pressed='true'],
-.btn-mode[aria-pressed='true'],
+.btn-mode[aria-pressed='true'], .btn-inputmode[aria-pressed='true'],
 .palette-sharp-toggle[aria-pressed='true'], .palette-flat-toggle[aria-pressed='true'],
 .palette-autoupdown[aria-pressed='true'] { background: var(--accent); }
+
+/* Colour-coded note keyboard (alternate note input) — compact chordl geometry,
+   each key filled with its tile colour and labelled, ink-bordered to match the
+   tiles. Black keys overlay the white ones. */
+.piano-keyboard { display: block; max-width: 30rem; }
+.piano-key { cursor: pointer; }
+.piano-key rect { transition: filter .08s ease; }
+.piano-key:hover rect { filter: brightness(0.93); }
+.piano-key:active rect { filter: brightness(0.85); }
+.piano-key:focus { outline: none; }
+.piano-key:focus-visible rect { stroke-width: 2.6; }
+.piano-key-label, .piano-key-oct { pointer-events: none; }
+.piano-key-label { font-family: Poppins, sans-serif; font-weight: 700; font-size: 8px; fill: var(--ink); }
+.piano-key.is-black .piano-key-label { font-size: 6px; }
+.piano-key-oct { font-family: 'Space Mono', monospace; font-size: 5px; fill: var(--ink); opacity: 0.55; }
 
 /* Note palette + quiz picker + symbol keys ------------------------------ */
 .palette-note, .pick-note,

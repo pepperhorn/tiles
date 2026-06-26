@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import type { SheetDoc, HeaderField, Action, Item } from './sheetModel';
 import { DesignerCanvas } from './DesignerCanvas';
 import { Palette } from './Palette';
+import { PianoKeyboard } from './PianoKeyboard';
 import { DesignerControls } from './DesignerControls';
 import { KeyOverlay } from './KeyOverlay';
 import { HeaderEditOverlay } from './HeaderEditOverlay';
@@ -53,6 +54,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
   const [speaker, setSpeaker] = useState(true);
   const [autoUpDown, setAutoUpDown] = useState(true);
   const [tempo, setTempo] = useState(120);
+  const [inputMode, setInputMode] = useState<'tiles' | 'keys'>('tiles');
   const [confirmNew, setConfirmNew] = useState(false);
   const [keyOpen, setKeyOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -348,7 +350,13 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
               />
               <span className="tempo-value w-16 shrink-0 whitespace-nowrap text-right text-sm tabular-nums text-slate-500">{tempo} bpm</span>
             </div>
-            <Palette onAction={handle} accidentalStyle={doc.accidentalStyle} />
+            <div className="input-mode-toggle mb-2 inline-flex gap-1" role="group" aria-label="Note input mode">
+              <button className="btn-inputmode px-3 py-1 text-sm" aria-pressed={inputMode === 'tiles'} onClick={() => setInputMode('tiles')}>Tiles</button>
+              <button className="btn-inputmode px-3 py-1 text-sm" aria-pressed={inputMode === 'keys'} onClick={() => setInputMode('keys')}>Keyboard</button>
+            </div>
+            {inputMode === 'tiles'
+              ? <Palette onAction={handle} accidentalStyle={doc.accidentalStyle} />
+              : <PianoKeyboard onAction={handle} accidentalStyle={doc.accidentalStyle} />}
           </div>
 
           <div className={`panel-layout ${tabPanelClass(tab === 'layout')} p-4 lg:p-0`}>
