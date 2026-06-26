@@ -1,4 +1,4 @@
-import { itemsToPitches, itemsToPlayback, midiToItems, midiNoteName, chromaDir } from './pitch';
+import { itemsToPitches, itemsToPlayback, midiToItems, midiNoteName, chromaDir, autoArrowItems } from './pitch';
 import type { Item } from '../designer/sheetModel';
 
 const note = (id: string): Item => ({ type: 'note', noteId: id });
@@ -103,4 +103,27 @@ test('every arrow midiToItems emits plays in the direction it points', () => {
       prev = cur; pending = 0;
     }
   }
+});
+
+test('autoArrowItems marks one arrow at each melodic turn and trims orphans', () => {
+  // C E G (up) then E C (down): one ↑ to open the run, one ↓ at the turn. The
+  // pre-existing down-arrow after C is an orphan and must be dropped.
+  const items: Item[] = [
+    note('C'), arrow('down'), note('E'), note('G'), note('E'), note('C'),
+  ];
+  expect(autoArrowItems(items)).toEqual([
+    note('C'), arrow('up'), note('E'), note('G'), arrow('down'), note('E'), note('C'),
+  ]);
+});
+
+test('autoArrowItems keeps non-note items and ignores them for direction', () => {
+  // The pause does not break the C→E run; the arrow sits right before its note.
+  expect(autoArrowItems([note('C'), { type: 'pause' }, note('E')])).toEqual([
+    note('C'), { type: 'pause' }, arrow('up'), note('E'),
+  ]);
+});
+
+test('autoArrowItems adds no arrow for a single note or repeated pitch', () => {
+  expect(autoArrowItems([note('C')])).toEqual([note('C')]);
+  expect(autoArrowItems([note('C'), arrow('up'), note('C')])).toEqual([note('C'), note('C')]);
 });

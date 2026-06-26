@@ -225,7 +225,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
           onEditField={setEditingField}
           onEditSection={setSectionEdit}
           onRemove={(i) => dispatch({ type: 'removeAt', index: i })}
-          onMove={(from, to) => dispatch({ type: 'moveItem', from, to })}
+          onMove={(from, to) => dispatch({ type: 'moveItem', from, to, auto: autoUpDown })}
           onToggleArrow={(i) => dispatch({ type: 'toggleArrow', index: i })}
           playingIndex={playingIndex}
         />

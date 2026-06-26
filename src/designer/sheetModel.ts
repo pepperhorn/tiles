@@ -1,5 +1,6 @@
 import { semitone, noteById, displayNote, type AccidentalStyle } from '../notes';
 import type { Paper, Orient, TilesPerRow } from '../geometry';
+import { autoArrowItems } from '../audio/pitch';
 
 export type Item =
   | { type: 'note'; noteId: string }
@@ -57,7 +58,9 @@ export type Action =
   | { type: 'setSection'; index: number; text: string }
   | { type: 'deleteLast' }
   | { type: 'removeAt'; index: number }
-  | { type: 'moveItem'; from: number; to: number }
+  // `auto` re-derives the up/down arrows across the whole song after the move
+  // (used when auto up/down is on, so a drag-drop doesn't leave stale arrows).
+  | { type: 'moveItem'; from: number; to: number; auto?: boolean }
   | { type: 'setHeader'; field: HeaderField; value: string }
   | { type: 'setKey'; key: SongKey }
   | { type: 'setLayout'; patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation' | 'accidentalStyle'>> }
@@ -94,7 +97,8 @@ export function reduce(doc: SheetDoc, action: Action): SheetDoc {
     case 'setSection':    return { ...doc, items: doc.items.map((it, i) => i === action.index && it.type === 'section' ? { ...it, text: action.text } : it) };
     case 'deleteLast':    return { ...doc, items: doc.items.slice(0, -1) };
     case 'removeAt':      return { ...doc, items: doc.items.filter((_, i) => i !== action.index) };
-    case 'moveItem':      return { ...doc, items: moveItem(doc.items, action.from, action.to) };
+    case 'moveItem':    { const moved = moveItem(doc.items, action.from, action.to);
+                          return { ...doc, items: action.auto ? autoArrowItems(moved) : moved }; }
     case 'setHeader':     return { ...doc, [action.field]: action.value };
     case 'setKey': {
       // No-op when the key is unchanged so re-tapping a selection doesn't record
