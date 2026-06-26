@@ -66,6 +66,39 @@ test('moveItem reorders items (e.g. arrow before note)', () => {
   ]);
 });
 
+test('moveItem with auto rescans arrows across the whole song (trim + add)', () => {
+  // C E G with a stale down-arrow before G. Drag that orphan arrow to the front;
+  // the rescan drops it and re-derives one ↑ opening the ascending run.
+  const items = [
+    { type: 'note', noteId: 'C' },
+    { type: 'note', noteId: 'E' },
+    { type: 'arrow', dir: 'down' },
+    { type: 'note', noteId: 'G' },
+  ] as const;
+  const d = { ...defaultDoc(), items: [...items] };
+  const out = reduce(d, { type: 'moveItem', from: 2, to: 0, auto: true });
+  expect(out.items).toEqual([
+    { type: 'note', noteId: 'C' },
+    { type: 'arrow', dir: 'up' },
+    { type: 'note', noteId: 'E' },
+    { type: 'note', noteId: 'G' },
+  ]);
+});
+
+test('moveItem without auto leaves arrows untouched (manual mode)', () => {
+  const d = { ...defaultDoc(), items: [
+    { type: 'note', noteId: 'C' } as const,
+    { type: 'arrow', dir: 'down' } as const,
+    { type: 'note', noteId: 'E' } as const,
+  ] };
+  const out = reduce(d, { type: 'moveItem', from: 0, to: 2 });
+  expect(out.items).toEqual([
+    { type: 'arrow', dir: 'down' },
+    { type: 'note', noteId: 'E' },
+    { type: 'note', noteId: 'C' },
+  ]);
+});
+
 test('moveItem is a no-op for out-of-range or equal indices', () => {
   const d = reduce(defaultDoc(), { type: 'insertNote', noteId: 'C' });
   expect(reduce(d, { type: 'moveItem', from: 0, to: 0 }).items).toEqual(d.items);

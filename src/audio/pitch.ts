@@ -29,6 +29,36 @@ export function chromaDir(fromId: string, toId: string): -1 | 0 | 1 {
   return d > 0 ? 1 : -1;
 }
 
+/**
+ * Recompute the auto up/down arrows for a whole melody: drop every existing
+ * arrow, then re-insert one ↑/↓ immediately before each note that starts a new
+ * chromatic run — the same rule applied incrementally as notes are typed
+ * (`DesignerMode`). Run this after a drag-drop reorder so arrows are refreshed:
+ * added where a new turn appears, and trimmed where they no longer mark one (no
+ * orphans). Non-note items (pauses, sections, breaks) are kept in place and, as
+ * when typing, don't break a run between the notes on either side.
+ */
+export function autoArrowItems(items: Item[]): Item[] {
+  const out: Item[] = [];
+  const notes: string[] = []; // note ids seen so far, in melodic order
+  for (const it of items) {
+    if (it.type === 'arrow') continue; // re-derived below — drop stale ones
+    if (it.type === 'note') {
+      const prev = notes.at(-1);
+      if (prev !== undefined) {
+        const newDir = chromaDir(prev, it.noteId);
+        const runDir = notes.length >= 2 ? chromaDir(notes[notes.length - 2], prev) : 0;
+        if (newDir !== 0 && newDir !== runDir) {
+          out.push({ type: 'arrow', dir: newDir === 1 ? 'up' : 'down' });
+        }
+      }
+      notes.push(it.noteId);
+    }
+    out.push(it);
+  }
+  return out;
+}
+
 function place(pc: number, prev: number | null, dir: 0 | 1 | -1): number {
   if (prev == null) {
     // First note: nearest octave landing in C4..B4 (FIRST_LO % 12 === 0).
