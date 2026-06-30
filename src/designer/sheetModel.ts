@@ -47,7 +47,10 @@ export function formatKey(key: SongKey | undefined, style: AccidentalStyle): str
 }
 
 export type Action =
-  | { type: 'insertNote'; noteId: string }
+  // `octave` is a transient hint from the on-screen keyboard (the key's real
+  // octave) used only to point auto up/down arrows at the entered pitch. Tiles
+  // store pitch class only, so the reducer ignores it — it is never persisted.
+  | { type: 'insertNote'; noteId: string; octave?: number }
   | { type: 'insertArrow'; dir: 'up' | 'down' }
   | { type: 'toggleArrow'; index: number }
   | { type: 'insertPause' }

@@ -23,3 +23,18 @@ test('the tools toggle is hidden outside the designer', async () => {
   await userEvent.click(screen.getByRole('button', { name: /tile generator/i }));
   expect(screen.queryByRole('button', { name: /tools/i })).not.toBeInTheDocument();
 });
+
+test('the mode-drawer toggle collapses and reveals the tabs', async () => {
+  // The compiled Tailwind CSS isn't loaded in jsdom, so assert the drawer state
+  // (aria-expanded + the nav's hidden/flex class) rather than computed visibility.
+  render(<App />);
+  const drawer = screen.getByRole('button', { name: /switch mode/i });
+  const nav = document.querySelector('.app-tabs') as HTMLElement;
+  expect(drawer).toHaveAttribute('aria-expanded', 'true');
+  expect(nav.className).toContain('flex');
+  await userEvent.click(drawer); // collapse
+  expect(drawer).toHaveAttribute('aria-expanded', 'false');
+  expect(nav.className).toContain('hidden');
+  await userEvent.click(drawer); // reveal
+  expect(drawer).toHaveAttribute('aria-expanded', 'true');
+});

@@ -17,7 +17,7 @@ import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
 import { serializeDoc, parseSheetJson } from './json';
 import { usePiano } from '../audio/usePiano';
-import { itemsToPitches, itemsToPlayback, midiToItems, chromaDir } from '../audio/pitch';
+import { itemsToPitches, itemsToPlayback, midiToItems, chromaDir, noteIdToMidi } from '../audio/pitch';
 import { defaultDoc } from './sheetModel';
 import { midiFileToMelody } from '../audio/midiFile';
 import { ucfirst } from '../text';
@@ -30,6 +30,14 @@ const TABS: TabDef[] = [
   { id: 'layout', label: 'Layout' },
   { id: 'file', label: 'Save & export' },
 ];
+
+// Editing preview: 'mobile' reflows tiles to the device at a tappable size,
+// 'a4' is the true WYSIWYG/export page. Default to mobile only on a phone in
+// portrait (matchMedia is absent under jsdom, so tests get the A4 preview).
+function defaultView(): 'mobile' | 'a4' {
+  return typeof window !== 'undefined' && !!window.matchMedia
+    && window.matchMedia('(max-width: 768px) and (orientation: portrait)').matches ? 'mobile' : 'a4';
+}
 
 export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, toolsOpen = true }: {
   doc: SheetDoc;
@@ -55,6 +63,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
   const [autoUpDown, setAutoUpDown] = useState(true);
   const [tempo, setTempo] = useState(120);
   const [inputMode, setInputMode] = useState<'tiles' | 'keys'>('tiles');
+  const [view, setView] = useState<'mobile' | 'a4'>(defaultView);
   const [confirmNew, setConfirmNew] = useState(false);
   const [keyOpen, setKeyOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -69,6 +78,13 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
   );
   const stopAudio = () => { stopPiano(); setPlayingIndex(null); };
 
+  // Octave-aware anchor for auto up/down: remembers the last note's sounding
+  // pitch (real octave when entered from the keyboard) and the run's current
+  // direction. `len` is the items length we left behind, so any external edit
+  // (undo, reorder, manual arrow…) desyncs the length and we safely fall back
+  // to the pitch-class heuristic instead of trusting a stale octave.
+  const arrowAnchor = useRef<{ midi: number; dir: -1 | 0 | 1; len: number } | null>(null);
+
   // useKeyboard reads handle through a ref, so it can stay a plain per-render
   // closure (always seeing current state) without rebinding the listener.
   const handle = (r: KeyResult) => {
@@ -82,32 +98,60 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
       return;
     }
     if (r.type === 'insertNote') {
-      // Auto up/down: mark only where the melodic line changes chromatic
-      // direction — one ↑ at the start of an ascending run, one ↓ at the start
-      // of a descending run — instead of an arrow between every note. Tap an
-      // arrow on the sheet to flip it, double-tap to delete.
+      // Auto up/down: mark only where the melodic line changes direction — one ↑
+      // at the start of an ascending run, one ↓ at the start of a descending run
+      // — instead of an arrow between every note. Tap an arrow on the sheet to
+      // flip it, double-tap to delete.
       const items = [...doc.items];
-      if (autoUpDown) {
+      // Keyboard entry carries the key's real octave; when we still have a fresh
+      // anchor (consecutive entry, nothing edited in between) the contour follows
+      // the entered pitch — E4→C5 leaps up, C5→C4 steps down — instead of the
+      // pitch-class shortest path, which can't tell octaves apart. Otherwise fall
+      // back to that chromatic heuristic over the document.
+      const enteredMidi = r.octave != null ? noteIdToMidi(r.noteId, r.octave) : NaN;
+      const anchor = arrowAnchor.current?.len === doc.items.length ? arrowAnchor.current : null;
+      let newDir: -1 | 0 | 1 = 0;
+      let runDir: -1 | 0 | 1 = 0;
+      if (anchor && Number.isFinite(enteredMidi)) {
+        newDir = Math.sign(enteredMidi - anchor.midi) as -1 | 0 | 1;
+        runDir = anchor.dir;
+      } else {
         const notes = doc.items.filter((it): it is Extract<Item, { type: 'note' }> => it.type === 'note');
         const prev = notes.at(-1);
         if (prev) {
-          const newDir = chromaDir(prev.noteId, r.noteId);
-          const runDir = notes.length >= 2 ? chromaDir(notes.at(-2)!.noteId, prev.noteId) : 0;
-          if (newDir !== 0 && newDir !== runDir) {
-            const dir = newDir === 1 ? 'up' : 'down';
-            dispatch({ type: 'insertArrow', dir });
-            items.push({ type: 'arrow', dir });
-          }
+          newDir = chromaDir(prev.noteId, r.noteId);
+          runDir = notes.length >= 2 ? chromaDir(notes.at(-2)!.noteId, prev.noteId) : 0;
         }
+      }
+      if (autoUpDown && newDir !== 0 && newDir !== runDir) {
+        const dir = newDir === 1 ? 'up' : 'down';
+        dispatch({ type: 'insertArrow', dir });
+        items.push({ type: 'arrow', dir });
       }
       dispatch(r);
       items.push({ type: 'note', noteId: r.noteId });
+      // The new note's sounding pitch: the real key octave when known, else the
+      // octave the placement algorithm picks. Carry the run direction forward so
+      // the next note knows whether the line is still rising or falling.
+      const placed = itemsToPitches(items).at(-1);
+      arrowAnchor.current = {
+        midi: Number.isFinite(enteredMidi) ? enteredMidi : (placed?.midi ?? 0),
+        dir: newDir !== 0 ? newDir : runDir,
+        len: items.length,
+      };
       // Speaker on: sound the note as it's added (palette tap or keyboard).
-      if (speaker) {
-        const placed = itemsToPitches(items).at(-1);
-        if (placed) void playNote(placed.midi).catch(() => {});
-      }
+      if (speaker && placed) void playNote(placed.midi).catch(() => {});
       return;
+    }
+    // A pause or line break is pitch-neutral: hold the anchor's pitch/direction
+    // and just track the added item, so a rest between two keyboard notes still
+    // lets the second follow the first's entered pitch. Anything else (manual
+    // arrow, sharpen/flatten, delete) may move the contour, so drop the anchor
+    // and let the next note recompute from the document.
+    if ((r.type === 'insertPause' || r.type === 'insertBreak') && arrowAnchor.current?.len === doc.items.length) {
+      arrowAnchor.current = { ...arrowAnchor.current, len: doc.items.length + 1 };
+    } else {
+      arrowAnchor.current = null;
     }
     dispatch(r);
   };
@@ -230,6 +274,9 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
           onMove={(from, to) => dispatch({ type: 'moveItem', from, to, auto: autoUpDown })}
           onToggleArrow={(i) => dispatch({ type: 'toggleArrow', index: i })}
           playingIndex={playingIndex}
+          // Exports/print capture the A4 `.sheet`, so the Save & export tab always
+          // shows the true A4 page regardless of the editing-view toggle.
+          view={tab === 'file' ? 'a4' : view}
         />
       </main>
 
@@ -237,7 +284,25 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
         <TabBar tabs={TABS} active={tab} onSelect={setTab} />
         <div className="panel-scroll flex-1 min-h-0 overflow-y-auto lg:overflow-visible lg:flex lg:flex-col lg:gap-4 lg:p-4">
           <div className={`panel-notes ${tabPanelClass(tab === 'notes')} p-4 lg:p-0`}>
-            <div className="designer-toolbar mb-3 flex flex-wrap items-center gap-2">
+            {/* Input first — the Tiles/Keyboard switch and its palette sit at the
+                top of the panel for thumb reach on mobile. */}
+            <div className="input-mode-toggle mb-2 flex" role="group" aria-label="Note input mode">
+              <button
+                className="btn-inputmode-switch flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                title={inputMode === 'tiles' ? 'Switch to keyboard input' : 'Switch to tile input'}
+                onClick={() => setInputMode(m => (m === 'tiles' ? 'keys' : 'tiles'))}
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M8 3 4 7l4 4" /><path d="M4 7h16" /><path d="m16 21 4-4-4-4" /><path d="M20 17H4" />
+                </svg>
+                {inputMode === 'tiles' ? 'Keyboard' : 'Tiles'}
+              </button>
+            </div>
+            {inputMode === 'tiles'
+              ? <Palette onAction={handle} accidentalStyle={doc.accidentalStyle} />
+              : <PianoKeyboard onAction={handle} accidentalStyle={doc.accidentalStyle} />}
+
+            <div className="designer-toolbar mt-4 mb-3 flex flex-wrap items-center gap-2">
               <button
                 className="btn-new-sheet text-sm font-semibold"
                 aria-label="New sheet"
@@ -294,15 +359,12 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
               <span className="toolbar-sep mx-0.5 self-stretch w-px bg-slate-300" aria-hidden="true" />
 
               <button
-                className="palette-sharp-toggle text-sm"
-                aria-pressed={doc.accidentalStyle === 'sharp'} aria-label="Sharp spelling"
-                onClick={() => dispatch({ type: 'setLayout', patch: { accidentalStyle: 'sharp' } })}
-              >♯</button>
-              <button
-                className="palette-flat-toggle text-sm"
-                aria-pressed={doc.accidentalStyle === 'flat'} aria-label="Flat spelling"
-                onClick={() => dispatch({ type: 'setLayout', patch: { accidentalStyle: 'flat' } })}
-              >♭</button>
+                className="palette-acc-toggle text-sm"
+                aria-pressed={doc.accidentalStyle === 'flat'}
+                aria-label={`Accidental spelling: ${doc.accidentalStyle}, tap to switch`}
+                title="Sharp / flat spelling"
+                onClick={() => dispatch({ type: 'setLayout', patch: { accidentalStyle: doc.accidentalStyle === 'sharp' ? 'flat' : 'sharp' } })}
+              >{doc.accidentalStyle === 'sharp' ? '♯' : '♭'}</button>
 
               <span className="toolbar-sep mx-0.5 self-stretch w-px bg-slate-300" aria-hidden="true" />
 
@@ -316,9 +378,9 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
                 onClick={() => setAutoUpDown(a => !a)}
               >↕</button>
               <button className="palette-pause" aria-label="Pause" title="Pause (rest)" onClick={() => handle({ type: 'insertPause' })}>
-                <PawIcon size={16} />
+                <PawIcon size={20} />
               </button>
-              <button className="palette-break text-sm" aria-label="Line break" onClick={() => handle({ type: 'insertBreak' })}>⏎</button>
+              <button className="palette-break text-lg" aria-label="Line break" onClick={() => handle({ type: 'insertBreak' })}>⏎</button>
 
               {pianoStatus === 'loading' && <span className="text-xs text-slate-400">loading piano…</span>}
               {pianoStatus === 'error' && <span className="text-xs text-red-500">audio unavailable</span>}
@@ -350,17 +412,10 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
               />
               <span className="tempo-value w-16 shrink-0 whitespace-nowrap text-right text-sm tabular-nums text-slate-500">{tempo} bpm</span>
             </div>
-            <div className="input-mode-toggle mb-2 inline-flex gap-1" role="group" aria-label="Note input mode">
-              <button className="btn-inputmode px-3 py-1 text-sm" aria-pressed={inputMode === 'tiles'} onClick={() => setInputMode('tiles')}>Tiles</button>
-              <button className="btn-inputmode px-3 py-1 text-sm" aria-pressed={inputMode === 'keys'} onClick={() => setInputMode('keys')}>Keyboard</button>
-            </div>
-            {inputMode === 'tiles'
-              ? <Palette onAction={handle} accidentalStyle={doc.accidentalStyle} />
-              : <PianoKeyboard onAction={handle} accidentalStyle={doc.accidentalStyle} />}
           </div>
 
           <div className={`panel-layout ${tabPanelClass(tab === 'layout')} p-4 lg:p-0`}>
-            <DesignerControls doc={doc} dispatch={dispatch} />
+            <DesignerControls doc={doc} dispatch={dispatch} view={view} onView={setView} />
           </div>
 
           <div className={`panel-file ${tabPanelClass(tab === 'file')} p-4 lg:p-0 grid gap-3`}>

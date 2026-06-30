@@ -1,10 +1,14 @@
 import { CHROMATIC } from '../notes';
 import type { Item } from '../designer/sheetModel';
 
-// Playback range: G3 (MIDI 55) .. G5 (MIDI 79) — either side of the treble clef.
-const LOW = 55;
-const HIGH = 79;
-// If unsure, the first note starts between C4 (60) and B4 (71).
+// Playback register: C3 (MIDI 48) .. C6 (MIDI 84) — three octaves around middle C.
+// A wide window so a run rarely reaches an edge; when it does, `place` saturates
+// (holds the top/bottom octave) rather than wrapping, so the line plateaus
+// instead of jumping an octave the wrong way.
+const LOW = 48;
+const HIGH = 84;
+// If unsure, the first note starts between C4 (60) and B4 (71) — low-middle of the
+// window, leaving the most headroom for an ascending line.
 const FIRST_LO = 60;
 
 export type Placed = { index: number; midi: number; noteId: string };
@@ -12,6 +16,17 @@ export type Placed = { index: number; midi: number; noteId: string };
 /** Pitch class 0..11 (C=0) for a note id, or -1 if unknown. */
 export function pcOf(noteId: string): number {
   return CHROMATIC.indexOf(noteId);
+}
+
+/**
+ * Absolute MIDI number for a tile note id at a given octave (MIDI 60 = C4), or
+ * NaN if the id is unknown. Used for octave-aware entry from the on-screen
+ * keyboard, where the clicked key carries a real octave the pitch-class tile
+ * model otherwise discards.
+ */
+export function noteIdToMidi(noteId: string, octave: number): number {
+  const pc = pcOf(noteId);
+  return pc < 0 ? NaN : (octave + 1) * 12 + pc;
 }
 
 /**
@@ -64,48 +79,61 @@ function place(pc: number, prev: number | null, dir: 0 | 1 | -1): number {
     // First note: nearest octave landing in C4..B4 (FIRST_LO % 12 === 0).
     return FIRST_LO + pc;
   }
-  // Candidate pitches for this pitch class, a couple octaves around the range.
+  // Every in-window pitch of this class, ascending (each class has ≥1 in range).
   const cands: number[] = [];
-  for (let m = pc; m <= HIGH + 12; m += 12) cands.push(m);
-  for (let m = pc - 12; m >= LOW - 12; m -= 12) cands.unshift(m);
+  for (let m = pc + Math.ceil((LOW - pc) / 12) * 12; m <= HIGH; m += 12) cands.push(m);
 
-  let chosen: number;
   if (dir === 1) {
-    const up = cands.filter(m => m > prev);
-    chosen = up.length ? up[0] : cands[cands.length - 1];
-  } else if (dir === -1) {
-    const down = cands.filter(m => m < prev);
-    chosen = down.length ? down[down.length - 1] : cands[0];
-  } else {
-    // Nearest adjacent; tie breaks downward.
-    chosen = cands.reduce((best, m) =>
-      Math.abs(m - prev) < Math.abs(best - prev) ? m : best, cands[0]);
+    // Lowest pitch above prev; if none in range, saturate at the top octave.
+    return cands.find(m => m > prev) ?? cands[cands.length - 1];
   }
-  while (chosen < LOW) chosen += 12;
-  while (chosen > HIGH) chosen -= 12;
-  return chosen;
+  if (dir === -1) {
+    // Highest pitch below prev; if none in range, saturate at the bottom octave.
+    const below = cands.filter(m => m < prev);
+    return below.length ? below[below.length - 1] : cands[0];
+  }
+  // Nearest adjacent; tie breaks downward.
+  return cands.reduce((best, m) =>
+    Math.abs(m - prev) < Math.abs(best - prev) ? m : best, cands[0]);
+}
+
+const mod12 = (m: number) => ((m % 12) + 12) % 12;
+
+/**
+ * Place one note under a *persistent* run direction. `runDir` carries across
+ * notes until an arrow changes it (so a whole ascending/descending run keeps
+ * going), and `freshArrow` is true only for the note immediately after an arrow.
+ * A repeated pitch class holds its octave — a repeat inside a run must not leap —
+ * unless an arrow was just given, which is the only way to climb e.g. C4→C5.
+ */
+function placedMidi(pc: number, prev: number | null, runDir: 0 | 1 | -1, freshArrow: boolean): number {
+  if (prev == null) return place(pc, prev, runDir); // first note: register-normalised
+  if (pc === mod12(prev)) return freshArrow ? place(pc, prev, runDir) : prev;
+  return place(pc, prev, runDir);
 }
 
 /**
- * Assign concrete pitches to the note items in melodic order. Arrow items set
- * the direction (↑/↓) for the next note; otherwise each note picks the octave
- * nearest the previous note. `overrides` replaces a note id at a given item
- * index (used to hear a student's submitted answer in context).
+ * Assign concrete pitches to the note items in melodic order. An arrow sets the
+ * run direction (↑/↓), which *persists* for every following note until the next
+ * arrow flips it; with no arrow yet, each note picks the octave nearest the
+ * previous one. `overrides` replaces a note id at a given item index (used to
+ * hear a student's submitted answer in context).
  */
 export function itemsToPitches(items: Item[], overrides?: Record<number, string>): Placed[] {
   const out: Placed[] = [];
   let prev: number | null = null;
-  let dir: 0 | 1 | -1 = 0;
+  let runDir: 0 | 1 | -1 = 0;
+  let fresh = false; // an arrow applies to the very next note, then runDir persists
   items.forEach((it, index) => {
-    if (it.type === 'arrow') { dir = it.dir === 'up' ? 1 : -1; return; }
+    if (it.type === 'arrow') { runDir = it.dir === 'up' ? 1 : -1; fresh = true; return; }
     if (it.type !== 'note') return; // breaks/sections don't sound
     const noteId = overrides?.[index] ?? it.noteId;
     const pc = pcOf(noteId);
-    if (pc < 0) { dir = 0; return; }
-    const midi = place(pc, prev, dir);
+    if (pc < 0) { fresh = false; return; }
+    const midi = placedMidi(pc, prev, runDir, fresh);
     out.push({ index, midi, noteId });
     prev = midi;
-    dir = 0;
+    fresh = false;
   });
   return out;
 }
@@ -115,22 +143,24 @@ export type PlayStep = { index: number; midi: number | null };
 /**
  * Playback steps in melodic order, including pause tiles as rests (midi null).
  * Notes follow the same octave placement as `itemsToPitches`; a pause holds the
- * previous note and direction so an arrow still applies to the note after it.
+ * previous note and the run direction so an arrow still applies to the note
+ * after it.
  */
 export function itemsToPlayback(items: Item[]): PlayStep[] {
   const out: PlayStep[] = [];
   let prev: number | null = null;
-  let dir: 0 | 1 | -1 = 0;
+  let runDir: 0 | 1 | -1 = 0;
+  let fresh = false;
   items.forEach((it, index) => {
-    if (it.type === 'arrow') { dir = it.dir === 'up' ? 1 : -1; return; }
+    if (it.type === 'arrow') { runDir = it.dir === 'up' ? 1 : -1; fresh = true; return; }
     if (it.type === 'pause') { out.push({ index, midi: null }); return; }
     if (it.type !== 'note') return; // breaks/sections don't sound
     const pc = pcOf(it.noteId);
-    if (pc < 0) { dir = 0; return; }
-    const midi = place(pc, prev, dir);
+    if (pc < 0) { fresh = false; return; }
+    const midi = placedMidi(pc, prev, runDir, fresh);
     out.push({ index, midi });
     prev = midi;
-    dir = 0;
+    fresh = false;
   });
   return out;
 }
@@ -148,35 +178,35 @@ export function midiNoteName(noteId: string, midi: number): string {
 /**
  * Inverse of `itemsToPitches`: turn a melody (MIDI note numbers in playing order)
  * back into note items, re-inserting ↑/↓ arrows so playback follows the melody's
- * up/down contour. Tiles carry pitch class only and playback spans just G3..G5, so
+ * up/down contour. Tiles carry pitch class only and playback spans just C3..C6, so
  * the absolute octave can't survive and leaps wider than that range get wrapped —
- * but within reach the contour is preserved. Any arrow it emits is faithful: it's
- * inserted only when the resulting placement genuinely moves in that direction (a
- * forced arrow can otherwise wrap the wrong way at the edge of the range), so an
- * arrow never plays against the note it precedes.
+ * but within reach the contour is preserved. Mirrors `itemsToPitches`: the run
+ * direction persists, so an arrow is emitted only when the *inherited* direction
+ * would miss the melody's move AND an arrow actually achieves it (a forced arrow
+ * can otherwise wrap the wrong way at the edge of the range) — an arrow never
+ * plays against the note it precedes.
  */
 export function midiToItems(midis: number[]): Item[] {
   const items: Item[] = [];
   let prevPlaced: number | null = null;
   let prevTarget: number | null = null;
+  let runDir: 0 | 1 | -1 = 0;
   for (const target of midis) {
     const pc = ((Math.round(target) % 12) + 12) % 12;
     const noteId = CHROMATIC[pc];
-    let dir: 0 | 1 | -1 = 0;
+    let fresh = false;
     if (prevPlaced != null && prevTarget != null) {
       const desired = Math.sign(target - prevTarget) as -1 | 0 | 1;
-      // Prefer no arrow; add one only when nearest placement misses the melody's
-      // direction AND the arrow actually achieves it (vs. wrapping at the range edge).
       if (desired !== 0 &&
-          Math.sign(place(pc, prevPlaced, 0) - prevPlaced) !== desired &&
-          Math.sign(place(pc, prevPlaced, desired) - prevPlaced) === desired) {
-        dir = desired;
+          Math.sign(placedMidi(pc, prevPlaced, runDir, false) - prevPlaced) !== desired &&
+          Math.sign(placedMidi(pc, prevPlaced, desired, true) - prevPlaced) === desired) {
+        items.push({ type: 'arrow', dir: desired === 1 ? 'up' : 'down' });
+        runDir = desired;
+        fresh = true;
       }
     }
-    if (dir === 1) items.push({ type: 'arrow', dir: 'up' });
-    else if (dir === -1) items.push({ type: 'arrow', dir: 'down' });
     items.push({ type: 'note', noteId });
-    prevPlaced = place(pc, prevPlaced, dir);
+    prevPlaced = placedMidi(pc, prevPlaced, runDir, fresh);
     prevTarget = target;
   }
   return items;

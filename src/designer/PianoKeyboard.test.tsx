@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PianoKeyboard } from './PianoKeyboard';
 
@@ -17,10 +17,11 @@ test('renders G3..E5 — 13 white keys and 9 black keys, colour-coded', () => {
 test('tapping a key inserts that pitch class (A♯ uses id Bb)', async () => {
   const onAction = vi.fn();
   render(<PianoKeyboard onAction={onAction} />);
+  // The action carries the key's real octave so auto arrows can follow pitch.
   await userEvent.click(screen.getByRole('button', { name: 'C4' }));
-  expect(onAction).toHaveBeenCalledWith({ type: 'insertNote', noteId: 'C' });
+  expect(onAction).toHaveBeenCalledWith({ type: 'insertNote', noteId: 'C', octave: 4 });
   await userEvent.click(screen.getByRole('button', { name: 'Bb3' }));
-  expect(onAction).toHaveBeenCalledWith({ type: 'insertNote', noteId: 'Bb' });
+  expect(onAction).toHaveBeenCalledWith({ type: 'insertNote', noteId: 'Bb', octave: 3 });
 });
 
 test('black-key labels follow the accidental spelling toggle', () => {
@@ -28,6 +29,18 @@ test('black-key labels follow the accidental spelling toggle', () => {
   expect(screen.getByRole('button', { name: 'Cs4' }).querySelector('.piano-key-label')!.textContent).toBe('C♯');
   rerender(<PianoKeyboard onAction={() => {}} accidentalStyle="flat" />);
   expect(screen.getByRole('button', { name: 'Cs4' }).querySelector('.piano-key-label')!.textContent).toBe('D♭');
+});
+
+test('the keys slider narrows the span, staying centred on F4', () => {
+  render(<PianoKeyboard onAction={() => {}} />);
+  const slider = screen.getByRole('slider', { name: /number of keys/i });
+  // Default (wide) spans G3–E5; narrowing to 9 keys re-centres to B3–C5.
+  expect(screen.getByRole('button', { name: 'G3' })).toBeInTheDocument();
+  fireEvent.change(slider, { target: { value: '9' } });
+  expect(screen.getByRole('button', { name: 'B3' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'C5' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'G3' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'E5' })).toBeNull();
 });
 
 test('the section button still adds a section from keyboard mode', async () => {
