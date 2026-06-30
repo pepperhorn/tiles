@@ -89,6 +89,20 @@ export function DesignerControls({ doc, dispatch, view, onView }: {
         </div>
       </div>
       {sep}
+      <div className="control-bpm flex items-center gap-2">
+        <label className="text-sm font-medium text-slate-600 whitespace-nowrap" htmlFor="dBpm">BPM</label>
+        <input
+          id="dBpm"
+          className="input-bpm px-2 py-1 text-sm w-20"
+          type="number"
+          min={20}
+          max={300}
+          defaultValue={doc.bpm}
+          aria-label="BPM"
+          onChange={e => dispatch({ type: 'setBpm', bpm: Number(e.target.value) })}
+        />
+      </div>
+      {sep}
       <div className="control-transpose flex items-center gap-2">
         <span className="text-sm font-medium text-slate-600">Transpose</span>
         <div className="transpose-options flex gap-1">
