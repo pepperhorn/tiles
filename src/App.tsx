@@ -68,16 +68,18 @@ export default function App() {
   // local JSON file can be loaded.
   const viewActive = /[#&]view\b/.test(window.location.hash);
   const viewDoc = useMemo(() => readViewFromHash(window.location.hash) ?? defaultDoc(), []);
+
+  // Embed mode: #quiz=<base64url> renders only the standalone quiz player, whose
+  // difficulty preset the taker can adjust.
+  const embedQuiz = useMemo(() => readQuizFromHash(window.location.hash), []);
+  const [embedPreset, setEmbedPreset] = useState<QuizPreset>(() => embedQuiz?.quiz ?? DEFAULT_PRESET);
+
   if (viewActive) return (
     <Suspense fallback={<ModeFallback />}>
       <SheetPlayer source={viewDoc} embed />
     </Suspense>
   );
 
-  // Embed mode: #quiz=<base64url> renders only the standalone quiz player, whose
-  // difficulty preset the taker can adjust.
-  const embedQuiz = useMemo(() => readQuizFromHash(window.location.hash), []);
-  const [embedPreset, setEmbedPreset] = useState<QuizPreset>(() => embedQuiz?.quiz ?? DEFAULT_PRESET);
   if (embedQuiz) return (
     <Suspense fallback={<ModeFallback />}>
       <QuizViewer source={embedQuiz.doc} preset={embedPreset} onPreset={setEmbedPreset} embed />

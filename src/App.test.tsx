@@ -43,8 +43,11 @@ test('the mode-drawer toggle collapses and reveals the tabs', async () => {
 
 test('a #view= link renders only the player, no mode tabs', async () => {
   window.location.hash = `#view=${encodeSheet({ ...defaultDoc(), items: [{ type: 'note', noteId: 'C' }] })}`;
-  render(<App />);
-  expect(await screen.findByRole('button', { name: /^play/i })).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: /sheet designer/i })).not.toBeInTheDocument();
-  window.location.hash = '';
+  try {
+    render(<App />);
+    expect(await screen.findByRole('button', { name: /^play/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /sheet designer/i })).not.toBeInTheDocument();
+  } finally {
+    window.location.hash = '';
+  }
 });
