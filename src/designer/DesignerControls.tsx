@@ -97,7 +97,7 @@ export function DesignerControls({ doc, dispatch, view, onView }: {
           type="number"
           min={20}
           max={300}
-          defaultValue={doc.bpm}
+          value={doc.bpm}
           aria-label="BPM"
           onChange={e => dispatch({ type: 'setBpm', bpm: Number(e.target.value) })}
         />
