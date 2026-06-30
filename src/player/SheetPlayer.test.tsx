@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SheetPlayer } from './SheetPlayer';
 import { defaultDoc } from '../designer/sheetModel';
@@ -46,6 +46,6 @@ test('Load JSON loads a sheet into the empty player', async () => {
   const json = JSON.stringify({ ...defaultDoc(), items: [{ type: 'note', noteId: 'D' }] });
   const file = new File([json], 'song.json', { type: 'application/json' });
   await userEvent.upload(screen.getByLabelText(/load json/i), file);
-  expect(await screen.findByText(/no song/i, {}, { timeout: 1000 }).catch(() => null)).toBeNull();
-  expect(document.querySelectorAll('.tile').length).toBeGreaterThan(0);
+  await waitFor(() => expect(document.querySelectorAll('.tile').length).toBeGreaterThan(0));
+  expect(screen.queryByText(/no song/i)).not.toBeInTheDocument();
 });
