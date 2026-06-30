@@ -22,6 +22,7 @@ export type SheetDoc = {
   songKey: SongKey;
   tilesPerRow: TilesPerRow; size: number; paper: Paper; orientation: Orient;
   accidentalStyle: AccidentalStyle;
+  bpm: number;
   items: Item[];
 };
 
@@ -31,6 +32,7 @@ export function defaultDoc(): SheetDoc {
     songKey: { root: null, quality: null },
     tilesPerRow: 'auto', size: 64, paper: 'A4', orientation: 'portrait',
     accidentalStyle: 'sharp',
+    bpm: 120,
     items: [],
   };
 }
@@ -67,6 +69,7 @@ export type Action =
   | { type: 'setHeader'; field: HeaderField; value: string }
   | { type: 'setKey'; key: SongKey }
   | { type: 'setLayout'; patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation' | 'accidentalStyle'>> }
+  | { type: 'setBpm'; bpm: number }
   | { type: 'transpose'; delta: number }
   | { type: 'load'; doc: SheetDoc };
 
@@ -111,6 +114,7 @@ export function reduce(doc: SheetDoc, action: Action): SheetDoc {
       return { ...doc, songKey: k };
     }
     case 'setLayout':     return { ...doc, ...action.patch };
+    case 'setBpm':        return { ...doc, bpm: Math.min(300, Math.max(20, Math.round(action.bpm))) };
     case 'transpose': {
       const items = doc.items.map(it => it.type === 'note' ? { ...it, noteId: semitone(it.noteId, action.delta) } : it);
       // A set key root rides along with the notes so the key stays correct.

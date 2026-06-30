@@ -139,3 +139,14 @@ test('load replaces the whole document', () => {
   const result = reduce(base, { type: 'load', doc: loaded });
   expect(result).toEqual(loaded);
 });
+
+test('defaultDoc has a 120 bpm', () => {
+  expect(defaultDoc().bpm).toBe(120);
+});
+
+test('setBpm sets the tempo, clamped to 20–300 and rounded', () => {
+  expect(reduce(defaultDoc(), { type: 'setBpm', bpm: 96 }).bpm).toBe(96);
+  expect(reduce(defaultDoc(), { type: 'setBpm', bpm: 5 }).bpm).toBe(20);
+  expect(reduce(defaultDoc(), { type: 'setBpm', bpm: 999 }).bpm).toBe(300);
+  expect(reduce(defaultDoc(), { type: 'setBpm', bpm: 90.7 }).bpm).toBe(91);
+});

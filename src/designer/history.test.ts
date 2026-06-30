@@ -40,3 +40,12 @@ test('no-op edits are not recorded in history', () => {
   expect(h.past).toHaveLength(0);
   expect(historyReducer(h, { type: 'undo' })).toBe(h);
 });
+
+test('a bpm change is an undoable step', () => {
+  let h = initHistory(defaultDoc());
+  h = historyReducer(h, { type: 'setBpm', bpm: 90 });
+  expect(h.present.bpm).toBe(90);
+  expect(h.past).toHaveLength(1);
+  h = historyReducer(h, { type: 'undo' });
+  expect(h.present.bpm).toBe(120);
+});

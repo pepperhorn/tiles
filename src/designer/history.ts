@@ -25,6 +25,7 @@ function changed(a: SheetDoc, b: SheetDoc): boolean {
     || a.tilesPerRow !== b.tilesPerRow || a.size !== b.size
     || a.paper !== b.paper || a.orientation !== b.orientation
     || a.accidentalStyle !== b.accidentalStyle
+    || a.bpm !== b.bpm
     || a.songKey !== b.songKey;
 }
 
