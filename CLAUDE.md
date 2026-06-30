@@ -30,3 +30,4 @@ When adding UI:
 - Tokens and the brutalist style blocks live in `src/index.css` (`:root` + labelled
   sections). The architecture/feature spec is in
   `docs/superpowers/specs/2026-06-20-dots-system-react-app-design.md`.
+- Data formats (tiles JSON + share-link URL encoding) are documented in `docs/FORMATS.md`.
