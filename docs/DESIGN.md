@@ -82,6 +82,14 @@ When you add a button, **add its class to the matching selector list** in
 Tailwind `rounded-* border shadow-*` will look foreign — that is the bug this
 doc exists to prevent.
 
+### Viewer controls (SheetPlayer / QuizViewer)
+
+The read-only viewers reuse existing families: transport Play/Stop use the Tier-1
+outline button family (`.btn-play` / `.btn-stop`); Loop/Metronome/Count-in and the
+`xs–xxl` tile-size buttons use the segmented-toggle family (`aria-pressed` fills
+`--accent`); the BPM number input uses the input family (`.input-bpm`); the tempo
+slider uses the range-slider family (`.input-tempo`). No new pattern was introduced.
+
 ## Checklist for a new component
 
 - [ ] Square corners (`border-radius: 0`), `var(--ink)` borders, **hard** offset shadow.

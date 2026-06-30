@@ -343,6 +343,7 @@ body { background: var(--paper); color: var(--ink); }
    component needs to hand-roll a slate fill. (.btn-speaker keeps its own
    matching accent rule since it lives among the flat notes-toolbar toggles.) */
 .btn-size, .btn-paper, .btn-orient, .btn-type, .btn-mode, .btn-inputmode, .btn-inputmode-switch, .btn-view,
+.btn-tile-size, .btn-loop, .btn-metronome, .btn-countin,
 .palette-acc-toggle, .palette-autoupdown {
   border-radius: 0;
   border: 2px solid var(--ink);
@@ -353,6 +354,8 @@ body { background: var(--paper); color: var(--ink); }
 .btn-size[aria-pressed='true'], .btn-paper[aria-pressed='true'],
 .btn-orient[aria-pressed='true'], .btn-type[aria-pressed='true'],
 .btn-mode[aria-pressed='true'], .btn-inputmode[aria-pressed='true'], .btn-view[aria-pressed='true'],
+.btn-tile-size[aria-pressed='true'], .btn-loop[aria-pressed='true'],
+.btn-metronome[aria-pressed='true'], .btn-countin[aria-pressed='true'],
 .palette-acc-toggle[aria-pressed='true'],
 .palette-autoupdown[aria-pressed='true'] { background: var(--accent); }
 
@@ -398,7 +401,7 @@ body { background: var(--paper); color: var(--ink); }
 }
 
 /* Inputs ---------------------------------------------------------------- */
-.input-name, .input-tpr, .input-email, .num, .tpl-name-input, .tpl-select, .overlay-input {
+.input-name, .input-tpr, .input-bpm, .input-email, .num, .tpl-name-input, .tpl-select, .overlay-input {
   border-radius: 0;
   border: 2px solid var(--ink);
   background: #fff;
