@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { DesignerMode } from './designer/DesignerMode';
-import { readQuizFromHash, readEditFromHash, DEFAULT_PRESET, type QuizPreset } from './quiz/encode';
+import { readQuizFromHash, readEditFromHash, readViewFromHash, DEFAULT_PRESET, type QuizPreset } from './quiz/encode';
 import { defaultDoc, type SheetDoc } from './designer/sheetModel';
 import { historyReducer, initHistory } from './designer/history';
 import { autosaveSlot } from './storage';
@@ -13,6 +13,7 @@ const GeneratorMode = lazy(() => import('./generator/GeneratorMode').then(m => (
 const QuizMode = lazy(() => import('./quiz/QuizMode').then(m => ({ default: m.QuizMode })));
 const QuizViewer = lazy(() => import('./quiz/QuizViewer').then(m => ({ default: m.QuizViewer })));
 const QuizViewerTab = lazy(() => import('./quiz/QuizViewerTab').then(m => ({ default: m.QuizViewerTab })));
+const SheetPlayer = lazy(() => import('./player/SheetPlayer').then(m => ({ default: m.SheetPlayer })));
 
 const ModeFallback = () => (
   <div className="mode-loading h-full grid place-items-center text-sm text-slate-400">loading…</div>
@@ -61,6 +62,17 @@ export default function App() {
     const id = window.setInterval(() => { autosaveSlot.save(docRef.current); }, 10000);
     return () => clearInterval(id);
   }, []);
+
+  // View mode: #view=<base64url> (or bare #view) renders only the standalone
+  // read-only player. A bare #view with no/invalid payload opens it empty so a
+  // local JSON file can be loaded.
+  const viewActive = /[#&]view\b/.test(window.location.hash);
+  const viewDoc = useMemo(() => readViewFromHash(window.location.hash) ?? defaultDoc(), []);
+  if (viewActive) return (
+    <Suspense fallback={<ModeFallback />}>
+      <SheetPlayer source={viewDoc} embed />
+    </Suspense>
+  );
 
   // Embed mode: #quiz=<base64url> renders only the standalone quiz player, whose
   // difficulty preset the taker can adjust.

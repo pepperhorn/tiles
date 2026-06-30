@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
+import { encodeSheet } from './quiz/encode';
+import { defaultDoc } from './designer/sheetModel';
 
 test('renders both mode tabs', () => {
   render(<App />);
@@ -37,4 +39,12 @@ test('the mode-drawer toggle collapses and reveals the tabs', async () => {
   expect(nav.className).toContain('hidden');
   await userEvent.click(drawer); // reveal
   expect(drawer).toHaveAttribute('aria-expanded', 'true');
+});
+
+test('a #view= link renders only the player, no mode tabs', async () => {
+  window.location.hash = `#view=${encodeSheet({ ...defaultDoc(), items: [{ type: 'note', noteId: 'C' }] })}`;
+  render(<App />);
+  expect(await screen.findByRole('button', { name: /^play/i })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /sheet designer/i })).not.toBeInTheDocument();
+  window.location.hash = '';
 });
