@@ -9,7 +9,10 @@ Add a **view-and-playback-only** surface for Note·Tiles sheets: it renders a sh
 read-only (no edit controls) and plays it back, with transport controls. It can be
 loaded two ways — from a local tiles JSON file, or from a sheet encoded in the URL
 hash. As part of this, tempo (BPM) becomes a **saved property of the song**, editable
-in the Sheet Designer, and the player can adjust playback tempo live.
+in the Sheet Designer. Both viewers — the new `SheetPlayer` and the existing
+`QuizViewer` — gain a live tempo (BPM) control and, for accessibility, a named
+tile-size control (xs → xxl). These are view-time overrides that do not modify the
+saved song.
 
 ## Non-goals
 
@@ -65,8 +68,48 @@ in the Sheet Designer, and the player can adjust playback tempo live.
 ### 3. Tempo-aware playback (one source of truth)
 
 - Beat duration derives from BPM: `beatDur = 60 / bpm`; one playback step = one beat.
-- **`QuizViewer.tsx`** — replace the fixed `NOTE_DUR = 0.5` with `60 / source.bpm`
-  so the quiz plays at the song's saved tempo.
+- Both viewers (`SheetPlayer` and `QuizViewer`) get a **live tempo override** seeded
+  from `doc.bpm` and an on-screen BPM control; the override drives all playback
+  (notes + metronome + count-in) but does **not** mutate the saved doc.
+- **`QuizViewer.tsx`** — replace the fixed `NOTE_DUR = 0.5` with `60 / bpm` from its
+  local tempo state (default `source.bpm`), and add a BPM control to its left panel.
+
+### 3b. Accessibility — live tile-size override in the viewers
+
+Larger tiles aid low-vision / motor accessibility. Both viewers expose a **named tile
+size control (xs → xxl)**, mirroring the editor's size buttons but labelled, as a live
+render-size override seeded from `doc.size`.
+
+- **Shared scale** — add a named scale reusing the editor's existing px values
+  (`[40, 52, 64, 80, 96, 112]`):
+
+  | label | xs | s  | m  | l  | xl | xxl |
+  |-------|----|----|----|----|----|-----|
+  | px    | 40 | 52 | 64 | 80 | 96 | 112 |
+
+  Defined once as `TILE_SIZE_SCALE` (label→px) in a shared module
+  (`src/viewer/sizes.ts`). The editor keeps its current numeric buttons (unchanged);
+  only the viewers use the labelled control.
+- **Override, not an edit:** each viewer holds `const [sizePx, setSizePx] =
+  useState(source.size)` (re-seeded when `source` changes). Rendering uses a derived
+  `renderDoc = { ...activeDoc, size: sizePx }`; item indices are unchanged, so grading
+  and answers in `QuizViewer` are unaffected. The saved doc is not modified.
+- The selected label is the nearest scale step to `sizePx`; the control sets `sizePx`
+  to the chosen step's px.
+
+### 3c. Shared viewer controls
+
+To avoid duplication between `SheetPlayer` and `QuizViewer`, factor two small,
+self-contained controls into `src/viewer/`:
+
+- `TempoControl` — `{ bpm, onBpm }`, a range slider + numeric (20–300) labelled with
+  current BPM. Class family `viewer-tempo` / `input-tempo`.
+- `TileSizeControl` — `{ sizePx, onSize }`, a row of labelled buttons from
+  `TILE_SIZE_SCALE` (`aria-pressed` on the active step). Class family `viewer-size` /
+  `btn-tile-size`.
+
+Both are presentational (state lives in each viewer). They follow the brutalist control
+families in `src/index.css`.
 
 ### 4. `SheetPlayer` component (`src/player/SheetPlayer.tsx`)
 
@@ -75,21 +118,22 @@ state itself (`const [loaded, setLoaded] = useState<SheetDoc | null>(null)`; the
 doc is `loaded ?? source`) and renders its own "Load JSON…" picker and empty state —
 there is no separate wrapper component.
 
-- **Render:** read-only sheet via `SheetSurface` + `sheetLayout(source).rows` +
-  `innerTile(item, source.size, source.accidentalStyle)`. Section rows render as labels.
-  No interactive cells, no edit affordances. Reuses the `is-playing` tile highlight for
-  the moving cursor.
-- **Local tempo state:** `const [bpm, setBpm] = useState(source.bpm)`, re-seeded when
-  `source` changes (render-phase reset pattern, as `QuizViewer` does for `quizKey`).
-  This is a **playback override** — it does not mutate the doc.
+- **Local view state** (overrides, re-seeded when `source` changes, render-phase reset
+  pattern as `QuizViewer` uses for `quizKey`): `bpm` (default `source.bpm`) and `sizePx`
+  (default `source.size`). Neither mutates the doc.
+- **Render:** `renderDoc = { ...activeDoc, size: sizePx }`; read-only sheet via
+  `SheetSurface` + `sheetLayout(renderDoc).rows` +
+  `innerTile(item, renderDoc.size, renderDoc.accidentalStyle)`. Section rows render as
+  labels. No interactive cells, no edit affordances. Reuses the `is-playing` tile
+  highlight for the moving cursor. (`activeDoc = loaded ?? source` — see props above.)
 - **Transport bar** (`player-transport`):
-  - `btn-play` ▶ Play — plays `itemsToPlayback(source.items)` at `beatDur = 60 / bpm`.
+  - `btn-play` ▶ Play — plays `itemsToPlayback(activeDoc.items)` at `beatDur = 60 / bpm`.
   - `btn-stop` ■ Stop.
   - `btn-loop` ⟳ Loop (toggle, `aria-pressed`).
   - `btn-metronome` 🎵 Metronome (toggle).
   - `btn-countin` Count-in / "1 bar" (toggle).
-  - `input-tempo` tempo control (range slider + numeric, 20–300), labelled with the
-    current BPM; seeded from `source.bpm`, adjustable live.
+  - `<TempoControl bpm onBpm>` (§3c) — live tempo, seeded from `source.bpm`.
+  - `<TileSizeControl sizePx onSize>` (§3b/§3c) — xs→xxl, seeded from `source.size`.
 - **Audio status:** show "Loading piano…" / "Audio unavailable." like `QuizViewer`.
 
 ### 5. `usePiano.playSequence` — metronome + count-in (backward compatible)
@@ -155,8 +199,14 @@ utilities. Run the new-component checklist at the bottom of `docs/DESIGN.md`.
 - **Encode** (`encode.test.ts`): `readViewFromHash` round-trips a doc through
   `encodeSheet` and returns null on garbage / absent key.
 - **Player** (`SheetPlayer.test.tsx`): renders tiles with **no** edit controls; shows
-  the five transport controls + tempo control reflecting `source.bpm`; "Load JSON…"
-  parses a file into the view. Audio is mocked (as in existing audio-touching tests).
+  the five transport controls + tempo control reflecting `source.bpm` + the xs→xxl size
+  control reflecting `source.size`; changing the size control changes the rendered tile
+  size; "Load JSON…" parses a file into the view. Audio is mocked (as in existing
+  audio-touching tests).
+- **Quiz viewer** (`QuizViewer` tests): BPM control adjusts playback tempo; tile-size
+  control changes rendered tile size without affecting blanks/grading.
+- **Shared controls** (`viewer` tests): `TileSizeControl` marks the nearest scale step
+  active and emits the chosen px; `TempoControl` clamps 20–300.
 - **playSequence**: count-in adds `countInBeats` clicks before the first note; metronome
   off by default keeps the existing call behaviour unchanged (regression guard for
   `QuizViewer`).
@@ -167,8 +217,10 @@ utilities. Run the new-component checklist at the bottom of `docs/DESIGN.md`.
 - `src/designer/history.ts` — `bpm` in `changed()`.
 - `src/designer/DesignerControls.tsx` — BPM input.
 - `src/audio/usePiano.ts` — click synth + `playSequence` options (metronome/count-in/loop).
-- `src/quiz/QuizViewer.tsx` — tempo from `source.bpm`.
+- `src/quiz/QuizViewer.tsx` — local tempo + size overrides; BPM + tile-size controls; render via `renderDoc`.
 - `src/quiz/encode.ts` — `readViewFromHash`.
+- `src/viewer/sizes.ts` — **new** `TILE_SIZE_SCALE` (label→px).
+- `src/viewer/TempoControl.tsx`, `src/viewer/TileSizeControl.tsx` — **new** shared controls.
 - `src/player/SheetPlayer.tsx` — **new** component.
 - `src/App.tsx` — `#view` embed branch + lazy import.
 - `src/index.css` / `docs/DESIGN.md` — new control selectors / doc any new pattern.
