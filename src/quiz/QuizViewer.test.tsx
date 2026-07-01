@@ -24,3 +24,14 @@ test('the size control resizes the rendered blank cells', async () => {
   const cell = document.querySelector('.quiz-cell') as HTMLElement;
   expect(cell.style.width).toBe('112px');
 });
+
+test('changing difficulty preset keeps the taker’s chosen tile size', async () => {
+  const src = source();
+  const { rerender } = render(<QuizViewer source={src} preset={{ knownPct: 0.5, seed: 1 }} />);
+  await userEvent.click(screen.getByRole('button', { name: 'xxl' }));
+  expect(screen.getByRole('button', { name: 'xxl' })).toHaveAttribute('aria-pressed', 'true');
+  // Same source doc, different difficulty (new blanks). The override reset keys
+  // on source identity, so the chosen size must survive the preset change.
+  rerender(<QuizViewer source={src} preset={{ knownPct: 0.8, seed: 2 }} />);
+  expect(screen.getByRole('button', { name: 'xxl' })).toHaveAttribute('aria-pressed', 'true');
+});

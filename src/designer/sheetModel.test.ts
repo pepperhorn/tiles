@@ -150,3 +150,10 @@ test('setBpm sets the tempo, clamped to 20–300 and rounded', () => {
   expect(reduce(defaultDoc(), { type: 'setBpm', bpm: 999 }).bpm).toBe(300);
   expect(reduce(defaultDoc(), { type: 'setBpm', bpm: 90.7 }).bpm).toBe(91);
 });
+
+test('setBpm keeps the existing tempo when given NaN (e.g. a cleared input)', () => {
+  const doc = reduce(defaultDoc(), { type: 'setBpm', bpm: 90 });
+  // Number('') is NaN; it must not overwrite the tempo with NaN (which would
+  // make beatDur = 60/NaN and break playback).
+  expect(reduce(doc, { type: 'setBpm', bpm: NaN }).bpm).toBe(90);
+});

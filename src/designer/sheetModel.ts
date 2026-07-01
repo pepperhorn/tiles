@@ -114,7 +114,12 @@ export function reduce(doc: SheetDoc, action: Action): SheetDoc {
       return { ...doc, songKey: k };
     }
     case 'setLayout':     return { ...doc, ...action.patch };
-    case 'setBpm':        return { ...doc, bpm: Math.min(300, Math.max(20, Math.round(action.bpm))) };
+    case 'setBpm': {
+      // Guard NaN (e.g. clearing the designer number input dispatches Number('')
+      // = NaN, which survives Math.max/round and would break beatDur = 60/bpm).
+      const b = Math.round(action.bpm);
+      return { ...doc, bpm: Number.isFinite(b) ? Math.min(300, Math.max(20, b)) : doc.bpm };
+    }
     case 'transpose': {
       const items = doc.items.map(it => it.type === 'note' ? { ...it, noteId: semitone(it.noteId, action.delta) } : it);
       // A set key root rides along with the notes so the key stays correct.
