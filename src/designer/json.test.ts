@@ -30,6 +30,14 @@ test('parse fills missing fields from defaults', () => {
   expect(doc.title).toBe('X');
 });
 
+test('parse clamps and rounds an out-of-range bpm to the 20–300 invariant', () => {
+  expect(parseSheetJson(JSON.stringify({ items: [], bpm: 9999 })).bpm).toBe(300);
+  expect(parseSheetJson(JSON.stringify({ items: [], bpm: 1 })).bpm).toBe(20);
+  expect(parseSheetJson(JSON.stringify({ items: [], bpm: 128.7 })).bpm).toBe(129);
+  // A file with no bpm at all still lands on the default, not NaN.
+  expect(parseSheetJson(JSON.stringify({ items: [] })).bpm).toBe(120);
+});
+
 test('parse rejects structurally invalid json', () => {
   expect(() => parseSheetJson('{"nope":true}')).toThrow();
   expect(() => parseSheetJson('not json at all')).toThrow();

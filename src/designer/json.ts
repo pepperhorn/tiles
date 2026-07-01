@@ -35,5 +35,10 @@ export function parseSheetJson(text: string): SheetDoc {
   }
   const rest = { ...parsed };
   delete rest.midi;
-  return { ...defaultDoc(), ...rest } as SheetDoc;
+  const doc = { ...defaultDoc(), ...rest } as SheetDoc;
+  // Clamp bpm to the same 20–300 invariant the setBpm reducer enforces, so a
+  // hand-edited file or crafted #view=/#edit= link can't push an out-of-range
+  // tempo into playback (beatDur = 60/bpm) or the designer input.
+  doc.bpm = Math.min(300, Math.max(20, Math.round(doc.bpm ?? 120)));
+  return doc;
 }
