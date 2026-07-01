@@ -39,6 +39,16 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
   const [bpm, setBpm] = useState(source.bpm);
   const [sizePx, setSizePx] = useState(source.size);
 
+  // View-time tempo/size re-seed only when the *source doc* changes — NOT when
+  // the difficulty preset (blanks) changes — so adjusting difficulty keeps the
+  // taker's chosen tempo/tile-size instead of snapping them back to the default.
+  const [viewSeed, setViewSeed] = useState<SheetDoc>(source);
+  if (viewSeed !== source) {
+    setViewSeed(source);
+    setBpm(source.bpm);
+    setSizePx(source.size);
+  }
+
   // Changing the quiz (different source or blank set) clears prior answers —
   // adjusted during render rather than in an effect (React-recommended pattern).
   const [quizKey, setQuizKey] = useState<{ s: SheetDoc; b: number[] }>({ s: source, b: blanks });
@@ -47,12 +57,10 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
     setAnswers({});
     setVerdicts(null);
     setSelected(null);
-    setBpm(source.bpm);
-    setSizePx(source.size);
   }
 
-  const renderDoc = { ...source, size: sizePx };
-  const { rows } = sheetLayout(renderDoc);
+  const renderDoc = useMemo(() => ({ ...source, size: sizePx }), [source, sizePx]);
+  const { rows } = useMemo(() => sheetLayout(renderDoc), [renderDoc]);
 
   const answerNoteId = (index: number) => {
     const it = source.items[index];

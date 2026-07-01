@@ -36,6 +36,9 @@ test('parse clamps and rounds an out-of-range bpm to the 20–300 invariant', ()
   expect(parseSheetJson(JSON.stringify({ items: [], bpm: 128.7 })).bpm).toBe(129);
   // A file with no bpm at all still lands on the default, not NaN.
   expect(parseSheetJson(JSON.stringify({ items: [] })).bpm).toBe(120);
+  // A non-numeric bpm (Number('fast') === NaN) falls back to the default rather
+  // than letting NaN survive the clamp and reach beatDur = 60/bpm.
+  expect(parseSheetJson(JSON.stringify({ items: [], bpm: 'fast' })).bpm).toBe(120);
 });
 
 test('parse rejects structurally invalid json', () => {

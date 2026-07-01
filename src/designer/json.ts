@@ -38,7 +38,10 @@ export function parseSheetJson(text: string): SheetDoc {
   const doc = { ...defaultDoc(), ...rest } as SheetDoc;
   // Clamp bpm to the same 20–300 invariant the setBpm reducer enforces, so a
   // hand-edited file or crafted #view=/#edit= link can't push an out-of-range
-  // tempo into playback (beatDur = 60/bpm) or the designer input.
-  doc.bpm = Math.min(300, Math.max(20, Math.round(doc.bpm ?? 120)));
+  // tempo into playback (beatDur = 60/bpm) or the designer input. Coerce first:
+  // a non-numeric bpm (e.g. "fast") is NaN, which survives Math.max/round, so
+  // fall back to the default rather than letting NaN reach beatDur.
+  const b = Math.round(Number(doc.bpm));
+  doc.bpm = Number.isFinite(b) ? Math.min(300, Math.max(20, b)) : 120;
   return doc;
 }

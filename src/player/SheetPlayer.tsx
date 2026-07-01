@@ -35,7 +35,7 @@ export function SheetPlayer({ source, embed = false }: { source: SheetDoc; embed
   const piano = usePiano();
 
   const renderDoc = useMemo(() => ({ ...active, size: sizePx }), [active, sizePx]);
-  const { rows } = sheetLayout(renderDoc);
+  const { rows } = useMemo(() => sheetLayout(renderDoc), [renderDoc]);
 
   const play = () => {
     const beatDur = 60 / bpm;
