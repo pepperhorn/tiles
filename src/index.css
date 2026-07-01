@@ -28,10 +28,14 @@
 
 /* Sheet tiles share the palette/toolbar look: 2px ink border + tight offset
    shadow, so the picker and the sheet read as one consistent tile style. */
-.sheet .tile { border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+.sheet .tile, .sheet-mobile .tile { border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
 /* Dashed-border tiles (arrows + paw rests) skip the hard offset shadow — it
    reads strangely against the open dashed frame. */
-.sheet .tile-arrow, .sheet .tile-pause { box-shadow: none; }
+.sheet .tile-arrow, .sheet .tile-pause,
+.sheet-mobile .tile-arrow, .sheet-mobile .tile-pause { box-shadow: none; }
+/* Mobile editing surface: a plain framed white panel that fills the stage; tiles
+   reflow to its width at a tappable size (see DesignerCanvas mobile view). */
+.sheet-mobile { border: 2px solid var(--ink); box-shadow: var(--shadow); }
 
 /* All note text (sheet + palette) carries a 2px ink outline; the white fill
    paints on top so the glyph stays legible over any tile colour. */
@@ -170,7 +174,7 @@ body { background: var(--paper); color: var(--ink); }
 }
 
 /* Range sliders share one ink thumb/track tint across every tab. */
-.input-tempo, .mix-slider, .diff-slider { accent-color: var(--ink); }
+.input-tempo, .mix-slider, .diff-slider, .keys-slider { accent-color: var(--ink); }
 
 /* Inline mini-actions — small Space Mono text triggers that sit inside a group
    (Apply to all / Select all / template Save·Load·Delete). Ink, not web-link
@@ -267,14 +271,12 @@ body { background: var(--paper); color: var(--ink); }
 /* Toolbar TOGGLES (sound, ♯ ♭, auto up/down) stay flat 2D — they hold a state,
    so no 3D brutalist shadow or press offset; just the outline + active fill. */
 .designer-toolbar .btn-speaker,
-.designer-toolbar .palette-sharp-toggle,
-.designer-toolbar .palette-flat-toggle,
+.designer-toolbar .palette-acc-toggle,
 .designer-toolbar .palette-autoupdown {
   box-shadow: none;
 }
 .designer-toolbar .btn-speaker:hover, .designer-toolbar .btn-speaker:active,
-.designer-toolbar .palette-sharp-toggle:hover, .designer-toolbar .palette-sharp-toggle:active,
-.designer-toolbar .palette-flat-toggle:hover, .designer-toolbar .palette-flat-toggle:active,
+.designer-toolbar .palette-acc-toggle:hover, .designer-toolbar .palette-acc-toggle:active,
 .designer-toolbar .palette-autoupdown:hover, .designer-toolbar .palette-autoupdown:active {
   transform: none;
   box-shadow: none;
@@ -283,15 +285,32 @@ body { background: var(--paper); color: var(--ink); }
 /* Show/hide-tools toggle: a C-colour tile echoing the favicon, with a white
    wrench. Dimmed (desaturated) when the panel is hidden so "lit = tools open". */
 .btn-toggle-tools {
-  width: 2.35rem; height: 2.35rem;
+  width: 1.9rem; height: 1.9rem;
   display: grid; place-items: center;
-  border-radius: 9px;
+  border-radius: 8px;
   border: 1px solid rgba(0, 0, 0, .15);
   background: var(--t1);
   color: #fff;
   box-shadow: var(--shadow-sm);
   transition: transform .08s ease, box-shadow .08s ease, filter .12s ease;
 }
+
+/* Mobile mode-drawer toggle — a compact brutalist chip showing the current mode. */
+.tabs-toggle {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.7rem;
+  max-width: 11rem;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.3rem 0.55rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.tabs-toggle:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
 .btn-toggle-tools:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
 .btn-toggle-tools:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
 .btn-toggle-tools[aria-pressed='false'] { filter: grayscale(.4) brightness(1.04); }
@@ -323,8 +342,9 @@ body { background: var(--paper); color: var(--ink); }
    The selected state is driven entirely by [aria-pressed='true'] below, so no
    component needs to hand-roll a slate fill. (.btn-speaker keeps its own
    matching accent rule since it lives among the flat notes-toolbar toggles.) */
-.btn-size, .btn-paper, .btn-orient, .btn-type, .btn-mode,
-.palette-sharp-toggle, .palette-flat-toggle, .palette-autoupdown {
+.btn-size, .btn-paper, .btn-orient, .btn-type, .btn-mode, .btn-inputmode, .btn-inputmode-switch, .btn-view,
+.btn-tile-size, .btn-loop, .btn-metronome, .btn-countin,
+.palette-acc-toggle, .palette-autoupdown {
   border-radius: 0;
   border: 2px solid var(--ink);
   background: var(--paper);
@@ -333,9 +353,29 @@ body { background: var(--paper); color: var(--ink); }
 }
 .btn-size[aria-pressed='true'], .btn-paper[aria-pressed='true'],
 .btn-orient[aria-pressed='true'], .btn-type[aria-pressed='true'],
-.btn-mode[aria-pressed='true'],
-.palette-sharp-toggle[aria-pressed='true'], .palette-flat-toggle[aria-pressed='true'],
+.btn-mode[aria-pressed='true'], .btn-inputmode[aria-pressed='true'], .btn-view[aria-pressed='true'],
+.btn-tile-size[aria-pressed='true'], .btn-loop[aria-pressed='true'],
+.btn-metronome[aria-pressed='true'], .btn-countin[aria-pressed='true'],
+.palette-acc-toggle[aria-pressed='true'],
 .palette-autoupdown[aria-pressed='true'] { background: var(--accent); }
+
+/* Colour-coded note keyboard (alternate note input) — compact chordl geometry,
+   each key filled with its tile colour and labelled, ink-bordered to match the
+   tiles. Black keys overlay the white ones. */
+.piano-keyboard { display: block; width: 100%; }
+.piano-key { cursor: pointer; }
+.piano-key rect { transition: filter .08s ease; }
+.piano-key:hover rect { filter: brightness(0.93); }
+.piano-key:active rect { filter: brightness(0.85); }
+.piano-key:focus { outline: none; }
+.piano-key:focus-visible rect { stroke-width: 2.6; }
+.piano-key-label { pointer-events: none; }
+/* White note-name with an ink outline painted underneath — the same convention
+   as the tiles (.tile-main), so a key reads identically to its tile. */
+.piano-key-label { font-family: Poppins, sans-serif; font-weight: 700; font-size: 8px; fill: #fff; stroke: var(--ink); stroke-width: 1.2; paint-order: stroke; }
+.piano-key.is-black .piano-key-label { font-size: 6px; stroke-width: 0.9; }
+/* Tuck the ♯/♭ tight against the letter, mirroring .note-accidental on the tiles. */
+.piano-key-acc { /* dx is applied per-glyph in the markup so it scales with key size */ }
 
 /* Note palette + quiz picker + symbol keys ------------------------------ */
 .palette-note, .pick-note,
@@ -361,7 +401,7 @@ body { background: var(--paper); color: var(--ink); }
 }
 
 /* Inputs ---------------------------------------------------------------- */
-.input-name, .input-tpr, .input-email, .num, .tpl-name-input, .tpl-select, .overlay-input {
+.input-name, .input-tpr, .input-bpm, .input-email, .num, .tpl-name-input, .tpl-select, .overlay-input {
   border-radius: 0;
   border: 2px solid var(--ink);
   background: #fff;

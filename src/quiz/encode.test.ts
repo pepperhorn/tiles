@@ -1,4 +1,4 @@
-import { encodeQuiz, decodeQuiz, readQuizFromHash, encodeSheet, readEditFromHash } from './encode';
+import { encodeQuiz, decodeQuiz, readQuizFromHash, encodeSheet, readEditFromHash, readViewFromHash } from './encode';
 import { defaultDoc } from '../designer/sheetModel';
 
 const quiz = () => ({
@@ -31,4 +31,13 @@ test('readQuizFromHash extracts a quiz from #quiz=', () => {
 
 test('readQuizFromHash returns null for an unrelated hash', () => {
   expect(readQuizFromHash('#nothing-here')).toBeNull();
+});
+
+test('readViewFromHash loads a sheet from #view=', () => {
+  const enc = encodeSheet(quiz().doc);
+  expect(readViewFromHash(`#view=${enc}`)?.title).toBe('Twinkle ♯');
+});
+
+test('readViewFromHash returns null for an unrelated hash', () => {
+  expect(readViewFromHash('#nope')).toBeNull();
 });

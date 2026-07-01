@@ -6,7 +6,12 @@ const SIZES = [40, 52, 64, 80, 96, 112];
 const PAPERS: Paper[] = ['A4', 'A3', 'Letter', 'Legal'];
 const ORIENTS: Orient[] = ['portrait', 'landscape'];
 
-export function DesignerControls({ doc, dispatch }: { doc: SheetDoc; dispatch: (a: Action) => void }) {
+export function DesignerControls({ doc, dispatch, view, onView }: {
+  doc: SheetDoc;
+  dispatch: (a: Action) => void;
+  view: 'mobile' | 'a4';
+  onView: (v: 'mobile' | 'a4') => void;
+}) {
   const setLayout = (patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation'>>) =>
     dispatch({ type: 'setLayout', patch });
 
@@ -21,6 +26,14 @@ export function DesignerControls({ doc, dispatch }: { doc: SheetDoc; dispatch: (
 
   return (
     <div className="designer-controls no-print flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="control-view flex items-center gap-2">
+        <span className="text-sm font-medium text-slate-600">View</span>
+        <div className="view-options inline-flex gap-1" role="group" aria-label="Editing view">
+          <button className="btn-view px-2.5 py-1 text-xs" aria-pressed={view === 'mobile'} onClick={() => onView('mobile')}>Mobile</button>
+          <button className="btn-view px-2.5 py-1 text-xs" aria-pressed={view === 'a4'} onClick={() => onView('a4')}>A4</button>
+        </div>
+      </div>
+      {sep}
       <div className="control-tpr flex items-center gap-2">
         <label className="text-sm font-medium text-slate-600 whitespace-nowrap" htmlFor="dTilesPerRow">Tiles per row</label>
         <input
@@ -74,6 +87,20 @@ export function DesignerControls({ doc, dispatch }: { doc: SheetDoc; dispatch: (
             >{o}</button>
           ))}
         </div>
+      </div>
+      {sep}
+      <div className="control-bpm flex items-center gap-2">
+        <label className="text-sm font-medium text-slate-600 whitespace-nowrap" htmlFor="dBpm">BPM</label>
+        <input
+          id="dBpm"
+          className="input-bpm px-2 py-1 text-sm w-20"
+          type="number"
+          min={20}
+          max={300}
+          value={doc.bpm}
+          aria-label="BPM"
+          onChange={e => dispatch({ type: 'setBpm', bpm: Number(e.target.value) })}
+        />
       </div>
       {sep}
       <div className="control-transpose flex items-center gap-2">

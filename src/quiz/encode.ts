@@ -46,6 +46,17 @@ export function readEditFromHash(hash: string): SheetDoc | null {
   }
 }
 
+/** Reads `#view=<base64url>` (a full sheet) from a URL hash; null if absent/invalid. */
+export function readViewFromHash(hash: string): SheetDoc | null {
+  const m = /[#&]view=([^&]+)/.exec(hash);
+  if (!m) return null;
+  try {
+    return parseSheetJson(fromBase64Url(decodeURIComponent(m[1])));
+  } catch {
+    return null;
+  }
+}
+
 // --- Quiz (sheet + addon preset) -------------------------------------------
 
 export function encodeQuiz(quiz: Quiz): string {

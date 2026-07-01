@@ -11,8 +11,8 @@ import { gradeAnswer } from './grade';
 import { chooseBlanks } from './blanks';
 import type { QuizPreset } from './encode';
 import type { SheetDoc } from '../designer/sheetModel';
-
-const NOTE_DUR = 0.5;
+import { TempoControl } from '../viewer/TempoControl';
+import { TileSizeControl } from '../viewer/TileSizeControl';
 
 type Verdict = 'correct' | 'retry';
 
@@ -36,6 +36,8 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
   const [verdicts, setVerdicts] = useState<Record<number, Verdict> | null>(null);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const piano = usePiano();
+  const [bpm, setBpm] = useState(source.bpm);
+  const [sizePx, setSizePx] = useState(source.size);
 
   // Changing the quiz (different source or blank set) clears prior answers —
   // adjusted during render rather than in an effect (React-recommended pattern).
@@ -45,9 +47,12 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
     setAnswers({});
     setVerdicts(null);
     setSelected(null);
+    setBpm(source.bpm);
+    setSizePx(source.size);
   }
 
-  const { rows } = sheetLayout(source);
+  const renderDoc = { ...source, size: sizePx };
+  const { rows } = sheetLayout(renderDoc);
 
   const answerNoteId = (index: number) => {
     const it = source.items[index];
@@ -66,13 +71,14 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
   };
 
   const playSong = (withAnswers: boolean) => {
+    const beatDur = 60 / bpm;
     const overrides = withAnswers ? answers : {};
     const placed = itemsToPitches(source.items, overrides);
     const events = placed.map(p => {
       // "Song" plays the FULL melody incl. blanks — an auditory cue to the
       // answers. "With my answers" mutes only blanks the user hasn't filled.
       const muted = withAnswers && blankSet.has(p.index) && answers[p.index] === undefined;
-      return { midi: muted ? null : p.midi, dur: NOTE_DUR, index: p.index };
+      return { midi: muted ? null : p.midi, dur: beatDur, index: p.index };
     });
     void piano.playSequence(events, setPlayingIndex);
   };
@@ -94,7 +100,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
   const pct = total ? Math.round((correctCount / total) * 100) : 0;
 
   const sheet = (
-    <SheetSurface doc={source}>
+    <SheetSurface doc={renderDoc}>
         <div className="sheet-body flex flex-col gap-1.5">
           {rows.map((row, ri) =>
             row.kind === 'section'
@@ -106,7 +112,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
                     const playing = playingIndex === cell.index;
                     // Everything except a blanked-out note draws as a normal tile.
                     if (item.type !== 'note' || !blankSet.has(cell.index)) {
-                      return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}>{innerTile(item, source.size, source.accidentalStyle)}</div>;
+                      return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}>{innerTile(item, renderDoc.size, renderDoc.accidentalStyle)}</div>;
                     }
                     // Blank cell — fillable.
                     const given = answers[cell.index];
@@ -119,11 +125,11 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
                       <button
                         key={cell.index}
                         className={`tile-slot quiz-cell ${isSel ? 'quiz-cell-selected' : ''} ${playing ? 'is-playing' : ''}`}
-                        style={{ width: source.size, height: source.size, boxSizing: 'border-box', boxShadow: ring, border: given ? 'none' : '2px dashed #94a3b8', borderRadius: 0 }}
+                        style={{ width: renderDoc.size, height: renderDoc.size, boxSizing: 'border-box', boxShadow: ring, border: given ? 'none' : '2px dashed #94a3b8', borderRadius: 0 }}
                         aria-label={`Blank ${cell.index}${given ? `, answered ${given}` : ''}`}
                         onClick={() => { setSelected(cell.index); setVerdicts(null); }}
                       >
-                        {given ? <Tile kind="note" note={noteById(given)!} size={source.size} accidental={source.accidentalStyle} /> : null}
+                        {given ? <Tile kind="note" note={noteById(given)!} size={renderDoc.size} accidental={renderDoc.accidentalStyle} /> : null}
                       </button>
                     );
                   })}
@@ -165,6 +171,9 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
         {piano.status === 'loading' && <p className="text-xs text-slate-400 mt-1">Loading piano…</p>}
         {piano.status === 'error' && <p className="text-xs text-red-500 mt-1">Audio unavailable.</p>}
       </div>
+
+      <TempoControl bpm={bpm} onBpm={setBpm} />
+      <TileSizeControl sizePx={sizePx} onSize={setSizePx} />
 
       <div className="group group-pick">
         <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">

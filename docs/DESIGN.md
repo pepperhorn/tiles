@@ -64,8 +64,11 @@ Buttons come in two deliberate tiers so the UI has hierarchy:
 | **Tier 2 soft action** | `.btn-save .btn-load .btn-pdf .btn-print .btn-email …` | Rounded 8px, 1.5px hairline border, soft blurred shadow, quiet press |
 | **Primary / go** | `.btn-download-pdf .btn-submit` | 2.5px border, `--primary` fill, `--shadow`, uppercase |
 | **Masthead tab** | `.brut-tab` | 2.5px border, Space Mono; **inverse `--ink` fill + `--paper` text** when `aria-pressed` (the deliberate non-yellow selected state) |
-| **Segmented toggle** | `.btn-size .btn-paper .btn-orient .btn-type .btn-mode .palette-sharp-toggle .palette-flat-toggle .palette-autoupdown` | Square, 2px border; **selected fills `--accent`** purely via `[aria-pressed='true']` in `index.css` — the component only sets `aria-pressed`, never a fill class. Connected groups stay shadow-less |
+| **Segmented toggle** | `.btn-size .btn-paper .btn-orient .btn-type .btn-mode .btn-inputmode .btn-view .palette-acc-toggle .palette-autoupdown` | Square, 2px border; **selected fills `--accent`** purely via `[aria-pressed='true']` in `index.css` — the component only sets `aria-pressed`, never a fill class. Connected groups stay shadow-less. `.palette-acc-toggle` is a single ♯/♭ button that shows the active spelling and flips on tap; `.btn-view` is the Mobile/A4 editing-view pair |
+| **Mobile mode drawer** | `.tabs-toggle` (header) · `.btn-inputmode-switch` (notes) | Single-button switches that save space on mobile: `.tabs-toggle` collapses the masthead mode tabs behind a chip showing the current mode (collapsed by default on mobile portrait, inline ≥`lg`); `.btn-inputmode-switch` flips Tiles⇄Keyboard, labelled with the target mode |
+| **Mobile editing surface** | `.sheet-mobile` | The A4 page is WYSIWYG (zoomed to fit width, so tiles shrink). The Mobile view (default on mobile portrait, toggled via `.btn-view` in Layout) drops the page chrome and reflows tiles to the device at a tappable ≥80px size; the A4 view stays the true export preview |
 | **Note / symbol tile** | `.palette-note .palette-up .palette-pause .palette-break …` | Square, 2px border, 2px tile shadow |
+| **Colour-coded keyboard** | `.piano-keyboard .piano-key` | SVG note-input keyboard (compact chordl geometry). Each key filled with its tile colour + `var(--ink)` border, white note-name labels with an ink outline (same convention as `.tile-main`, ♯/♭ tucked tight); no octave digit — tiles are register-free, so the key's octave is an internal input aid (it points auto up/down arrows at the entered pitch) and is never shown or stored. Spans full panel width with height scaling to aspect ratio, so a `.keys-slider` (7–15 white keys, centred on F4; defaults to 9/B3–C5 on mobile portrait, 13/G3–E5 wider) trades span for bigger, easier-to-tap keys. Hover/active dim via `filter: brightness()`. The alternate to the note-tile palette |
 | **Notes toolbar** | any `button` inside `.designer-toolbar` | Auto-unified to one outline + `--shadow-sm` (see rule in `index.css`) |
 | **Inline mini-action** | `.btn-apply-all .btn-sel-all .btn-sel-none .btn-reset-counts .btn-tpl-save .btn-tpl-load .btn-tpl-del .btn-diff-shuffle` | Space Mono uppercase ink text trigger, underline on hover (no box). For small in-group actions — **not** web-link blue |
 | **Input** | `.input-name .input-email .overlay-input .num .tpl-* …` | Square, 2px ink border, white fill |
@@ -78,6 +81,14 @@ When you add a button, **add its class to the matching selector list** in
 `.designer-toolbar`) instead of styling it inline. A button that only has
 Tailwind `rounded-* border shadow-*` will look foreign — that is the bug this
 doc exists to prevent.
+
+### Viewer controls (SheetPlayer / QuizViewer)
+
+The read-only viewers reuse existing families: transport Play/Stop use the Tier-1
+outline button family (`.btn-play` / `.btn-stop`); Loop/Metronome/Count-in and the
+`xs–xxl` tile-size buttons use the segmented-toggle family (`aria-pressed` fills
+`--accent`); the BPM number input uses the input family (`.input-bpm`); the tempo
+slider uses the range-slider family (`.input-tempo`). No new pattern was introduced.
 
 ## Checklist for a new component
 

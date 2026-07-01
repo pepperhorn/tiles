@@ -30,12 +30,53 @@ test('a down arrow forces the next note lower', () => {
   expect(itemsToPitches([note('B'), arrow('down'), note('C')]).map(p => p.midi)).toEqual([71, 60]);
 });
 
-test('all pitches stay within G3 (55) and G5 (79)', () => {
+test("an arrow's direction persists across the whole run, not just the next note", () => {
+  // C up to A (a sixth), then F. Under one-note arrows, F would snap to the
+  // nearest octave below A and fold the run down; the run direction must persist
+  // so F continues upward.
+  expect(itemsToPitches([note('C'), arrow('up'), note('A'), note('F')]).map(p => p.midi))
+    .toEqual([60, 69, 77]);
+});
+
+test('a mid-run arrow flips the direction for the rest of the run', () => {
+  expect(itemsToPitches([note('C'), arrow('up'), note('E'), note('G'), arrow('down'), note('E'), note('C')])
+    .map(p => p.midi)).toEqual([60, 64, 67, 64, 60]);
+});
+
+test('a repeated pitch class inside a run holds its octave (no octave leap)', () => {
+  // Already climbing, then E repeats: it must stay put, not jump an octave just
+  // because the run is ascending.
+  expect(itemsToPitches([note('C'), arrow('up'), note('E'), note('E')]).map(p => p.midi))
+    .toEqual([60, 64, 64]);
+});
+
+test('an explicit arrow still leaps a repeated pitch class by an octave', () => {
+  // The only way to climb C4→C5: an arrow on the repeat overrides the hold.
+  expect(itemsToPitches([note('C'), arrow('up'), note('C')]).map(p => p.midi)).toEqual([60, 72]);
+});
+
+test('a run direction persists through a pause in playback', () => {
+  expect(itemsToPlayback([note('C'), arrow('up'), note('E'), { type: 'pause' }, note('G')]).map(s => s.midi))
+    .toEqual([60, 64, null, 67]);
+});
+
+test('all pitches stay within C3 (48) and C6 (84)', () => {
   const items = ['C', 'G', 'C', 'G', 'C', 'G'].flatMap(id => [arrow('up'), note(id)]);
   for (const p of itemsToPitches(items)) {
-    expect(p.midi).toBeGreaterThanOrEqual(55);
-    expect(p.midi).toBeLessThanOrEqual(79);
+    expect(p.midi).toBeGreaterThanOrEqual(48);
+    expect(p.midi).toBeLessThanOrEqual(84);
   }
+});
+
+test('a run that overruns the top octave saturates instead of wrapping down', () => {
+  // Forced-up steps climb to C6 (84); the final ↑ can climb no further, so it must
+  // hold near the top — not wrap an octave the wrong way back down to a low G.
+  const items = ['C', 'E', 'G', 'C', 'E', 'G', 'C', 'G'].flatMap(id => [arrow('up'), note(id)]);
+  const midis = itemsToPitches(items).map(p => p.midi);
+  expect(midis.slice(0, 7)).toEqual([60, 64, 67, 72, 76, 79, 84]); // monotonic climb to C6
+  expect(midis).toEqual(expect.arrayContaining([84]));             // reaches the ceiling
+  midis.forEach(m => { expect(m).toBeGreaterThanOrEqual(48); expect(m).toBeLessThanOrEqual(84); });
+  expect(midis[7]).toBeGreaterThanOrEqual(72); // saturates at G5, not wrapped to a low octave
 });
 
 test('itemsToPlayback yields rests (midi null) for pause tiles, keeping item indexes', () => {

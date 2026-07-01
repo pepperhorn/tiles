@@ -22,6 +22,7 @@ export type SheetDoc = {
   songKey: SongKey;
   tilesPerRow: TilesPerRow; size: number; paper: Paper; orientation: Orient;
   accidentalStyle: AccidentalStyle;
+  bpm: number;
   items: Item[];
 };
 
@@ -31,6 +32,7 @@ export function defaultDoc(): SheetDoc {
     songKey: { root: null, quality: null },
     tilesPerRow: 'auto', size: 64, paper: 'A4', orientation: 'portrait',
     accidentalStyle: 'sharp',
+    bpm: 120,
     items: [],
   };
 }
@@ -47,7 +49,10 @@ export function formatKey(key: SongKey | undefined, style: AccidentalStyle): str
 }
 
 export type Action =
-  | { type: 'insertNote'; noteId: string }
+  // `octave` is a transient hint from the on-screen keyboard (the key's real
+  // octave) used only to point auto up/down arrows at the entered pitch. Tiles
+  // store pitch class only, so the reducer ignores it — it is never persisted.
+  | { type: 'insertNote'; noteId: string; octave?: number }
   | { type: 'insertArrow'; dir: 'up' | 'down' }
   | { type: 'toggleArrow'; index: number }
   | { type: 'insertPause' }
@@ -64,6 +69,7 @@ export type Action =
   | { type: 'setHeader'; field: HeaderField; value: string }
   | { type: 'setKey'; key: SongKey }
   | { type: 'setLayout'; patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation' | 'accidentalStyle'>> }
+  | { type: 'setBpm'; bpm: number }
   | { type: 'transpose'; delta: number }
   | { type: 'load'; doc: SheetDoc };
 
@@ -108,6 +114,7 @@ export function reduce(doc: SheetDoc, action: Action): SheetDoc {
       return { ...doc, songKey: k };
     }
     case 'setLayout':     return { ...doc, ...action.patch };
+    case 'setBpm':        return { ...doc, bpm: Math.min(300, Math.max(20, Math.round(action.bpm))) };
     case 'transpose': {
       const items = doc.items.map(it => it.type === 'note' ? { ...it, noteId: semitone(it.noteId, action.delta) } : it);
       // A set key root rides along with the notes so the key stays correct.

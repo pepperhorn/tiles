@@ -7,9 +7,17 @@ import {
 import { noteById } from '../notes';
 import { TILE_GAP } from '../geometry';
 import { sheetLayout } from './layout';
+import { flowRows } from './flow';
 import { SheetSurface } from './SheetSurface';
+import { HeaderZone } from './HeaderZone';
 import { innerTile, type TileItem } from './tileRender';
 import type { Item, SheetDoc, HeaderField } from './sheetModel';
+
+// Mobile editing view: tiles reflow to the device width at a comfortable minimum
+// size (instead of the whole A4 page being zoomed down to fit), so they stay big
+// enough to tap. The A4 view stays the true WYSIWYG/export preview.
+const MOBILE_MIN_TILE = 80;
+const MOBILE_PAD = 12;
 
 // Wraps a tile with tap handling: notes/pauses remove on tap; arrows (when a
 // toggle handler is supplied) flip direction on a single tap and delete on a
@@ -96,7 +104,7 @@ function sectionIsEmpty(items: Item[], s: number): boolean {
   return true;
 }
 
-export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, onEditSection, onMove, onToggleArrow, playingIndex = null }: {
+export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, onEditSection, onMove, onToggleArrow, playingIndex = null, view = 'a4' }: {
   doc: SheetDoc;
   onRemove: (index: number) => void;
   editable?: boolean;
@@ -105,8 +113,28 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
   onMove?: (from: number, to: number) => void;
   onToggleArrow?: (index: number) => void;
   playingIndex?: number | null;
+  view?: 'mobile' | 'a4';
 }) {
-  const { cols, rows } = sheetLayout(doc);
+  const mobile = view === 'mobile';
+  // Measure the mobile surface so tiles reflow to however many fit the device.
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const [surfaceW, setSurfaceW] = useState(0);
+  useEffect(() => {
+    if (!mobile) return;
+    const el = surfaceRef.current;
+    if (!el) return;
+    const measure = () => setSurfaceW(el.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mobile]);
+
+  const tileSize = mobile ? Math.max(doc.size, MOBILE_MIN_TILE) : doc.size;
+  const a4 = sheetLayout(doc);
+  const avail = Math.max(surfaceW - MOBILE_PAD * 2, tileSize);
+  const cols = mobile ? Math.max(1, Math.floor((avail + TILE_GAP) / (tileSize + TILE_GAP))) : a4.cols;
+  const rows = mobile ? flowRows(doc.items, cols) : a4.rows;
 
   const dnd = !!onMove;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -175,7 +203,7 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
               {sectionNode}
               {showZone && (
                 <div className="row-tiles flex" style={{ gap: TILE_GAP }}>
-                  <DropZone insertIndex={row.index + 1} size={doc.size} isOver={overId === `zone:${row.index + 1}`} dragColor={dragColor} />
+                  <DropZone insertIndex={row.index + 1} size={tileSize} isOver={overId === `zone:${row.index + 1}`} dragColor={dragColor} />
                 </div>
               )}
             </Fragment>
@@ -190,13 +218,13 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
             {row.cells.map(cell =>
               dnd
                 ? <DragSlot key={cell.index} index={cell.index} isOver={overId === cell.index} isPlaying={playingIndex === cell.index} isDropped={dropped === cell.index} dragColor={dragColor}>
-                    <TileButton index={cell.index} item={cell.item} size={doc.size} accidental={doc.accidentalStyle} onRemove={onRemove} onToggleArrow={onToggleArrow} />
+                    <TileButton index={cell.index} item={cell.item} size={tileSize} accidental={doc.accidentalStyle} onRemove={onRemove} onToggleArrow={onToggleArrow} />
                   </DragSlot>
                 : <div key={cell.index} className={`tile-slot ${playingIndex === cell.index ? 'is-playing' : ''}`}>
-                    {innerTile(cell.item, doc.size, doc.accidentalStyle, () => onRemove(cell.index))}
+                    {innerTile(cell.item, tileSize, doc.accidentalStyle, () => onRemove(cell.index))}
                   </div>
             )}
-            {showEndZone && <DropZone insertIndex={endZoneIndex} size={doc.size} isOver={overId === `zone:${endZoneIndex}`} dragColor={dragColor} />}
+            {showEndZone && <DropZone insertIndex={endZoneIndex} size={tileSize} isOver={overId === `zone:${endZoneIndex}`} dragColor={dragColor} />}
           </div>
         );
       })}
@@ -204,20 +232,33 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
     </div>
   );
 
+  const content = dnd ? (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={reset}>
+      {body}
+      {/* No snap-back: the overlay vanishes at the drop point instead of
+          animating to the dragged tile's old home; the landed tile wiggles. */}
+      <DragOverlay dropAnimation={null}>
+        {activeItem && (activeItem.type === 'note' || activeItem.type === 'arrow' || activeItem.type === 'pause')
+          ? innerTile(activeItem, tileSize, doc.accidentalStyle)
+          : null}
+      </DragOverlay>
+    </DndContext>
+  ) : body;
+
+  // Mobile view: tiles reflow to the device width at the editing size — no A4
+  // page chrome, no fit-to-width zoom. A4 view keeps the true export preview.
+  if (mobile) {
+    return (
+      <div className="sheet-mobile bg-white mx-auto w-full" ref={surfaceRef} style={{ padding: MOBILE_PAD }}>
+        <HeaderZone doc={doc} editable={editable} onEditField={onEditField} />
+        {content}
+      </div>
+    );
+  }
+
   return (
     <SheetSurface doc={doc} editable={editable} onEditField={onEditField}>
-      {dnd ? (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={reset}>
-          {body}
-          {/* No snap-back: the overlay vanishes at the drop point instead of
-              animating to the dragged tile's old home; the landed tile wiggles. */}
-          <DragOverlay dropAnimation={null}>
-            {activeItem && (activeItem.type === 'note' || activeItem.type === 'arrow' || activeItem.type === 'pause')
-              ? innerTile(activeItem, doc.size, doc.accidentalStyle)
-              : null}
-          </DragOverlay>
-        </DndContext>
-      ) : body}
+      {content}
     </SheetSurface>
   );
 }
