@@ -1,14 +1,14 @@
 import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { DesignerMode } from './designer/DesignerMode';
 import { readQuizFromHash, readEditFromHash, readViewFromHash, DEFAULT_PRESET, type QuizPreset } from './quiz/encode';
 import { defaultDoc, type SheetDoc } from './designer/sheetModel';
 import { historyReducer, initHistory } from './designer/history';
 import { autosaveSlot } from './storage';
 import { NOTES } from './notes';
 
-// Designer is the default tab, so it loads eagerly. The other tabs (and the
-// embed-only quiz player) are code-split so their JS — and the heavy export
-// stack they pull — only loads when the user actually opens them.
+// Every mode is code-split so its JS — and the heavy export stack the editor
+// pulls — only loads when actually opened. This keeps the embed-only routes
+// (#view SheetPlayer, #quiz player) minimal: they never download the designer.
+const DesignerMode = lazy(() => import('./designer/DesignerMode').then(m => ({ default: m.DesignerMode })));
 const GeneratorMode = lazy(() => import('./generator/GeneratorMode').then(m => ({ default: m.GeneratorMode })));
 const QuizMode = lazy(() => import('./quiz/QuizMode').then(m => ({ default: m.QuizMode })));
 const QuizViewer = lazy(() => import('./quiz/QuizViewer').then(m => ({ default: m.QuizViewer })));
