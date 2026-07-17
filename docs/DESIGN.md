@@ -75,6 +75,7 @@ Buttons come in two deliberate tiers so the UI has hierarchy:
 | **Range slider** | `.input-tempo .mix-slider .diff-slider` | `accent-color: var(--ink)` so every tab's slider shares one tint — never `accent-slate-*` |
 | **Overlay card** | `.overlay-card` + `.overlay-pop` | 3px border, `--shadow`, pop-in animation (square — never add `rounded-*`/`shadow-2xl`) |
 | **Overlay action** | `.overlay-done .confirm-ok` (dark `--ink` fill) · `.overlay-clear .confirm-cancel` (paper) | Square 2px ink, hard press; the modal's confirm/cancel pair |
+| **Library row** | `.library-row` | Full-width pick target in the Library overlay: flat 2px ink outline, no resting shadow, hover fills `--accent` with the standard lift, small hard press |
 
 When you add a button, **add its class to the matching selector list** in
 `index.css` (or place it inside an already-styled container like

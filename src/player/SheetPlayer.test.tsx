@@ -49,3 +49,22 @@ test('Load JSON loads a sheet into the empty player', async () => {
   await waitFor(() => expect(document.querySelectorAll('.tile').length).toBeGreaterThan(0));
   expect(screen.queryByText(/no song/i)).not.toBeInTheDocument();
 });
+
+const fetchLibraryList = vi.hoisted(() => vi.fn());
+const fetchLibraryDoc = vi.hoisted(() => vi.fn());
+vi.mock('../library', () => ({ fetchLibraryList, fetchLibraryDoc }));
+
+test('Library button loads a picked song into the player', async () => {
+  fetchLibraryList.mockResolvedValue([
+    { id: 'a1', title: 'Alouette', subtitle: null, keyRoot: null, keyQuality: null, bpm: null },
+  ]);
+  fetchLibraryDoc.mockResolvedValue({ ...defaultDoc(), title: 'Alouette', items: [{ type: 'note' as const, noteId: 'D' }] });
+  render(<SheetPlayer source={{ ...defaultDoc(), items: [] }} />);
+  expect(screen.getByText(/no song/i)).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: /^library/i }));
+  await userEvent.click(await screen.findByRole('button', { name: /alouette/i }));
+  await waitFor(() => expect(document.querySelectorAll('.tile').length).toBeGreaterThan(0));
+  expect(screen.queryByText(/no song/i)).not.toBeInTheDocument();
+  // The source line shows the loaded song's title.
+  expect(document.querySelector('.config-source')?.textContent).toBe('Alouette');
+});
