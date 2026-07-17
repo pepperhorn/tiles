@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SheetDoc } from './sheetModel';
 import { fetchLibraryList, fetchLibraryDoc, type LibraryEntry } from '../library';
 
@@ -24,12 +24,20 @@ export function LibraryOverlay({ onLoad, onClose }: {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [pickError, setPickError] = useState(false);
 
+  // Guards every promise callback below so a fetchList/pick that resolves
+  // after unmount (or after the user has already cancelled) never calls
+  // setState or onLoad on a gone/abandoned overlay.
+  const cancelled = useRef(false);
+  useEffect(() => () => { cancelled.current = true; }, []);
+
   // Split so the effect's own body never calls setState synchronously (only
   // from the resolved/rejected promise callbacks): the mount effect fetches
   // directly since entries/listError already start at their reset values;
   // retry (triggered from a click, not an effect) resets them first.
   const fetchList = useCallback(() => {
-    fetchLibraryList().then(setEntries).catch(() => setListError(true));
+    fetchLibraryList()
+      .then(list => { if (!cancelled.current) setEntries(list); })
+      .catch(() => { if (!cancelled.current) setListError(true); });
   }, []);
   useEffect(() => { fetchList(); }, [fetchList]);
   const retry = () => {
@@ -52,8 +60,8 @@ export function LibraryOverlay({ onLoad, onClose }: {
     setBusyId(id);
     setPickError(false);
     fetchLibraryDoc(id)
-      .then(doc => { onLoad(doc); onClose(); })
-      .catch(() => { setPickError(true); setBusyId(null); });
+      .then(doc => { if (!cancelled.current) { onLoad(doc); onClose(); } })
+      .catch(() => { if (!cancelled.current) { setPickError(true); setBusyId(null); } });
   };
 
   return (
@@ -89,24 +97,29 @@ export function LibraryOverlay({ onLoad, onClose }: {
             </div>
           )}
           {entries !== null && shown.length === 0 && !listError && (
-            <p className="library-empty text-sm text-slate-500">No matches.</p>
+            <p className="library-empty text-sm text-slate-500">
+              {q ? 'No matches.' : 'Library is empty.'}
+            </p>
           )}
-          {shown.map(e => (
-            <button
-              key={e.id}
-              type="button"
-              className="library-row px-3 py-2 text-left"
-              disabled={busyId !== null}
-              onClick={() => pick(e.id)}
-            >
-              <span className="library-row-title block text-sm font-semibold text-slate-900">
-                {e.title}{busyId === e.id ? ' …' : ''}
-              </span>
-              {metaLine(e) && (
-                <span className="library-row-meta block text-xs text-slate-500">{metaLine(e)}</span>
-              )}
-            </button>
-          ))}
+          {shown.map(e => {
+            const meta = metaLine(e);
+            return (
+              <button
+                key={e.id}
+                type="button"
+                className="library-row px-3 py-2 text-left"
+                disabled={busyId !== null}
+                onClick={() => pick(e.id)}
+              >
+                <span className="library-row-title block text-sm font-semibold text-slate-900">
+                  {e.title}{busyId === e.id ? ' …' : ''}
+                </span>
+                {meta && (
+                  <span className="library-row-meta block text-xs text-slate-500">{meta}</span>
+                )}
+              </button>
+            );
+          })}
           {pickError && (
             <p className="library-pick-error text-sm text-red-500" role="alert">Couldn't load this song.</p>
           )}

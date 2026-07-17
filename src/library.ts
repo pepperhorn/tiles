@@ -32,7 +32,7 @@ export async function fetchLibraryList(): Promise<LibraryEntry[]> {
   if (!Array.isArray(data)) throw new Error('Malformed library response');
   return data.map((row: Record<string, unknown>) => ({
     id: String(row.id),
-    title: String(row.title ?? ''),
+    title: row.title == null || row.title === '' ? 'Untitled' : String(row.title),
     subtitle: row.subtitle == null ? null : String(row.subtitle),
     keyRoot: row.key_root == null ? null : String(row.key_root),
     keyQuality: row.key_quality === 'major' || row.key_quality === 'minor' ? row.key_quality : null,

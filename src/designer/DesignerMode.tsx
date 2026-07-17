@@ -157,7 +157,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
     }
     dispatch(r);
   };
-  useKeyboard(handle, true);
+  useKeyboard(handle, !libraryOpen);
 
   usePageRule(doc.paper, doc.orientation);
 

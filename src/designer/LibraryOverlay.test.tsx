@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LibraryOverlay } from './LibraryOverlay';
 import { defaultDoc } from './sheetModel';
@@ -36,6 +36,13 @@ test('search filters by title and subtitle', async () => {
   expect(screen.getByText(/no matches/i)).toBeInTheDocument();
 });
 
+test('an empty library with no search query shows dedicated empty copy', async () => {
+  fetchLibraryList.mockResolvedValue([]);
+  render(<LibraryOverlay onLoad={vi.fn()} onClose={vi.fn()} />);
+  expect(await screen.findByText(/library is empty/i)).toBeInTheDocument();
+  expect(screen.queryByText(/no matches/i)).not.toBeInTheDocument();
+});
+
 test('picking a song loads the parsed doc and closes', async () => {
   const onLoad = vi.fn();
   const onClose = vi.fn();
@@ -45,6 +52,20 @@ test('picking a song loads the parsed doc and closes', async () => {
   expect(fetchLibraryDoc).toHaveBeenCalledWith('a1');
   expect(onLoad.mock.calls[0][0].title).toBe('Alouette');
   expect(onClose).toHaveBeenCalled();
+});
+
+test('a pick resolving after unmount does not call onLoad', async () => {
+  let resolvePick!: (doc: unknown) => void;
+  fetchLibraryDoc.mockReturnValue(new Promise(resolve => { resolvePick = resolve; }));
+  const onLoad = vi.fn();
+  const { unmount } = render(<LibraryOverlay onLoad={onLoad} onClose={vi.fn()} />);
+  await userEvent.click(await screen.findByRole('button', { name: /alouette/i }));
+  unmount();
+  await act(async () => {
+    resolvePick({ ...defaultDoc(), title: 'Alouette', items: [{ type: 'note', noteId: 'G' }] });
+    await Promise.resolve();
+  });
+  expect(onLoad).not.toHaveBeenCalled();
 });
 
 test('a failed list fetch shows the error state and retry refetches', async () => {

@@ -14,6 +14,7 @@ describe('fetchLibraryList', () => {
     fetchMock.mockResolvedValue(ok([
       { id: 'a1', title: 'Song A', subtitle: 'Sub', key_root: 'G', key_quality: 'major', bpm: 100 },
       { id: 'b2', title: 'Song B', subtitle: null, key_root: null, key_quality: null, bpm: null },
+      { id: 'c3', title: null, subtitle: null, key_root: null, key_quality: null, bpm: null },
     ]));
     const list = await fetchLibraryList();
     const url = String(fetchMock.mock.calls[0][0]);
@@ -25,7 +26,25 @@ describe('fetchLibraryList', () => {
     expect(list).toEqual([
       { id: 'a1', title: 'Song A', subtitle: 'Sub', keyRoot: 'G', keyQuality: 'major', bpm: 100 },
       { id: 'b2', title: 'Song B', subtitle: null, keyRoot: null, keyQuality: null, bpm: null },
+      { id: 'c3', title: 'Untitled', subtitle: null, keyRoot: null, keyQuality: null, bpm: null },
     ]);
+  });
+
+  test('a missing or blank title falls back to Untitled', async () => {
+    fetchMock.mockResolvedValue(ok([
+      { id: 'd4', subtitle: null, key_root: null, key_quality: null, bpm: null },
+      { id: 'e5', title: '', subtitle: null, key_root: null, key_quality: null, bpm: null },
+    ]));
+    const list = await fetchLibraryList();
+    expect(list.map(e => e.title)).toEqual(['Untitled', 'Untitled']);
+  });
+
+  test('an unrecognised key_quality coerces to null', async () => {
+    fetchMock.mockResolvedValue(ok([
+      { id: 'f6', title: 'Song F', subtitle: null, key_root: 'D', key_quality: 'dorian', bpm: null },
+    ]));
+    const list = await fetchLibraryList();
+    expect(list[0].keyQuality).toBeNull();
   });
 
   test('throws on a non-OK response', async () => {

@@ -1,5 +1,5 @@
 import { useReducer } from 'react';
-import { render, screen, within, waitFor } from '@testing-library/react';
+import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DesignerMode } from './DesignerMode';
 import { defaultDoc } from './sheetModel';
@@ -204,4 +204,32 @@ test('Library button opens the overlay and picking a song dispatches load', asyn
     expect(dispatch).toHaveBeenCalledWith({ type: 'load', doc: libDoc }));
   // Overlay closed after the pick.
   expect(screen.queryByRole('dialog', { name: /library/i })).not.toBeInTheDocument();
+});
+
+test('note-entry hotkeys are gated while the library overlay is open', async () => {
+  fetchLibraryList.mockResolvedValue([
+    { id: 'a1', title: 'Alouette', subtitle: null, keyRoot: null, keyQuality: null, bpm: null },
+  ]);
+  const dispatch = vi.fn();
+  render(
+    <DesignerMode
+      doc={defaultDoc()}
+      dispatch={dispatch}
+      onUndo={() => {}}
+      onRedo={() => {}}
+      canUndo={false}
+      canRedo={false}
+    />,
+  );
+  await userEvent.click(screen.getByRole('button', { name: /library/i }));
+  await screen.findByRole('button', { name: /alouette/i });
+  // Fire on document.body (not the auto-focused search input) so this
+  // exercises the window-level gate itself, not the pre-existing
+  // input-element guard inside useKeyboard.
+  fireEvent.keyDown(document.body, { key: 'a' });
+  expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'insertNote' }));
+
+  await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
+  fireEvent.keyDown(document.body, { key: 'c' });
+  expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'insertNote', noteId: 'C' }));
 });
