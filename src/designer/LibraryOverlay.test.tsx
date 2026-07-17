@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LibraryOverlay } from './LibraryOverlay';
@@ -83,6 +84,15 @@ test('a failed doc fetch shows an inline error and keeps the overlay open', asyn
   await userEvent.click(await screen.findByRole('button', { name: /alouette/i }));
   expect(await screen.findByText(/couldn't load this song/i)).toBeInTheDocument();
   expect(onClose).not.toHaveBeenCalled();
+});
+
+test('recovers from a StrictMode mount/cleanup/remount cycle in dev', async () => {
+  render(
+    <StrictMode>
+      <LibraryOverlay onLoad={vi.fn()} onClose={vi.fn()} />
+    </StrictMode>
+  );
+  expect(await screen.findByRole('button', { name: /alouette/i })).toBeInTheDocument();
 });
 
 test('Escape closes the overlay', async () => {

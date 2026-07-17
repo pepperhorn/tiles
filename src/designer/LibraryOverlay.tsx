@@ -28,7 +28,10 @@ export function LibraryOverlay({ onLoad, onClose }: {
   // after unmount (or after the user has already cancelled) never calls
   // setState or onLoad on a gone/abandoned overlay.
   const cancelled = useRef(false);
-  useEffect(() => () => { cancelled.current = true; }, []);
+  useEffect(() => {
+    cancelled.current = false;
+    return () => { cancelled.current = true; };
+  }, []);
 
   // Split so the effect's own body never calls setState synchronously (only
   // from the resolved/rejected promise callbacks): the mount effect fetches
