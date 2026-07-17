@@ -196,7 +196,7 @@ body { background: var(--paper); color: var(--ink); }
 .btn-new-sheet, .btn-undo, .btn-redo, .btn-key,
 .btn-transpose-up, .btn-transpose-down,
 .btn-download-png, .btn-download-webp,
-.btn-shuffle, .btn-reset, .btn-embed, .btn-load-json, .btn-use-current,
+.btn-shuffle, .btn-reset, .btn-embed, .btn-load-json, .btn-library, .btn-use-current,
 .btn-play-song, .btn-play-answers {
   border: 2px solid var(--ink);
   border-radius: 0;
@@ -210,13 +210,13 @@ body { background: var(--paper); color: var(--ink); }
 .btn-new-sheet:hover, .btn-undo:hover, .btn-redo:hover, .btn-key:hover,
 .btn-transpose-up:hover, .btn-transpose-down:hover,
 .btn-download-png:hover, .btn-download-webp:hover,
-.btn-shuffle:hover, .btn-reset:hover, .btn-embed:hover, .btn-load-json:hover, .btn-use-current:hover,
+.btn-shuffle:hover, .btn-reset:hover, .btn-embed:hover, .btn-load-json:hover, .btn-library:hover, .btn-use-current:hover,
 .btn-play-song:hover, .btn-play-answers:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
 .btn-play:active, .btn-stop:active, .btn-speaker:active,
 .btn-new-sheet:active, .btn-undo:active, .btn-redo:active, .btn-key:active,
 .btn-transpose-up:active, .btn-transpose-down:active,
 .btn-download-png:active, .btn-download-webp:active,
-.btn-shuffle:active, .btn-reset:active, .btn-embed:active, .btn-load-json:active, .btn-use-current:active,
+.btn-shuffle:active, .btn-reset:active, .btn-embed:active, .btn-load-json:active, .btn-library:active, .btn-use-current:active,
 .btn-play-song:active, .btn-play-answers:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
 
 /* Secondary buttons — TIER 2, softer (utility / file & export actions) -------
@@ -260,8 +260,8 @@ body { background: var(--paper); color: var(--ink); }
   justify-content: center;
 }
 /* Glyph / icon buttons are a fixed square so the whole row matches; only the
-   text button (New) keeps flexible width sized to its label. */
-.designer-toolbar button:not(.btn-new-sheet) {
+   text buttons (New, Library) keep flexible width sized to their labels. */
+.designer-toolbar button:not(.btn-new-sheet):not(.btn-library) {
   width: 2.5rem;
   padding: 0;
 }

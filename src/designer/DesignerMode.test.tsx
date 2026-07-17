@@ -1,9 +1,13 @@
 import { useReducer } from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DesignerMode } from './DesignerMode';
 import { defaultDoc } from './sheetModel';
 import { historyReducer, initHistory } from './history';
+
+const fetchLibraryList = vi.hoisted(() => vi.fn());
+const fetchLibraryDoc = vi.hoisted(() => vi.fn());
+vi.mock('../library', () => ({ fetchLibraryList, fetchLibraryDoc }));
 
 // DesignerMode receives doc/dispatch + undo/redo from App; provide them in a harness.
 function DesignerHarness() {
@@ -175,4 +179,29 @@ test('the input-mode toggle swaps the tile palette for the colour-coded keyboard
   // Back to tiles mode restores the palette.
   await userEvent.click(screen.getByRole('button', { name: 'Tiles' }));
   expect(screen.queryByRole('group', { name: /note keyboard/i })).toBeNull();
+});
+
+test('Library button opens the overlay and picking a song dispatches load', async () => {
+  fetchLibraryList.mockResolvedValue([
+    { id: 'a1', title: 'Alouette', subtitle: null, keyRoot: null, keyQuality: null, bpm: null },
+  ]);
+  const libDoc = { ...defaultDoc(), title: 'Alouette', items: [{ type: 'note' as const, noteId: 'G' }] };
+  fetchLibraryDoc.mockResolvedValue(libDoc);
+  const dispatch = vi.fn();
+  render(
+    <DesignerMode
+      doc={defaultDoc()}
+      dispatch={dispatch}
+      onUndo={() => {}}
+      onRedo={() => {}}
+      canUndo={false}
+      canRedo={false}
+    />,
+  );
+  await userEvent.click(screen.getByRole('button', { name: /library/i }));
+  await userEvent.click(await screen.findByRole('button', { name: /alouette/i }));
+  await waitFor(() =>
+    expect(dispatch).toHaveBeenCalledWith({ type: 'load', doc: libDoc }));
+  // Overlay closed after the pick.
+  expect(screen.queryByRole('dialog', { name: /library/i })).not.toBeInTheDocument();
 });

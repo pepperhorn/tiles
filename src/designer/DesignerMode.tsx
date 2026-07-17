@@ -8,6 +8,7 @@ import { KeyOverlay } from './KeyOverlay';
 import { HeaderEditOverlay } from './HeaderEditOverlay';
 import { EditOverlay } from './EditOverlay';
 import { ConfirmOverlay } from './ConfirmOverlay';
+import { LibraryOverlay } from './LibraryOverlay';
 import { useKeyboard, type KeyResult } from './useKeyboard';
 import { TabBar } from '../components/Tabs';
 import { tabPanelClass, type TabDef } from '../components/tabPanel';
@@ -66,6 +67,7 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
   const [view, setView] = useState<'mobile' | 'a4'>(defaultView);
   const [confirmNew, setConfirmNew] = useState(false);
   const [keyOpen, setKeyOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   // Destructure the stable (useCallback-memoised) members so the memoised
@@ -309,6 +311,12 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
                 title="New sheet"
                 onClick={() => setConfirmNew(true)}
               >New</button>
+              <button
+                className="btn-library text-sm font-semibold"
+                aria-label="Library"
+                title="Load a song from the library"
+                onClick={() => setLibraryOpen(true)}
+              >Library</button>
 
               <span className="toolbar-sep mx-0.5 self-stretch w-px bg-slate-300" aria-hidden="true" />
 
@@ -477,6 +485,17 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
 
       {keyOpen && (
         <KeyOverlay doc={doc} dispatch={dispatch} onClose={() => setKeyOpen(false)} />
+      )}
+
+      {libraryOpen && (
+        <LibraryOverlay
+          onLoad={(d) => {
+            if (playingIndex !== null) stopAudio();
+            dispatch({ type: 'load', doc: d });
+            setExportMsg('');
+          }}
+          onClose={() => setLibraryOpen(false)}
+        />
       )}
 
       {editingField && (
