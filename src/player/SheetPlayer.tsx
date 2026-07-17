@@ -3,6 +3,7 @@ import type { SheetDoc } from '../designer/sheetModel';
 import { parseSheetJson } from '../designer/json';
 import { sheetLayout } from '../designer/layout';
 import { SheetSurface } from '../designer/SheetSurface';
+import { LibraryOverlay } from '../designer/LibraryOverlay';
 import { innerTile } from '../designer/tileRender';
 import { itemsToPlayback } from '../audio/pitch';
 import { usePiano } from '../audio/usePiano';
@@ -31,6 +32,7 @@ export function SheetPlayer({ source, embed = false }: { source: SheetDoc; embed
   const [countIn, setCountIn] = useState(false);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [msg, setMsg] = useState('');
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const piano = usePiano();
 
@@ -77,6 +79,7 @@ export function SheetPlayer({ source, embed = false }: { source: SheetDoc; embed
         <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400">Sheet</span>
         <div className="config-source text-xs text-slate-500">{active.title?.trim() || (loaded ? 'uploaded JSON' : 'shared sheet')}</div>
         <button className="btn-load-json px-3 py-1 text-sm" onClick={() => fileRef.current?.click()}>Load JSON…</button>
+        <button className="btn-library px-3 py-1 text-sm" onClick={() => setLibraryOpen(true)}>Library…</button>
         <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" aria-label="Load JSON"
           onChange={e => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ''; }} />
         {msg && <div className="config-msg text-xs text-slate-500 break-all">{msg}</div>}
@@ -108,6 +111,12 @@ export function SheetPlayer({ source, embed = false }: { source: SheetDoc; embed
       <aside className="player-panel no-print order-2 lg:order-1 basis-[45%] lg:basis-auto shrink-0 lg:shrink min-h-0 overflow-y-auto bg-white lg:border-r lg:border-slate-200 p-5">
         {controls}
       </aside>
+      {libraryOpen && (
+        <LibraryOverlay
+          onLoad={(d) => { setLoaded(d); setMsg('Loaded from library.'); }}
+          onClose={() => setLibraryOpen(false)}
+        />
+      )}
     </div>
   );
 }
