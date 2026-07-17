@@ -1,4 +1,4 @@
-import { serializeDoc, parseSheetJson, deriveMidi } from './json';
+import { serializeDoc, parseSheetJson, parseSheetValue, deriveMidi } from './json';
 import { defaultDoc } from './sheetModel';
 
 test('serialize then parse round-trips a doc', () => {
@@ -44,4 +44,26 @@ test('parse clamps and rounds an out-of-range bpm to the 20–300 invariant', ()
 test('parse rejects structurally invalid json', () => {
   expect(() => parseSheetJson('{"nope":true}')).toThrow();
   expect(() => parseSheetJson('not json at all')).toThrow();
+});
+
+describe('parseSheetValue', () => {
+  test('accepts an already-parsed object and backfills defaults', () => {
+    const doc = parseSheetValue({ title: 'Lib song', items: [{ type: 'note', noteId: 'G' }] });
+    expect(doc.title).toBe('Lib song');
+    expect(doc.items).toEqual([{ type: 'note', noteId: 'G' }]);
+    expect(doc.paper).toBe('A4'); // backfilled from defaultDoc()
+    expect(doc.bpm).toBe(120);
+  });
+
+  test('strips the derived midi annotation and clamps bpm', () => {
+    const doc = parseSheetValue({ items: [], midi: [{ index: 0, midi: 60, name: 'C4' }], bpm: 999 });
+    expect('midi' in doc).toBe(false);
+    expect(doc.bpm).toBe(300);
+  });
+
+  test('rejects values without an items array', () => {
+    expect(() => parseSheetValue(null)).toThrow(/items array/);
+    expect(() => parseSheetValue('a string')).toThrow(/items array/);
+    expect(() => parseSheetValue({ title: 'no items' })).toThrow(/items array/);
+  });
 });
