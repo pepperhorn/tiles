@@ -25,6 +25,7 @@ import { ucfirst } from '../text';
 import { formatKey } from './sheetModel';
 import { cmsEnabled, emailReceipt } from '../cms';
 import { PawIcon } from '../Tile';
+import { tileAnnotations, transposeMidiForDisplayMode } from '../stringFingering';
 
 const TABS: TabDef[] = [
   { id: 'notes', label: 'Notes' },
@@ -73,11 +74,18 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
   // Destructure the stable (useCallback-memoised) members so the memoised
   // handlers below can depend on them precisely without the whole piano object.
   const { status: pianoStatus, playNote, playSequence, stop: stopPiano } = usePiano();
-  const playSheet = () => playSequence(
+  const playSheet = () => {
+    const annotations = tileAnnotations(doc.items, doc.displayMode, doc.accidentalStyle, undefined, doc.fingeringPositions);
+    return playSequence(
     // 60 / bpm seconds per tile (each tile is one beat); pauses sound as rests.
-    itemsToPlayback(doc.items).map(p => ({ midi: p.midi, dur: 60 / tempo, index: p.index })),
+    itemsToPlayback(doc.items).map(p => ({
+      midi: p.midi == null ? null : (annotations[p.index]?.midi ?? transposeMidiForDisplayMode(doc.displayMode, p.midi)),
+      dur: 60 / tempo,
+      index: p.index,
+    })),
     setPlayingIndex,
-  );
+    );
+  };
   const stopAudio = () => { stopPiano(); setPlayingIndex(null); };
 
   // Octave-aware anchor for auto up/down: remembers the last note's sounding
@@ -142,7 +150,10 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
         len: items.length,
       };
       // Speaker on: sound the note as it's added (palette tap or keyboard).
-      if (speaker && placed) void playNote(placed.midi).catch(() => {});
+      if (speaker && placed) {
+        const annotations = tileAnnotations(items, doc.displayMode, doc.accidentalStyle, undefined, doc.fingeringPositions);
+        void playNote(annotations[placed.index]?.midi ?? transposeMidiForDisplayMode(doc.displayMode, placed.midi)).catch(() => {});
+      }
       return;
     }
     // A pause or line break is pitch-neutral: hold the anchor's pitch/direction
@@ -262,6 +273,21 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
     reader.readAsArrayBuffer(file);
   };
 
+  const inputModeSwitch = (
+    <div className="input-mode-toggle flex" role="group" aria-label="Note input mode">
+      <button
+        className="btn-inputmode-switch flex items-center gap-1.5 px-3 py-1.5 text-sm"
+        title={inputMode === 'tiles' ? 'Switch to keyboard input' : 'Switch to tile input'}
+        onClick={() => setInputMode(m => (m === 'tiles' ? 'keys' : 'tiles'))}
+      >
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M8 3 4 7l4 4" /><path d="M4 7h16" /><path d="m16 21 4-4-4-4" /><path d="M20 17H4" />
+        </svg>
+        {inputMode === 'tiles' ? 'Keyboard' : 'Tiles'}
+      </button>
+    </div>
+  );
+
   return (
     // Mobile/tablet: preview on top (fits width, scrolls), tools a tabbed panel
     // capped at 45% height below. Desktop (lg+): tools sidebar + preview.
@@ -283,23 +309,9 @@ export function DesignerMode({ doc, dispatch, onUndo, onRedo, canUndo, canRedo, 
       </main>
 
       <div className={`designer-panel no-print order-2 lg:order-1 basis-[45%] lg:basis-auto shrink-0 lg:shrink min-h-0 flex-col overflow-hidden lg:overflow-y-auto bg-white lg:border-r lg:border-slate-200 ${toolsOpen ? 'flex' : 'hidden'}`}>
-        <TabBar tabs={TABS} active={tab} onSelect={setTab} />
+        <TabBar tabs={TABS} active={tab} onSelect={setTab} actions={inputModeSwitch} />
         <div className="panel-scroll flex-1 min-h-0 overflow-y-auto lg:overflow-visible lg:flex lg:flex-col lg:gap-4 lg:p-4">
           <div className={`panel-notes ${tabPanelClass(tab === 'notes')} p-4 lg:p-0`}>
-            {/* Input first — the Tiles/Keyboard switch and its palette sit at the
-                top of the panel for thumb reach on mobile. */}
-            <div className="input-mode-toggle mb-2 flex" role="group" aria-label="Note input mode">
-              <button
-                className="btn-inputmode-switch flex items-center gap-1.5 px-3 py-1.5 text-sm"
-                title={inputMode === 'tiles' ? 'Switch to keyboard input' : 'Switch to tile input'}
-                onClick={() => setInputMode(m => (m === 'tiles' ? 'keys' : 'tiles'))}
-              >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M8 3 4 7l4 4" /><path d="M4 7h16" /><path d="m16 21 4-4-4-4" /><path d="M20 17H4" />
-                </svg>
-                {inputMode === 'tiles' ? 'Keyboard' : 'Tiles'}
-              </button>
-            </div>
             {inputMode === 'tiles'
               ? <Palette onAction={handle} accidentalStyle={doc.accidentalStyle} />
               : <PianoKeyboard onAction={handle} accidentalStyle={doc.accidentalStyle} />}

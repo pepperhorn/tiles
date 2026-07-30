@@ -25,6 +25,7 @@ export function HeaderZone({ doc, editable, onEditField = () => {} }: {
 
   // Spelled with the sheet's sharp/flat preference; hidden entirely when unset.
   const keyLabel = formatKey(doc.songKey, doc.accidentalStyle);
+  const instrumentNote = doc.displayMode === 'cello' ? 'Cello 8vb' : '';
 
   return (
     <header className="sheet-header mb-4">
@@ -32,6 +33,7 @@ export function HeaderZone({ doc, editable, onEditField = () => {} }: {
         <div className="header-left min-w-0 text-sm text-slate-600">
           {keyLabel && <span className="header-key block text-left font-semibold text-slate-700">{keyLabel}</span>}
           {display('part', 'Part / instrument', 'header-part font-semibold', 'text-left')}
+          {instrumentNote && <span className="header-instrument-note block text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{instrumentNote}</span>}
           {display('tempoStyle', 'LH: tempo · style', 'header-tempo mt-1', 'text-left')}
         </div>
         <div className="header-center min-w-0">

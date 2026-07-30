@@ -12,6 +12,7 @@ import { SheetSurface } from './SheetSurface';
 import { HeaderZone } from './HeaderZone';
 import { innerTile, type TileItem } from './tileRender';
 import type { Item, SheetDoc, HeaderField } from './sheetModel';
+import { tileAnnotations, type TileAnnotation } from '../stringFingering';
 
 // Mobile editing view: tiles reflow to the device width at a comfortable minimum
 // size (instead of the whole A4 page being zoomed down to fit), so they stay big
@@ -22,9 +23,10 @@ const MOBILE_PAD = 12;
 // Wraps a tile with tap handling: notes/pauses remove on tap; arrows (when a
 // toggle handler is supplied) flip direction on a single tap and delete on a
 // double tap. The double-tap timer lives in a ref read only inside the handler.
-function TileButton({ index, item, size, accidental, onRemove, onToggleArrow }: {
+function TileButton({ index, item, size, accidental, onRemove, onToggleArrow, annotation }: {
   index: number; item: TileItem; size: number; accidental: SheetDoc['accidentalStyle'];
   onRemove: (index: number) => void; onToggleArrow?: (index: number) => void;
+  annotation?: TileAnnotation;
 }) {
   const pending = useRef<number | null>(null);
   // Don't let a pending single-tap toggle fire after this tile unmounts (e.g. a
@@ -41,7 +43,7 @@ function TileButton({ index, item, size, accidental, onRemove, onToggleArrow }: 
   };
   // display:contents wrapper carries the click without adding a layout box; the
   // surrounding slot already shows the grab cursor.
-  return <span className="contents" onClick={onClick}>{innerTile(item, size, accidental)}</span>;
+  return <span className="contents" onClick={onClick}>{innerTile(item, size, accidental, undefined, annotation)}</span>;
 }
 
 // A draggable + droppable tile slot (only rendered inside a DndContext).
@@ -135,6 +137,7 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
   const avail = Math.max(surfaceW - MOBILE_PAD * 2, tileSize);
   const cols = mobile ? Math.max(1, Math.floor((avail + TILE_GAP) / (tileSize + TILE_GAP))) : a4.cols;
   const rows = mobile ? flowRows(doc.items, cols) : a4.rows;
+  const annotations = tileAnnotations(doc.items, doc.displayMode, doc.accidentalStyle, undefined, doc.fingeringPositions);
 
   const dnd = !!onMove;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -218,10 +221,10 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
             {row.cells.map(cell =>
               dnd
                 ? <DragSlot key={cell.index} index={cell.index} isOver={overId === cell.index} isPlaying={playingIndex === cell.index} isDropped={dropped === cell.index} dragColor={dragColor}>
-                    <TileButton index={cell.index} item={cell.item} size={tileSize} accidental={doc.accidentalStyle} onRemove={onRemove} onToggleArrow={onToggleArrow} />
+                    <TileButton index={cell.index} item={cell.item} size={tileSize} accidental={doc.accidentalStyle} annotation={annotations[cell.index]} onRemove={onRemove} onToggleArrow={onToggleArrow} />
                   </DragSlot>
                 : <div key={cell.index} className={`tile-slot ${playingIndex === cell.index ? 'is-playing' : ''}`}>
-                    {innerTile(cell.item, tileSize, doc.accidentalStyle, () => onRemove(cell.index))}
+                    {innerTile(cell.item, tileSize, doc.accidentalStyle, () => onRemove(cell.index), annotations[cell.index])}
                   </div>
             )}
             {showEndZone && <DropZone insertIndex={endZoneIndex} size={tileSize} isOver={overId === `zone:${endZoneIndex}`} dragColor={dragColor} />}
@@ -239,7 +242,7 @@ export function DesignerCanvas({ doc, onRemove, editable = false, onEditField, o
           animating to the dragged tile's old home; the landed tile wiggles. */}
       <DragOverlay dropAnimation={null}>
         {activeItem && (activeItem.type === 'note' || activeItem.type === 'arrow' || activeItem.type === 'pause')
-          ? innerTile(activeItem, tileSize, doc.accidentalStyle)
+          ? innerTile(activeItem, tileSize, doc.accidentalStyle, undefined, activeIndex != null ? annotations[activeIndex] : undefined)
           : null}
       </DragOverlay>
     </DndContext>

@@ -16,6 +16,15 @@ test('flat accidental style makes the flat spelling predominant', () => {
   expect(container.querySelector('.tile-sub')!.textContent).toBe('C♯');
 });
 
+test('note tile can show a fingering label with a small keyboard note name', () => {
+  const { container } = render(<Tile kind="note" note={noteById('E')!} size={80} annotation={{ main: 'E2', sub: 'F♯5' }} />);
+  expect(container.querySelector('.tile-main')!.textContent).toBe('E2');
+  expect(container.querySelector('.tile-sub')!.textContent).toBe('F♯5');
+  expect(container.querySelector('.tile-sub .note-accidental')!.textContent).toBe('♯');
+  expect(container.querySelector('.tile-fingering')).toBeInTheDocument();
+  expect(container.querySelector('.tile-note-name')).toBeInTheDocument();
+});
+
 test('arrow tile shows its vector glyph', () => {
   // Arrows render as a stroke-only SVG (.tile-arrow-glyph), not a text glyph.
   const { container } = render(<Tile kind="arrow" sym={SYMBOLS[0]} size={80} />);

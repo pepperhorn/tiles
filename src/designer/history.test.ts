@@ -49,3 +49,21 @@ test('a bpm change is an undoable step', () => {
   h = historyReducer(h, { type: 'undo' });
   expect(h.present.bpm).toBe(120);
 });
+
+test('a display mode change is an undoable step', () => {
+  let h = initHistory(defaultDoc());
+  h = historyReducer(h, { type: 'setLayout', patch: { displayMode: 'violin' } });
+  expect(h.present.displayMode).toBe('violin');
+  expect(h.past).toHaveLength(1);
+  h = historyReducer(h, { type: 'undo' });
+  expect(h.present.displayMode).toBe('pitch');
+});
+
+test('a fingering position change is an undoable step', () => {
+  let h = initHistory(defaultDoc());
+  h = historyReducer(h, { type: 'setLayout', patch: { fingeringPositions: { violin: [1], cello: [0.5, 1] } } });
+  expect(h.present.fingeringPositions.violin).toEqual([1]);
+  expect(h.past).toHaveLength(1);
+  h = historyReducer(h, { type: 'undo' });
+  expect(h.present.fingeringPositions.violin).toEqual([1, 2, 3, 4]);
+});

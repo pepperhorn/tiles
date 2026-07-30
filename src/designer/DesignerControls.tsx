@@ -1,10 +1,18 @@
 import type { SheetDoc } from './sheetModel';
 import type { Action } from './sheetModel';
 import type { Paper, Orient, TilesPerRow } from '../geometry';
+import { AVAILABLE_FINGERING_POSITIONS, DEFAULT_FINGERING_POSITIONS, positionLabel, type StringInstrumentId, type TileDisplayMode } from '../stringFingering';
 
 const SIZES = [40, 52, 64, 80, 96, 112];
 const PAPERS: Paper[] = ['A4', 'A3', 'Letter', 'Legal'];
 const ORIENTS: Orient[] = ['portrait', 'landscape'];
+const DISPLAY_MODES: [TileDisplayMode, string][] = [
+  ['pitch', 'Pitch'],
+  ['bb', 'Bb'],
+  ['eb', 'Eb'],
+  ['violin', 'Violin'],
+  ['cello', 'Cello'],
+];
 
 export function DesignerControls({ doc, dispatch, view, onView }: {
   doc: SheetDoc;
@@ -12,7 +20,7 @@ export function DesignerControls({ doc, dispatch, view, onView }: {
   view: 'mobile' | 'a4';
   onView: (v: 'mobile' | 'a4') => void;
 }) {
-  const setLayout = (patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation'>>) =>
+  const setLayout = (patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation' | 'displayMode' | 'fingeringPositions'>>) =>
     dispatch({ type: 'setLayout', patch });
 
   const handleTpr = (val: string) => {
@@ -23,6 +31,22 @@ export function DesignerControls({ doc, dispatch, view, onView }: {
   };
 
   const sep = <span className="control-sep h-5 w-px self-center bg-slate-300" aria-hidden="true" />;
+  const instrumentMode = doc.displayMode === 'violin' || doc.displayMode === 'cello' ? doc.displayMode : null;
+  const activePositions = (instrumentMode ? doc.fingeringPositions?.[instrumentMode] : undefined) ?? (instrumentMode ? DEFAULT_FINGERING_POSITIONS[instrumentMode] : []);
+  const togglePosition = (instrument: StringInstrumentId, position: number) => {
+    const current = doc.fingeringPositions?.[instrument] ?? DEFAULT_FINGERING_POSITIONS[instrument];
+    const next = current.includes(position)
+      ? current.filter(p => p !== position)
+      : [...current, position].sort((a, b) => a - b);
+    if (!next.length) return;
+    setLayout({
+      fingeringPositions: {
+        violin: [...(doc.fingeringPositions?.violin ?? DEFAULT_FINGERING_POSITIONS.violin)],
+        cello: [...(doc.fingeringPositions?.cello ?? DEFAULT_FINGERING_POSITIONS.cello)],
+        [instrument]: next,
+      },
+    });
+  };
 
   return (
     <div className="designer-controls no-print flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -34,6 +58,38 @@ export function DesignerControls({ doc, dispatch, view, onView }: {
         </div>
       </div>
       {sep}
+      <div className="control-display flex items-center gap-2">
+        <span className="text-sm font-medium text-slate-600">Mode</span>
+        <div className="display-options flex gap-1" role="group" aria-label="Tile display mode">
+          {DISPLAY_MODES.map(([m, label]) => (
+            <button
+              key={m}
+              className="btn-display px-2.5 py-1 text-xs"
+              aria-pressed={doc.displayMode === m}
+              onClick={() => setLayout({ displayMode: m })}
+            >{label}</button>
+          ))}
+        </div>
+      </div>
+      {sep}
+      {instrumentMode && (
+        <>
+          <div className="control-positions flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-600">Positions</span>
+            <div className="position-options flex flex-wrap gap-1" role="group" aria-label={`${instrumentMode} fingering positions`}>
+              {AVAILABLE_FINGERING_POSITIONS[instrumentMode].map(pos => (
+                <button
+                  key={pos}
+                  className="btn-position px-2 py-1 text-xs"
+                  aria-pressed={activePositions.includes(pos)}
+                  onClick={() => togglePosition(instrumentMode, pos)}
+                >{positionLabel(pos)}</button>
+              ))}
+            </div>
+          </div>
+          {sep}
+        </>
+      )}
       <div className="control-tpr flex items-center gap-2">
         <label className="text-sm font-medium text-slate-600 whitespace-nowrap" htmlFor="dTilesPerRow">Tiles per row</label>
         <input

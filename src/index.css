@@ -46,7 +46,11 @@
 }
 /* The ♯/♭ glyphs fall back to a font with a wide left bearing; tuck them back
    against the note letter so there's no strange gap. */
-.note-accidental { margin-left: -0.18em; }
+.note-accidental {
+  display: inline-block;
+  margin-left: -0.08em;
+  margin-right: 0.03em;
+}
 
 /* Key overlay root picker: the selected note fills the signature yellow.
    (The quality toggles are .btn-mode, filled by the shared segmented-toggle
@@ -342,7 +346,7 @@ body { background: var(--paper); color: var(--ink); }
    The selected state is driven entirely by [aria-pressed='true'] below, so no
    component needs to hand-roll a slate fill. (.btn-speaker keeps its own
    matching accent rule since it lives among the flat notes-toolbar toggles.) */
-.btn-size, .btn-paper, .btn-orient, .btn-type, .btn-mode, .btn-inputmode, .btn-inputmode-switch, .btn-view,
+.btn-size, .btn-paper, .btn-orient, .btn-type, .btn-mode, .btn-inputmode, .btn-inputmode-switch, .btn-view, .btn-display, .btn-position,
 .btn-tile-size, .btn-loop, .btn-metronome, .btn-countin,
 .palette-acc-toggle, .palette-autoupdown {
   border-radius: 0;
@@ -353,11 +357,20 @@ body { background: var(--paper); color: var(--ink); }
 }
 .btn-size[aria-pressed='true'], .btn-paper[aria-pressed='true'],
 .btn-orient[aria-pressed='true'], .btn-type[aria-pressed='true'],
-.btn-mode[aria-pressed='true'], .btn-inputmode[aria-pressed='true'], .btn-view[aria-pressed='true'],
+.btn-mode[aria-pressed='true'], .btn-inputmode[aria-pressed='true'], .btn-view[aria-pressed='true'], .btn-display[aria-pressed='true'], .btn-position[aria-pressed='true'],
 .btn-tile-size[aria-pressed='true'], .btn-loop[aria-pressed='true'],
 .btn-metronome[aria-pressed='true'], .btn-countin[aria-pressed='true'],
 .palette-acc-toggle[aria-pressed='true'],
 .palette-autoupdown[aria-pressed='true'] { background: var(--accent); }
+
+.tile-fingering {
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 0;
+}
+.tile-note-name {
+  font-family: Poppins, system-ui, sans-serif;
+  letter-spacing: 0;
+}
 
 /* Colour-coded note keyboard (alternate note input) — compact chordl geometry,
    each key filled with its tile colour and labelled, ink-bordered to match the

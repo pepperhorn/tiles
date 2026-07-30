@@ -5,6 +5,7 @@ import { sheetLayout } from '../designer/layout';
 import { hexToCmyk, CMYK_BLACK, CMYK_WHITE, type Cmyk } from './cmyk';
 import { formatKey, type SheetDoc } from '../designer/sheetModel';
 import type { SheetPlan } from '../generator/useGeneratorState';
+import { tileAnnotations } from '../stringFingering';
 
 // Print-first PDF: drawn as VECTOR with DeviceCMYK colors (text/lines as pure
 // K black, tiles as converted CMYK), rather than an embedded RGB raster.
@@ -15,7 +16,7 @@ type PdfCell =
   | { t: 'pause' }
   | { t: 'blank' };
 type PdfRow = { t: 'section'; text: string } | { t: 'tiles'; size: number; gap: number; cells: PdfCell[] };
-type PdfHeader = { songKey: string; part: string; tempoStyle: string; title: string; subtitle: string; composer: string };
+type PdfHeader = { songKey: string; part: string; instrumentNote: string; tempoStyle: string; title: string; subtitle: string; composer: string };
 export type PdfPage = { header?: PdfHeader; rows: PdfRow[] };
 
 const ARROW_CMYK = hexToCmyk('#64748b');
@@ -112,6 +113,7 @@ function buildSheetPdf(pages: PdfPage[], paper: Paper, orient: Orient): jsPDF {
       let ly = y + 3;
       if (h.songKey) { doc.setFontSize(9); doc.text(h.songKey, pad, ly); ly += 4.5; }
       if (h.part) { doc.setFontSize(9); doc.text(h.part, pad, ly); ly += 4.5; }
+      if (h.instrumentNote) { doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.text(h.instrumentNote, pad, ly); doc.setFont('helvetica', 'normal'); ly += 4; }
       if (h.tempoStyle) { doc.setFontSize(8); doc.text(h.tempoStyle, pad, ly); }
       if (h.composer) { doc.setFontSize(9); doc.text(h.composer, pageW - pad, y + 3, { align: 'right' }); }
       if (h.title) { doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text(h.title, pageW / 2, y + 4, { align: 'center' }); }
@@ -159,6 +161,7 @@ export function buildSheetPdfString(pages: PdfPage[], paper: Paper, orient: Orie
 // --- Model builders ---------------------------------------------------------
 
 export function docToPages(doc: SheetDoc, blanks?: Set<number>): PdfPage[] {
+  const annotations = tileAnnotations(doc.items, doc.displayMode, doc.accidentalStyle, undefined, doc.fingeringPositions);
   const rows = sheetLayout(doc).rows.map<PdfRow>(row =>
     row.kind === 'section'
       ? { t: 'section', text: ascii(row.text) }
@@ -169,12 +172,21 @@ export function docToPages(doc: SheetDoc, blanks?: Set<number>): PdfPage[] {
             if (item.type === 'arrow') return { t: 'arrow', dir: item.dir };
             if (item.type === 'pause') return { t: 'pause' };
             if (blanks?.has(cell.index)) return { t: 'blank' };
-            const n = noteById(item.noteId)!;
-            const d = displayNote(n, doc.accidentalStyle);
+            const annotation = annotations[cell.index];
+            const n = noteById(annotation?.noteId ?? item.noteId)!;
+            const d = annotation ?? displayNote(n, doc.accidentalStyle);
             return { t: 'note', cmyk: hexToCmyk(n.hex), main: ascii(d.main), sub: ascii(d.sub) };
           }),
         });
-  const header: PdfHeader = { songKey: ascii(formatKey(doc.songKey, doc.accidentalStyle)), part: doc.part, tempoStyle: doc.tempoStyle, title: doc.title, subtitle: doc.subtitle, composer: doc.composer };
+  const header: PdfHeader = {
+    songKey: ascii(formatKey(doc.songKey, doc.accidentalStyle)),
+    part: doc.part,
+    instrumentNote: doc.displayMode === 'cello' ? 'Cello 8vb' : '',
+    tempoStyle: doc.tempoStyle,
+    title: doc.title,
+    subtitle: doc.subtitle,
+    composer: doc.composer,
+  };
   return [{ header, rows }];
 }
 

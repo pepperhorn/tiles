@@ -10,6 +10,7 @@ import { usePiano } from '../audio/usePiano';
 import { TILE_GAP } from '../geometry';
 import { TempoControl } from '../viewer/TempoControl';
 import { TileSizeControl } from '../viewer/TileSizeControl';
+import { tileAnnotations, transposeMidiForDisplayMode } from '../stringFingering';
 
 /**
  * View-and-playback-only sheet surface: renders a sheet read-only and plays it
@@ -38,10 +39,18 @@ export function SheetPlayer({ source, embed = false }: { source: SheetDoc; embed
 
   const renderDoc = useMemo(() => ({ ...active, size: sizePx }), [active, sizePx]);
   const { rows } = useMemo(() => sheetLayout(renderDoc), [renderDoc]);
+  const annotations = useMemo(
+    () => tileAnnotations(renderDoc.items, renderDoc.displayMode, renderDoc.accidentalStyle, undefined, renderDoc.fingeringPositions),
+    [renderDoc.items, renderDoc.displayMode, renderDoc.accidentalStyle, renderDoc.fingeringPositions],
+  );
 
   const play = () => {
     const beatDur = 60 / bpm;
-    const events = itemsToPlayback(active.items).map(s => ({ midi: s.midi, dur: beatDur, index: s.index }));
+    const events = itemsToPlayback(active.items).map(s => ({
+      midi: s.midi == null ? null : (annotations[s.index]?.midi ?? transposeMidiForDisplayMode(active.displayMode, s.midi)),
+      dur: beatDur,
+      index: s.index,
+    }));
     void piano.playSequence(events, setPlayingIndex, { metronome, countInBeats: countIn ? 4 : 0, beatDur, loop });
   };
   const stop = () => { piano.stop(); setPlayingIndex(null); };
@@ -63,7 +72,7 @@ export function SheetPlayer({ source, embed = false }: { source: SheetDoc; embed
               <div key={ri} className="row-tiles flex flex-wrap" style={{ gap: TILE_GAP }}>
                 {row.cells.map(cell => (
                   <div key={cell.index} className={`tile-slot ${playingIndex === cell.index ? 'is-playing' : ''}`}>
-                    {innerTile(cell.item, renderDoc.size, renderDoc.accidentalStyle)}
+                    {innerTile(cell.item, renderDoc.size, renderDoc.accidentalStyle, undefined, annotations[cell.index])}
                   </div>
                 ))}
               </div>

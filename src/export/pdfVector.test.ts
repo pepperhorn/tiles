@@ -17,6 +17,19 @@ test('designer PDF uses CMYK fills (k operator) and embeds the title', () => {
   expect(pdf).toContain('PrintMe');
 });
 
+test('designer PDF page model uses instrument fingering labels', () => {
+  const doc = { ...defaultDoc(), displayMode: 'violin' as const, items: [{ type: 'note' as const, noteId: 'E' }] };
+  const pages = docToPages(doc);
+  const row = pages[0].rows.find(r => r.t === 'tiles');
+  expect(row && row.t === 'tiles' ? row.cells[0] : null).toMatchObject({ t: 'note', main: 'D1', sub: 'E4' });
+});
+
+test('designer PDF includes the cello 8vb header note', () => {
+  const doc = { ...defaultDoc(), displayMode: 'cello' as const, items: [{ type: 'note' as const, noteId: 'C' }] };
+  const pdf = buildSheetPdfString(docToPages(doc), 'A4', 'portrait');
+  expect(pdf).toContain('Cello 8vb');
+});
+
 test('generator tile plans build vector pages; grid paper does not', () => {
   const tiles: SheetPlan = { kind: 'tiles', cols: 2, rows: [{ noteId: 'C' }], size: 80, gap: 4, guides: false };
   expect(plansToPages([tiles])).not.toBeNull();

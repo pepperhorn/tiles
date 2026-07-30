@@ -1,6 +1,7 @@
 import { semitone, noteById, displayNote, type AccidentalStyle } from '../notes';
 import type { Paper, Orient, TilesPerRow } from '../geometry';
 import { autoArrowItems } from '../audio/pitch';
+import { DEFAULT_FINGERING_POSITIONS, type FingeringPositions, type TileDisplayMode } from '../stringFingering';
 
 export type Item =
   | { type: 'note'; noteId: string }
@@ -22,6 +23,8 @@ export type SheetDoc = {
   songKey: SongKey;
   tilesPerRow: TilesPerRow; size: number; paper: Paper; orientation: Orient;
   accidentalStyle: AccidentalStyle;
+  displayMode: TileDisplayMode;
+  fingeringPositions: FingeringPositions;
   bpm: number;
   items: Item[];
 };
@@ -31,7 +34,11 @@ export function defaultDoc(): SheetDoc {
     part: '', title: '', subtitle: '', composer: '', tempoStyle: '',
     songKey: { root: null, quality: null },
     tilesPerRow: 'auto', size: 64, paper: 'A4', orientation: 'portrait',
-    accidentalStyle: 'sharp',
+    accidentalStyle: 'sharp', displayMode: 'pitch',
+    fingeringPositions: {
+      violin: [...DEFAULT_FINGERING_POSITIONS.violin],
+      cello: [...DEFAULT_FINGERING_POSITIONS.cello],
+    },
     bpm: 120,
     items: [],
   };
@@ -68,7 +75,7 @@ export type Action =
   | { type: 'moveItem'; from: number; to: number; auto?: boolean }
   | { type: 'setHeader'; field: HeaderField; value: string }
   | { type: 'setKey'; key: SongKey }
-  | { type: 'setLayout'; patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation' | 'accidentalStyle'>> }
+  | { type: 'setLayout'; patch: Partial<Pick<SheetDoc, 'tilesPerRow' | 'size' | 'paper' | 'orientation' | 'accidentalStyle' | 'displayMode' | 'fingeringPositions'>> }
   | { type: 'setBpm'; bpm: number }
   | { type: 'transpose'; delta: number }
   | { type: 'load'; doc: SheetDoc };

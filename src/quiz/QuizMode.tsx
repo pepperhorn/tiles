@@ -6,6 +6,7 @@ import { withExportReady } from '../export/fit';
 import { usePageRule } from '../export/usePageRule';
 import { usePiano } from '../audio/usePiano';
 import { itemsToPitches } from '../audio/pitch';
+import { tileAnnotations, transposeMidiForDisplayMode } from '../stringFingering';
 
 export function QuizMode({ doc }: { doc: SheetDoc }) {
   const stageRef = useRef<HTMLDivElement>(null);
@@ -14,10 +15,13 @@ export function QuizMode({ doc }: { doc: SheetDoc }) {
   const [exportMsg, setExportMsg] = useState('');
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const piano = usePiano();
-  const playSong = () => piano.playSequence(
-    itemsToPitches(doc.items).map(p => ({ midi: p.midi, dur: 0.5, index: p.index })),
-    setPlayingIndex,
-  );
+  const playSong = () => {
+    const annotations = tileAnnotations(doc.items, doc.displayMode, doc.accidentalStyle, undefined, doc.fingeringPositions);
+    return piano.playSequence(
+      itemsToPitches(doc.items).map(p => ({ midi: annotations[p.index]?.midi ?? transposeMidiForDisplayMode(doc.displayMode, p.midi), dur: 0.5, index: p.index })),
+      setPlayingIndex,
+    );
+  };
   const stopAudio = () => { piano.stop(); setPlayingIndex(null); };
 
   usePageRule(doc.paper, doc.orientation);

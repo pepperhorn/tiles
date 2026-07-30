@@ -3,10 +3,12 @@ import { sheetLayout } from '../designer/layout';
 import { SheetSurface } from '../designer/SheetSurface';
 import { innerTile } from '../designer/tileRender';
 import type { SheetDoc } from '../designer/sheetModel';
+import { tileAnnotations } from '../stringFingering';
 
 /** Read-only sheet where the "unknown" note cells are rendered as empty bordered boxes. */
 export function QuizCanvas({ doc, unknown, playingIndex = null }: { doc: SheetDoc; unknown: Set<number>; playingIndex?: number | null }) {
   const { rows } = sheetLayout(doc);
+  const annotations = tileAnnotations(doc.items, doc.displayMode, doc.accidentalStyle, undefined, doc.fingeringPositions);
 
   return (
     <SheetSurface doc={doc}>
@@ -30,7 +32,7 @@ export function QuizCanvas({ doc, unknown, playingIndex = null }: { doc: SheetDo
                   }
                   return (
                     <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}>
-                      {innerTile(item, doc.size, doc.accidentalStyle)}
+                      {innerTile(item, doc.size, doc.accidentalStyle, undefined, annotations[cell.index])}
                     </div>
                   );
                 })}

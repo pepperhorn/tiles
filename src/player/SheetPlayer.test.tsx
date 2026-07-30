@@ -40,6 +40,18 @@ test('Play hands playSequence the tempo-derived beat duration and 4-beat count-i
   expect(opts.countInBeats).toBe(4);
 });
 
+test('Bb and Eb display modes still play concert pitch', async () => {
+  render(<SheetPlayer source={{ ...doc(), displayMode: 'bb' }} />);
+  await userEvent.click(screen.getByRole('button', { name: /^play/i }));
+  expect(playSequence.mock.calls.at(-1)![0].map((e: { midi: number | null }) => e.midi)).toEqual([60, 64, 67]);
+});
+
+test('Cello display mode plays one octave down', async () => {
+  render(<SheetPlayer source={{ ...doc(), displayMode: 'cello' }} />);
+  await userEvent.click(screen.getByRole('button', { name: /^play/i }));
+  expect(playSequence.mock.calls.at(-1)![0].map((e: { midi: number | null }) => e.midi)).toEqual([48, 52, 55]);
+});
+
 test('Load JSON loads a sheet into the empty player', async () => {
   render(<SheetPlayer source={{ ...defaultDoc(), items: [] }} />);
   expect(screen.getByText(/no song/i)).toBeInTheDocument();

@@ -1,7 +1,8 @@
 import { displayNote, type Note, type Sym, type AccidentalStyle } from './notes';
+import type { TileAnnotation } from './stringFingering';
 
 type TileProps =
-  | { kind: 'note'; note: Note; size: number; accidental?: AccidentalStyle; onClick?: () => void }
+  | { kind: 'note'; note: Note; size: number; accidental?: AccidentalStyle; annotation?: TileAnnotation; onClick?: () => void }
   | { kind: 'arrow'; sym: Sym; size: number; onClick?: () => void }
   | { kind: 'pause'; size: number; onClick?: () => void };
 
@@ -35,9 +36,9 @@ export function ArrowIcon({ dir, size }: { dir: 'up' | 'down'; size: number }) {
  *  tight against the letter (the music-symbol glyphs fall back to a font with a
  *  wide left bearing, which otherwise leaves a strange gap). */
 export function NoteText({ text }: { text: string }) {
-  const acc = text.slice(-1);
-  if (acc !== '♯' && acc !== '♭') return <>{text}</>;
-  return <>{text.slice(0, -1)}<span className="note-accidental">{acc}</span></>;
+  const parts = text.match(/^(.+?)([♯♭])(\d*)$/);
+  if (!parts) return <>{text}</>;
+  return <>{parts[1]}<span className="note-accidental">{parts[2]}</span>{parts[3]}</>;
 }
 
 export function Tile(props: TileProps) {
@@ -64,13 +65,20 @@ export function Tile(props: TileProps) {
       </div>
     );
   }
-  const disp = displayNote(props.note, props.accidental ?? 'sharp');
+  const disp = props.annotation ?? displayNote(props.note, props.accidental ?? 'sharp');
   const bg = props.note.hex, main = disp.main, sub = disp.sub;
+  const isFingering = !!props.annotation;
   return (
     <div {...common} style={{ width: size, height: size, background: bg, cursor: onClick ? 'pointer' : 'default' }}>
-      <div className="tile-main text-white font-bold" style={{ ...shadow, fontSize: size * (sub ? 0.5 : 0.575) }}><NoteText text={main} /></div>
+      <div
+        className={`tile-main text-white font-bold ${isFingering ? 'tile-fingering' : ''}`}
+        style={{ ...shadow, fontSize: size * (isFingering ? 0.36 : sub ? 0.5 : 0.575) }}
+      ><NoteText text={main} /></div>
       {sub && (
-        <div className="tile-sub text-white font-semibold opacity-90" style={{ ...shadow, fontSize: size * 0.275, marginTop: 2 }}><NoteText text={sub} /></div>
+        <div
+          className={`tile-sub text-white font-semibold opacity-90 ${isFingering ? 'tile-note-name' : ''}`}
+          style={{ ...shadow, fontSize: size * (isFingering ? 0.18 : 0.275), marginTop: isFingering ? size * 0.08 : 2 }}
+        ><NoteText text={sub} /></div>
       )}
     </div>
   );

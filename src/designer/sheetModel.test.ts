@@ -113,6 +113,10 @@ test('setHeader and setLayout patch the doc', () => {
   expect(d.tilesPerRow).toBe(6);
   d = reduce(d, { type: 'setLayout', patch: { accidentalStyle: 'flat' } });
   expect(d.accidentalStyle).toBe('flat');
+  d = reduce(d, { type: 'setLayout', patch: { displayMode: 'violin' } });
+  expect(d.displayMode).toBe('violin');
+  d = reduce(d, { type: 'setLayout', patch: { fingeringPositions: { violin: [1], cello: [0.5, 1] } } });
+  expect(d.fingeringPositions).toEqual({ violin: [1], cello: [0.5, 1] });
 });
 
 test('setKey sets the song key', () => {
@@ -122,6 +126,14 @@ test('setKey sets the song key', () => {
 
 test('default doc has no key set', () => {
   expect(defaultDoc().songKey).toEqual({ root: null, quality: null });
+});
+
+test('default doc renders pitch tiles', () => {
+  expect(defaultDoc().displayMode).toBe('pitch');
+  expect(defaultDoc().fingeringPositions).toEqual({
+    violin: [1, 2, 3, 4],
+    cello: [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4],
+  });
 });
 
 test('formatKey spells the root per accidental style and appends quality', () => {

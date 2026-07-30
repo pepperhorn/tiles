@@ -13,6 +13,7 @@ import type { QuizPreset } from './encode';
 import type { SheetDoc } from '../designer/sheetModel';
 import { TempoControl } from '../viewer/TempoControl';
 import { TileSizeControl } from '../viewer/TileSizeControl';
+import { tileAnnotations, transposeMidiForDisplayMode } from '../stringFingering';
 
 type Verdict = 'correct' | 'retry';
 
@@ -61,6 +62,14 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
 
   const renderDoc = useMemo(() => ({ ...source, size: sizePx }), [source, sizePx]);
   const { rows } = useMemo(() => sheetLayout(renderDoc), [renderDoc]);
+  const annotations = useMemo(
+    () => tileAnnotations(renderDoc.items, renderDoc.displayMode, renderDoc.accidentalStyle, undefined, renderDoc.fingeringPositions),
+    [renderDoc.items, renderDoc.displayMode, renderDoc.accidentalStyle, renderDoc.fingeringPositions],
+  );
+  const answerAnnotations = useMemo(
+    () => tileAnnotations(renderDoc.items, renderDoc.displayMode, renderDoc.accidentalStyle, answers, renderDoc.fingeringPositions),
+    [renderDoc.items, renderDoc.displayMode, renderDoc.accidentalStyle, renderDoc.fingeringPositions, answers],
+  );
 
   const answerNoteId = (index: number) => {
     const it = source.items[index];
@@ -75,7 +84,8 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
     setVerdicts(null); // editing invalidates a prior grade
     // Hear the entered note in melodic context.
     const placed = itemsToPitches(source.items, next).find(p => p.index === selected);
-    if (placed) void piano.playNote(placed.midi);
+    const previewAnnotations = tileAnnotations(source.items, source.displayMode, source.accidentalStyle, next, source.fingeringPositions);
+    if (placed) void piano.playNote(previewAnnotations[placed.index]?.midi ?? transposeMidiForDisplayMode(source.displayMode, placed.midi));
   };
 
   const playSong = (withAnswers: boolean) => {
@@ -86,7 +96,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
       // "Song" plays the FULL melody incl. blanks — an auditory cue to the
       // answers. "With my answers" mutes only blanks the user hasn't filled.
       const muted = withAnswers && blankSet.has(p.index) && answers[p.index] === undefined;
-      return { midi: muted ? null : p.midi, dur: beatDur, index: p.index };
+      return { midi: muted ? null : (answerAnnotations[p.index]?.midi ?? transposeMidiForDisplayMode(source.displayMode, p.midi)), dur: beatDur, index: p.index };
     });
     void piano.playSequence(events, setPlayingIndex);
   };
@@ -120,7 +130,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
                     const playing = playingIndex === cell.index;
                     // Everything except a blanked-out note draws as a normal tile.
                     if (item.type !== 'note' || !blankSet.has(cell.index)) {
-                      return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}>{innerTile(item, renderDoc.size, renderDoc.accidentalStyle)}</div>;
+                      return <div key={cell.index} className={`tile-slot ${playing ? 'is-playing' : ''}`}>{innerTile(item, renderDoc.size, renderDoc.accidentalStyle, undefined, annotations[cell.index])}</div>;
                     }
                     // Blank cell — fillable.
                     const given = answers[cell.index];
@@ -137,7 +147,7 @@ export function QuizViewer({ source, preset, onPreset, embed = false, configSlot
                         aria-label={`Blank ${cell.index}${given ? `, answered ${given}` : ''}`}
                         onClick={() => { setSelected(cell.index); setVerdicts(null); }}
                       >
-                        {given ? <Tile kind="note" note={noteById(given)!} size={renderDoc.size} accidental={renderDoc.accidentalStyle} /> : null}
+                        {given ? <Tile kind="note" note={noteById(given)!} size={renderDoc.size} accidental={renderDoc.accidentalStyle} annotation={answerAnnotations[cell.index]} /> : null}
                       </button>
                     );
                   })}
