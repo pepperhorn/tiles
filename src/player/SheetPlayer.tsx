@@ -1,16 +1,13 @@
 import { useMemo, useRef, useState } from 'react';
 import type { SheetDoc } from '../designer/sheetModel';
 import { parseSheetJson } from '../designer/json';
-import { sheetLayout } from '../designer/layout';
-import { SheetSurface } from '../designer/SheetSurface';
 import { LibraryOverlay } from '../designer/LibraryOverlay';
-import { innerTile } from '../designer/tileRender';
-import { itemsToPlayback } from '../audio/pitch';
-import { usePiano } from '../audio/usePiano';
-import { TILE_GAP } from '../geometry';
 import { TempoControl } from '../viewer/TempoControl';
 import { TileSizeControl } from '../viewer/TileSizeControl';
-import { tileAnnotations, transposeMidiForDisplayMode } from '../stringFingering';
+import { tileAnnotations } from '../stringFingering';
+import { PlayerSheet } from './PlayerSheet';
+import { PlayerTransport } from './PlayerTransport';
+import { useSheetPlayback } from './useSheetPlayback';
 
 /**
  * View-and-playback-only sheet surface: renders a sheet read-only and plays it
@@ -28,32 +25,17 @@ export function SheetPlayer({ source, embed = false }: { source: SheetDoc; embed
   const [sizePx, setSizePx] = useState(active.size);
   if (seed !== active) { setSeed(active); setBpm(active.bpm); setSizePx(active.size); }
 
-  const [loop, setLoop] = useState(false);
-  const [metronome, setMetronome] = useState(false);
-  const [countIn, setCountIn] = useState(false);
-  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [msg, setMsg] = useState('');
   const [libraryOpen, setLibraryOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const piano = usePiano();
 
   const renderDoc = useMemo(() => ({ ...active, size: sizePx }), [active, sizePx]);
-  const { rows } = useMemo(() => sheetLayout(renderDoc), [renderDoc]);
   const annotations = useMemo(
     () => tileAnnotations(renderDoc.items, renderDoc.displayMode, renderDoc.accidentalStyle, undefined, renderDoc.fingeringPositions),
     [renderDoc.items, renderDoc.displayMode, renderDoc.accidentalStyle, renderDoc.fingeringPositions],
   );
 
-  const play = () => {
-    const beatDur = 60 / bpm;
-    const events = itemsToPlayback(active.items).map(s => ({
-      midi: s.midi == null ? null : (annotations[s.index]?.midi ?? transposeMidiForDisplayMode(active.displayMode, s.midi)),
-      dur: beatDur,
-      index: s.index,
-    }));
-    void piano.playSequence(events, setPlayingIndex, { metronome, countInBeats: countIn ? 4 : 0, beatDur, loop });
-  };
-  const stop = () => { piano.stop(); setPlayingIndex(null); };
+  const playback = useSheetPlayback(active, bpm, annotations);
 
   const onUpload = (file: File) => {
     const reader = new FileReader();
@@ -62,25 +44,7 @@ export function SheetPlayer({ source, embed = false }: { source: SheetDoc; embed
     reader.readAsText(file);
   };
 
-  const sheet = (
-    <SheetSurface doc={renderDoc}>
-      <div className="sheet-body flex flex-col gap-1.5">
-        {rows.map((row, ri) =>
-          row.kind === 'section'
-            ? <div key={ri} className="row-section font-semibold text-slate-700 mt-2">{row.text}</div>
-            : (
-              <div key={ri} className="row-tiles flex flex-wrap" style={{ gap: TILE_GAP }}>
-                {row.cells.map(cell => (
-                  <div key={cell.index} className={`tile-slot ${playingIndex === cell.index ? 'is-playing' : ''}`}>
-                    {innerTile(cell.item, renderDoc.size, renderDoc.accidentalStyle, undefined, annotations[cell.index])}
-                  </div>
-                ))}
-              </div>
-            ))}
-        {active.items.length === 0 && <div className="empty text-slate-400 text-sm">No song loaded.</div>}
-      </div>
-    </SheetSurface>
-  );
+  const sheet = <PlayerSheet doc={renderDoc} annotations={annotations} playingIndex={playback.playingIndex} />;
 
   const controls = (
     <div className="player-controls flex flex-col gap-4">
@@ -94,18 +58,7 @@ export function SheetPlayer({ source, embed = false }: { source: SheetDoc; embed
         {msg && <div className="config-msg text-xs text-slate-500 break-all">{msg}</div>}
       </div>
 
-      <div className="group group-transport player-transport grid gap-2">
-        <span className="lbl block text-xs font-semibold uppercase tracking-widest text-slate-400">Playback</span>
-        <div className="transport-actions grid grid-cols-2 gap-2">
-          <button className="btn-play px-3 py-2 text-sm font-semibold" aria-label="Play" onClick={play}>▶ Play</button>
-          <button className="btn-stop px-3 py-2 text-sm font-semibold" aria-label="Stop" onClick={stop}>■ Stop</button>
-          <button className="btn-loop px-3 py-2 text-sm" aria-pressed={loop} onClick={() => setLoop(v => !v)}>⟳ Loop</button>
-          <button className="btn-metronome px-3 py-2 text-sm" aria-pressed={metronome} onClick={() => setMetronome(v => !v)}>🎵 Metronome</button>
-          <button className="btn-countin px-3 py-2 text-sm col-span-2" aria-pressed={countIn} onClick={() => setCountIn(v => !v)}>Count-in (1 bar)</button>
-        </div>
-        {piano.status === 'loading' && <p className="text-xs text-slate-400">Loading piano…</p>}
-        {piano.status === 'error' && <p className="text-xs text-red-500">Audio unavailable.</p>}
-      </div>
+      <PlayerTransport playback={playback} />
 
       <TempoControl bpm={bpm} onBpm={setBpm} />
       <TileSizeControl sizePx={sizePx} onSize={setSizePx} />

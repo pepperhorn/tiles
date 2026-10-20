@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>crftiles demo</title>
+    <style>
+      /* A deliberately hostile host: global element rules the embed must not inherit. */
+      body { margin: 0; font: 18px/1.2 Georgia, serif; color: #333; background: #eef2f5; text-transform: none; }
+      button { background: hotpink; border-radius: 999px; }
+      p { margin: 2em 0; }
+      .demo-page { max-width: 1100px; margin: 0 auto; padding: 24px; display: grid; gap: 32px; }
+      .demo-row { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start; }
+      .demo-card h2 { font: 600 14px/1.2 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px; }
+      .demo-narrow { width: 320px; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>
