@@ -2,7 +2,7 @@
 // - dist/index.d.ts re-exports the declarations tsc wrote under dist/types/ (the component imports the app's sources
 //   from ../../src, so tsc's rootDir is the repo root) and drops `import './styles.css'`.
 // - Checks the bundle stays an embed: no export/PDF code (jspdf, html2canvas), no crf-admin library fetch, no
-//   top-level window/document access (SSR-safe import), smplr loaded lazily, and every style.css rule scoped.
+//   smplr loaded lazily, and every style.css rule scoped. (SSR-safe import is covered by src/ssr.test.tsx.)
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import postcss from 'postcss';
@@ -33,6 +33,7 @@ postcss.parse(css).walkRules(rule => {
   if (rule.parent?.type === 'atrule' && /keyframes$/.test(rule.parent.name)) return;
   selectors.push(...rule.selectors);
 });
-const unscoped = selectors.filter(s => !s.startsWith(scope));
+const scoped = new RegExp(`^${scope.replace('.', '\\.')}(?=$|[\\s.:\\[>~+,])`);
+const unscoped = selectors.filter(s => !scoped.test(s));
 assert.deepEqual(unscoped, [], 'every style.css selector is scoped under the root class');
 console.log(`finalize-dist: ${pkg.name}@${pkg.version} ok (${selectors.length} scoped selectors)`);
