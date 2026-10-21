@@ -1,0 +1,464 @@
+/* Note·Tiles tokens + brutalist component styles (docs/DESIGN.md).
+   Imported by src/index.css for the app and by packages/crftiles/src/styles.css
+   for the embeddable package, which scopes every rule under its root class.
+   Keep this file free of @import so both builds can include it as-is. */
+
+:root {
+  font-family: Poppins, system-ui, sans-serif;
+
+  /* Brutalist tokens */
+  --ink: #141210;
+  --paper: #fdfcf9;
+  --shadow: 5px 5px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+
+  /* The 12 tile colours, used as accents + the spectrum motif */
+  --t1: #f86e6e; --t2: #f58841; --t3: #ffbc57; --t4: #b8a334;
+  --t5: #fff56d; --t6: #b3f888; --t7: #93d154; --t8: #6bc6a0;
+  --t9: #7ee8df; --t10: #88a7f8; --t11: #cc97e8; --t12: #e277b1;
+  --accent: var(--t5);     /* signature yellow */
+  --primary: var(--t8);    /* go/confirm green */
+}
+
+/* Every tile box carries a light hairline border to separate it from neighbours
+   and to frame the unfilled (white) pause/rest tile. */
+.tile { border: 1px solid rgba(20, 18, 16, .18); box-sizing: border-box; }
+
+/* Sheet tiles share the palette/toolbar look: 2px ink border + tight offset
+   shadow, so the picker and the sheet read as one consistent tile style. */
+.sheet .tile, .sheet-mobile .tile { border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+/* Dashed-border tiles (arrows + paw rests) skip the hard offset shadow — it
+   reads strangely against the open dashed frame. */
+.sheet .tile-arrow, .sheet .tile-pause,
+.sheet-mobile .tile-arrow, .sheet-mobile .tile-pause { box-shadow: none; }
+/* Mobile editing surface: a plain framed white panel that fills the stage; tiles
+   reflow to its width at a tappable size (see DesignerCanvas mobile view). */
+.sheet-mobile { border: 2px solid var(--ink); box-shadow: var(--shadow); }
+
+/* All note text (sheet + palette) carries a 2px ink outline; the white fill
+   paints on top so the glyph stays legible over any tile colour. */
+.tile-main, .tile-sub,
+.palette-note-main, .palette-note-sub {
+  -webkit-text-stroke: 2px var(--ink);
+  paint-order: stroke;
+}
+/* The ♯/♭ glyphs fall back to a font with a wide left bearing; tuck them back
+   against the note letter so there's no strange gap. */
+.note-accidental {
+  display: inline-block;
+  margin-left: -0.08em;
+  margin-right: 0.03em;
+}
+
+/* Key overlay root picker: the selected note fills the signature yellow.
+   (The quality toggles are .btn-mode, filled by the shared segmented-toggle
+   rule, so they don't need their own selector here.) */
+.key-root-grid .pick-note[aria-pressed='true'] { background: var(--accent); }
+
+.guides .tile { outline: .4px dashed rgba(0,0,0,.22); outline-offset: -.2px; }
+
+/* Drag-and-drop placeholder: a dashed grey target for empty sections and the
+   blank space at a row's end. Eases in (and gently breathes) so it doesn't just
+   pop into place; tints to the dragged tile's colour when hovered. */
+.drop-zone {
+  box-sizing: border-box;
+  border: 2px dashed #94a3b8;
+  background: rgba(148, 163, 184, .10);
+  animation: dropZoneIn .16s ease-out both;
+}
+@keyframes dropZoneIn {
+  from { opacity: 0; transform: scale(.82); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* A tile that just landed from a drag: a quick settle wiggle so the move reads
+   as "snapped into place" rather than teleporting. */
+.tile-slot.just-dropped { animation: tileDrop .34s ease-out; }
+@keyframes tileDrop {
+  0%   { transform: scale(1.12) rotate(-4deg); }
+  40%  { transform: scale(1) rotate(3deg); }
+  70%  { transform: rotate(-1.5deg); }
+  100% { transform: rotate(0); }
+}
+
+@keyframes overlayPop {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.overlay-pop { animation: overlayPop .16s ease-out; }
+
+/* ============================================================
+   BRUTALIST SYSTEM — raw, high-contrast frame around the tiles
+   ============================================================ */
+
+body { background: var(--paper); color: var(--ink); }
+
+/* App shell + masthead -------------------------------------------------- */
+.app-shell { background: var(--paper); }
+.app-bar { background: var(--paper); border-bottom: 3px solid var(--ink); }
+
+.brand-mark {
+  font-family: 'Archivo Black', Poppins, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--ink);
+}
+.brand-dot { color: var(--t1); }
+.brand-sub {
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.6rem;
+  color: var(--ink);
+  opacity: 0.6;
+}
+
+/* The recurring 12-colour spectrum stripe */
+.spectrum { display: flex; height: 7px; border-top: 2px solid var(--ink); }
+.spectrum > i { flex: 1; display: block; }
+
+/* Tabs (masthead) ------------------------------------------------------- */
+.brut-tab {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  border: 2.5px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.4rem 0.7rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, box-shadow .08s ease, background .08s ease;
+}
+.brut-tab:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.brut-tab:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+/* The masthead tab is the one deliberate exception to "selected = --accent":
+   it fills ink (white text) so the primary nav reads as a dark anchor and gives
+   the eye a break from the yellow-filled controls below it. */
+.brut-tab[aria-pressed='true'] { background: var(--ink); color: var(--paper); box-shadow: var(--shadow); }
+
+/* Workspace: plain white behind the sheet (the hard shadow gives definition). */
+.stage {
+  background-color: #ffffff;
+  border-color: var(--ink);
+  border-bottom-width: 3px;
+}
+
+/* Tool panels ----------------------------------------------------------- */
+.designer-panel, .generator-panel, .quiz-panel, .quiz-viewer-panel { background: var(--paper); }
+@media (min-width: 1024px) {
+  .designer-panel, .generator-panel, .quiz-panel, .quiz-viewer-panel { border-right: 3px solid var(--ink); }
+}
+
+/* Mobile tool tab bar --------------------------------------------------- */
+.tab-bar { border-bottom: 3px solid var(--ink); background: var(--paper); }
+.tab-btn {
+  border-radius: 0;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.tab-btn[aria-selected='true'] { background: var(--accent); }
+
+/* Uppercase mono labels ------------------------------------------------- */
+.lbl {
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+}
+
+/* Range sliders share one ink thumb/track tint across every tab. */
+.input-tempo, .mix-slider, .diff-slider, .keys-slider { accent-color: var(--ink); }
+
+/* Inline mini-actions — small Space Mono text triggers that sit inside a group
+   (Apply to all / Select all / template Save·Load·Delete). Ink, not web-link
+   blue; underline on hover. Delete is the one warm-coloured action. */
+.btn-apply-all, .btn-sel-all, .btn-sel-none, .btn-reset-counts,
+.btn-tpl-save, .btn-tpl-load, .btn-diff-shuffle {
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: var(--ink);
+}
+.btn-tpl-del { font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; color: var(--t1); }
+.btn-apply-all:hover, .btn-sel-all:hover, .btn-sel-none:hover, .btn-reset-counts:hover,
+.btn-tpl-save:hover, .btn-tpl-load:hover, .btn-tpl-del:hover, .btn-diff-shuffle:hover { text-decoration: underline; }
+
+/* Outline action buttons — TIER 1, full brutalist (primary creative tools) --- */
+.btn-play, .btn-stop, .btn-speaker,
+.btn-new-sheet, .btn-undo, .btn-redo, .btn-key,
+.btn-transpose-up, .btn-transpose-down,
+.btn-download-png, .btn-download-webp,
+.btn-shuffle, .btn-reset, .btn-embed, .btn-load-json, .btn-library, .btn-use-current,
+.btn-play-song, .btn-play-answers {
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.btn-play:hover, .btn-stop:hover, .btn-speaker:hover,
+.btn-new-sheet:hover, .btn-undo:hover, .btn-redo:hover, .btn-key:hover,
+.btn-transpose-up:hover, .btn-transpose-down:hover,
+.btn-download-png:hover, .btn-download-webp:hover,
+.btn-shuffle:hover, .btn-reset:hover, .btn-embed:hover, .btn-load-json:hover, .btn-library:hover, .btn-use-current:hover,
+.btn-play-song:hover, .btn-play-answers:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.btn-play:active, .btn-stop:active, .btn-speaker:active,
+.btn-new-sheet:active, .btn-undo:active, .btn-redo:active, .btn-key:active,
+.btn-transpose-up:active, .btn-transpose-down:active,
+.btn-download-png:active, .btn-download-webp:active,
+.btn-shuffle:active, .btn-reset:active, .btn-embed:active, .btn-load-json:active, .btn-library:active, .btn-use-current:active,
+.btn-play-song:active, .btn-play-answers:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+/* Secondary buttons — TIER 2, softer (utility / file & export actions) -------
+   Calmer than tier 1 so the bold brutalist look stays reserved for the primary
+   creative tools: rounded corners, hairline border, gentle blurred shadow, and
+   a quiet press (no hard offset translate). */
+.btn-save, .btn-load, .btn-export-json, .btn-import-json, .btn-import-midi,
+.btn-pdf, .btn-png, .btn-webp, .btn-print, .btn-email {
+  border: 1.5px solid rgba(20, 18, 16, .28);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(20, 18, 16, .10);
+  font-weight: 600;
+  transition: border-color .12s ease, box-shadow .12s ease, background .12s ease;
+}
+.btn-save:hover, .btn-load:hover, .btn-export-json:hover, .btn-import-json:hover, .btn-import-midi:hover,
+.btn-pdf:hover, .btn-png:hover, .btn-webp:hover, .btn-print:hover, .btn-email:hover {
+  border-color: var(--ink);
+  box-shadow: 0 2px 6px rgba(20, 18, 16, .15);
+}
+.btn-save:active, .btn-load:active, .btn-export-json:active, .btn-import-json:active, .btn-import-midi:active,
+.btn-pdf:active, .btn-png:active, .btn-webp:active, .btn-print:active, .btn-email:active {
+  box-shadow: 0 1px 1px rgba(20, 18, 16, .12);
+  background: rgba(20, 18, 16, .04);
+}
+
+/* Notes toolbar: every action button shares one chunky outline + shadow so the
+   row reads as a single set — overrides the lighter palette/segmented shadows on
+   the toggles (♯ ♭ ↕), arrows, pause and break that otherwise mismatch. */
+.designer-toolbar button {
+  border-radius: 0;
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, box-shadow .08s ease;
+  /* One uniform row height; glyph centred regardless of interior padding. */
+  height: 2.5rem;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Glyph / icon buttons are a fixed square so the whole row matches; only the
+   text buttons (New, Library) keep flexible width sized to their labels. */
+.designer-toolbar button:not(.btn-new-sheet):not(.btn-library) {
+  width: 2.5rem;
+  padding: 0;
+}
+.designer-toolbar button:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.designer-toolbar button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+/* Toolbar TOGGLES (sound, ♯ ♭, auto up/down) stay flat 2D — they hold a state,
+   so no 3D brutalist shadow or press offset; just the outline + active fill. */
+.designer-toolbar .btn-speaker,
+.designer-toolbar .palette-acc-toggle,
+.designer-toolbar .palette-autoupdown {
+  box-shadow: none;
+}
+.designer-toolbar .btn-speaker:hover, .designer-toolbar .btn-speaker:active,
+.designer-toolbar .palette-acc-toggle:hover, .designer-toolbar .palette-acc-toggle:active,
+.designer-toolbar .palette-autoupdown:hover, .designer-toolbar .palette-autoupdown:active {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Show/hide-tools toggle: a C-colour tile echoing the favicon, with a white
+   wrench. Dimmed (desaturated) when the panel is hidden so "lit = tools open". */
+.btn-toggle-tools {
+  width: 1.9rem; height: 1.9rem;
+  display: grid; place-items: center;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, .15);
+  background: var(--t1);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, box-shadow .08s ease, filter .12s ease;
+}
+
+/* Mobile mode-drawer toggle — a compact brutalist chip showing the current mode. */
+.tabs-toggle {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.7rem;
+  max-width: 11rem;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.3rem 0.55rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.tabs-toggle:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
+.btn-toggle-tools:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.btn-toggle-tools:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.btn-toggle-tools[aria-pressed='false'] { filter: grayscale(.4) brightness(1.04); }
+
+/* Speaker toggle when on */
+.btn-speaker[aria-pressed='true'] { background: var(--accent); }
+
+/* Disabled toolbar buttons (e.g. undo/redo at history ends) read as inert. */
+.btn-undo:disabled, .btn-redo:disabled {
+  opacity: .4; box-shadow: var(--shadow-sm) !important; transform: none !important; cursor: default;
+}
+
+/* Primary / go buttons -------------------------------------------------- */
+.btn-download-pdf, .btn-submit {
+  border: 2.5px solid var(--ink);
+  border-radius: 0;
+  background: var(--primary);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.btn-download-pdf:hover, .btn-submit:hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 var(--ink); }
+.btn-download-pdf:active, .btn-submit:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+
+/* Segmented toggles — square + chunky, fill with --accent when selected ---
+   The selected state is driven entirely by [aria-pressed='true'] below, so no
+   component needs to hand-roll a slate fill. (.btn-speaker keeps its own
+   matching accent rule since it lives among the flat notes-toolbar toggles.) */
+.btn-size, .btn-paper, .btn-orient, .btn-type, .btn-mode, .btn-inputmode, .btn-inputmode-switch, .btn-view, .btn-display, .btn-position,
+.btn-tile-size, .btn-loop, .btn-metronome, .btn-countin,
+.palette-acc-toggle, .palette-autoupdown {
+  border-radius: 0;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 700;
+}
+.btn-size[aria-pressed='true'], .btn-paper[aria-pressed='true'],
+.btn-orient[aria-pressed='true'], .btn-type[aria-pressed='true'],
+.btn-mode[aria-pressed='true'], .btn-inputmode[aria-pressed='true'], .btn-view[aria-pressed='true'], .btn-display[aria-pressed='true'], .btn-position[aria-pressed='true'],
+.btn-tile-size[aria-pressed='true'], .btn-loop[aria-pressed='true'],
+.btn-metronome[aria-pressed='true'], .btn-countin[aria-pressed='true'],
+.palette-acc-toggle[aria-pressed='true'],
+.palette-autoupdown[aria-pressed='true'] { background: var(--accent); }
+
+.tile-fingering {
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 0;
+}
+.tile-note-name {
+  font-family: Poppins, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+/* Colour-coded note keyboard (alternate note input) — compact chordl geometry,
+   each key filled with its tile colour and labelled, ink-bordered to match the
+   tiles. Black keys overlay the white ones. */
+.piano-keyboard { display: block; width: 100%; }
+.piano-key { cursor: pointer; }
+.piano-key rect { transition: filter .08s ease; }
+.piano-key:hover rect { filter: brightness(0.93); }
+.piano-key:active rect { filter: brightness(0.85); }
+.piano-key:focus { outline: none; }
+.piano-key:focus-visible rect { stroke-width: 2.6; }
+.piano-key-label { pointer-events: none; }
+/* White note-name with an ink outline painted underneath — the same convention
+   as the tiles (.tile-main), so a key reads identically to its tile. */
+.piano-key-label { font-family: Poppins, sans-serif; font-weight: 700; font-size: 8px; fill: #fff; stroke: var(--ink); stroke-width: 1.2; paint-order: stroke; }
+.piano-key.is-black .piano-key-label { font-size: 6px; stroke-width: 0.9; }
+/* Tuck the ♯/♭ tight against the letter, mirroring .note-accidental on the tiles. */
+.piano-key-acc { /* dx is applied per-glyph in the markup so it scales with key size */ }
+
+/* Note palette + quiz picker + symbol keys ------------------------------ */
+.palette-note, .pick-note,
+.palette-up, .palette-down, .palette-break, .palette-pause, .palette-section {
+  border-radius: 0;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  transition: transform .07s ease, box-shadow .07s ease;
+}
+/* Palette note tiles mirror the sheet tiles: font sized as a fraction of the
+   tile (via container units) with matching weights, so picker == sheet. */
+.palette-note { container-type: inline-size; }
+.palette-note-main { font-size: 62cqw; font-weight: 700; }
+.palette-note-main.has-sub { font-size: 54cqw; }
+.palette-note-sub { font-size: 30cqw; font-weight: 600; }
+.palette-note:hover, .pick-note:hover,
+.palette-up:hover, .palette-down:hover, .palette-break:hover, .palette-section:hover {
+  transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink);
+}
+.palette-note:active, .pick-note:active,
+.palette-up:active, .palette-down:active, .palette-break:active, .palette-section:active {
+  transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink);
+}
+
+/* Inputs ---------------------------------------------------------------- */
+.input-name, .input-tpr, .input-bpm, .input-email, .num, .tpl-name-input, .tpl-select, .overlay-input, .library-search {
+  border-radius: 0;
+  border: 2px solid var(--ink);
+  background: #fff;
+}
+
+/* Overlay card + score block ------------------------------------------- */
+.overlay-card { border-radius: 0; border: 3px solid var(--ink); box-shadow: var(--shadow); }
+.quiz-score { border-radius: 0; border: 2.5px solid var(--ink); background: var(--accent) !important; box-shadow: var(--shadow-sm); }
+
+/* Overlay action buttons — square brutalist pair: a dark "confirm/done" and a
+   paper "cancel/clear", matching the controls behind the modal. */
+.overlay-done, .confirm-ok,
+.overlay-clear, .confirm-cancel {
+  border-radius: 0;
+  border: 2px solid var(--ink);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.overlay-done, .confirm-ok { background: var(--ink); color: var(--paper); }
+.overlay-clear, .confirm-cancel { background: var(--paper); color: var(--ink); }
+.overlay-done:hover, .confirm-ok:hover,
+.overlay-clear:hover, .confirm-cancel:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.overlay-done:active, .confirm-ok:active,
+.overlay-clear:active, .confirm-cancel:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+/* Library rows: full-width pick targets in the Library overlay. Flat 2px ink
+   outline with no resting shadow (a stack of shadowed rows reads as noise);
+   hover fills the signature yellow like a selected segmented toggle, active
+   uses a small hard press. */
+.library-row {
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  transition: transform .08s ease, background .08s ease, box-shadow .08s ease;
+}
+.library-row:hover:not(:disabled) { background: var(--accent); box-shadow: var(--shadow-sm); transform: translate(-1px, -1px); }
+.library-row:active:not(:disabled) { transform: translate(1px, 1px); box-shadow: none; }
+.library-row:disabled { opacity: .55; }
+
+/* Playback transport: glow the tile that is currently sounding. */
+.tile-slot.is-playing, .quiz-cell.is-playing {
+  position: relative;
+  z-index: 3;
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px var(--ink), 0 0 16px 4px rgba(255, 245, 109, .95);
+  transform: scale(1.06);
+  transition: transform .06s ease, box-shadow .06s ease;
+}

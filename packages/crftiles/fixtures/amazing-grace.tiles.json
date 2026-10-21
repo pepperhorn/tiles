@@ -1,0 +1,107 @@
+{
+  "part": "",
+  "title": "Amazing Grace",
+  "subtitle": "",
+  "composer": "Traditional (New Britain)",
+  "tempoStyle": "♩ = 80",
+  "songKey": {
+    "root": "G",
+    "quality": "major"
+  },
+  "tilesPerRow": "auto",
+  "size": 64,
+  "paper": "A4",
+  "orientation": "portrait",
+  "accidentalStyle": "sharp",
+  "bpm": 80,
+  "items": [
+    {
+      "type": "note",
+      "noteId": "D"
+    },
+    {
+      "type": "note",
+      "noteId": "G"
+    },
+    {
+      "type": "note",
+      "noteId": "A"
+    },
+    {
+      "type": "note",
+      "noteId": "B"
+    },
+    {
+      "type": "note",
+      "noteId": "C"
+    },
+    {
+      "type": "note",
+      "noteId": "D"
+    },
+    {
+      "type": "note",
+      "noteId": "D"
+    },
+    {
+      "type": "note",
+      "noteId": "C"
+    },
+    {
+      "type": "note",
+      "noteId": "B"
+    },
+    {
+      "type": "note",
+      "noteId": "A"
+    },
+    {
+      "type": "note",
+      "noteId": "G"
+    },
+    {
+      "type": "note",
+      "noteId": "G"
+    },
+    {
+      "type": "note",
+      "noteId": "A"
+    },
+    {
+      "type": "note",
+      "noteId": "B"
+    },
+    {
+      "type": "note",
+      "noteId": "C"
+    },
+    {
+      "type": "note",
+      "noteId": "D"
+    },
+    {
+      "type": "note",
+      "noteId": "D"
+    },
+    {
+      "type": "note",
+      "noteId": "D"
+    },
+    {
+      "type": "note",
+      "noteId": "C"
+    },
+    {
+      "type": "note",
+      "noteId": "B"
+    },
+    {
+      "type": "note",
+      "noteId": "A"
+    },
+    {
+      "type": "note",
+      "noteId": "G"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+/* crftiles stylesheet. Built into dist/style.css; every rule below (Tailwind's theme, preflight and utilities, the
+   app's brutalist system from src/brutalist.css, and the embed layout) is scoped under the root class by
+   scripts/scope-css.mjs. `:root` here means the embed's root element. Fonts are added as @fontsource imports by
+   scripts/finalize-css.mjs (dev: demo/main.tsx imports them). */
+
+/* Tailwind, with class detection limited to the components the embed renders. */
+@import 'tailwindcss' source(none);
+@source '../../../src/Tile.tsx';
+@source '../../../src/designer/SheetSurface.tsx';
+@source '../../../src/designer/HeaderZone.tsx';
+@source '../../../src/designer/tileRender.tsx';
+@source '../../../src/viewer/TempoControl.tsx';
+@source '../../../src/viewer/TileSizeControl.tsx';
+@source '../../../src/player/PlayerSheet.tsx';
+@source '../../../src/player/PlayerTransport.tsx';
+@source './CrfTiles.tsx';
+
+/* The app's tokens + brutalist component families (docs/DESIGN.md). */
+@import '../../../src/brutalist.css';
+
+/* ===== Embed root: isolate from the host's inherited text styles ===== */
+:root {
+  display: block;
+  position: relative;
+  isolation: isolate;
+  container: crftiles / inline-size;
+  min-width: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  text-indent: 0;
+  white-space: normal;
+  direction: ltr;
+}
+:root[data-chrome='full'], :root[data-chrome='minimal'] { border: 3px solid var(--ink); }
+:root[data-height='fixed'] { display: flex; flex-direction: column; overflow: hidden; }
+:root[data-height='fixed'] .crftiles-stage { flex: 1 1 auto; min-height: 0; overflow: auto; }
+
+/* ===== Toolbar: the viewer controls (transport / tempo / tile size) in one wrapping row ===== */
+.crftiles-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--paper);
+}
+.crftiles-bar .transport-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.crftiles-bar .transport-status { margin: 0; }
+.crftiles-tempo { flex: 1 1 10rem; max-width: 18rem; }
+.crftiles-spectrum { height: 10px; border-bottom: 3px solid var(--ink); } /* the app's 2px top rule + 5px colours, plus a 3px base rule */
+:root[data-chrome='none'] .crftiles-bar { border-bottom: 3px solid var(--ink); }
+
+/* ===== Stage: white workspace behind the fit-to-width page ===== */
+.crftiles-stage { background: #fff; padding: 1rem 1.25rem 1.5rem; }
+@container crftiles (max-width: 480px) {
+  .crftiles-bar { padding: 0.5rem 0.75rem; gap: 0.5rem 1rem; }
+  .crftiles-stage { padding: 0.5rem 0.75rem 1rem; }
+}
+
+/* ===== States ===== */
+.crftiles-loading, .crftiles-empty {
+  margin: 0;
+  padding: 1rem 0;
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  color: var(--ink);
+}
+.crftiles-error {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--ink);
+  border-left: 8px solid var(--t1);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+  font-size: 0.875rem;
+}

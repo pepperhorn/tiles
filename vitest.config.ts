@@ -1,7 +1,8 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  test: { environment: 'jsdom', globals: true, setupFiles: './src/test/setup.ts' },
+  // packages/* run their own suites (npm test in the package directory).
+  test: { environment: 'jsdom', globals: true, setupFiles: './src/test/setup.ts', exclude: [...configDefaults.exclude, 'packages/**'] },
 });

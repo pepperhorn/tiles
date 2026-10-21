@@ -1,0 +1,49 @@
+{
+  "name": "crftiles",
+  "version": "0.1.0",
+  "description": "An embeddable, read-only Note·Tiles sheet viewer and player for React: colourful note tiles with tempo, tile size and piano playback.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pepperhorn/tiles.git",
+    "directory": "packages/crftiles"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build && tsc -p tsconfig.build.json && node scripts/finalize-css.mjs && node scripts/finalize-dist.mjs",
+    "check": "tsc --noEmit -p .",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "prepack": "npm run build"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "dependencies": {
+    "@fontsource/poppins": "^5.2.7",
+    "@fontsource/space-mono": "^5.3.0",
+    "smplr": "^1.0.0"
+  }
+}

@@ -8,26 +8,34 @@ undo/redo; rendering is shared so the on-screen sheet and exports stay identical
 
 This app has a deliberate **neo-brutalist** visual language. **Any new component,
 button, or control MUST follow `docs/DESIGN.md`** and reuse the existing style
-families in `src/index.css` — square corners, `var(--ink)` borders, hard offset
+families in `src/brutalist.css` — square corners, `var(--ink)` borders, hard offset
 shadows (`--shadow` / `--shadow-sm`), token colours, and the standard hover/active
 press.
 
 When adding UI:
 
 1. Read `docs/DESIGN.md` first and pick the matching button/input/overlay family.
-2. Add your element's class to that family's selector list in `index.css` (or nest
+2. Add your element's class to that family's selector list in `brutalist.css` (or nest
    it inside an already-styled container, e.g. `.designer-toolbar`) — **do not**
    ship one-off Tailwind like `rounded-lg border shadow-sm`, which looks foreign
    next to the brutalist controls.
 3. Run the new-component checklist at the bottom of `docs/DESIGN.md`.
-4. If a genuinely new pattern is needed, add it to `index.css` as a named family
+4. If a genuinely new pattern is needed, add it to `brutalist.css` as a named family
    **and document it in `docs/DESIGN.md`** so the next addition can reuse it.
 
 ## Working in this repo
 
 - `npm test` (Vitest) · `npm run lint` (ESLint) · `npm run build` (tsc + Vite).
 - Keep changes covered by tests; the suite must stay green before a PR.
-- Tokens and the brutalist style blocks live in `src/index.css` (`:root` + labelled
+- Tokens and the brutalist style blocks live in `src/brutalist.css` (`:root` + labelled
   sections). The architecture/feature spec is in
   `docs/superpowers/specs/2026-06-20-dots-system-react-app-design.md`.
 - Data formats (tiles JSON + share-link URL encoding) are documented in `docs/FORMATS.md`.
+- `src/index.css` only holds the app's imports (Tailwind, fonts); the tokens and style
+  families are in `src/brutalist.css`, which the embeddable package also builds from.
+- `packages/crftiles/` is the embeddable read-only viewer/player (npm `crftiles`). It
+  bundles `src/player/{PlayerSheet,PlayerTransport,useSheetPlayback}`, the viewer
+  controls and the shared sheet rendering, scoped under `.crftiles`. It has its own
+  `npm test` / `npm run lint` / `npm run build` (run `npm ci` at the repo root first);
+  the root suite excludes it. Never import export/PDF code (jspdf, html2canvas) or the
+  crf-admin library into anything it renders: `scripts/finalize-dist.mjs` fails the build.
