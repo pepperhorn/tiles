@@ -1,6 +1,6 @@
 {
   "name": "crftiles",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An embeddable, read-only Note·Tiles sheet viewer and player for React: colourful note tiles with tempo, tile size and piano playback.",
   "license": "MIT",
   "type": "module",

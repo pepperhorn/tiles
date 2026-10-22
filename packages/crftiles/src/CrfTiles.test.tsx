@@ -126,6 +126,6 @@ test('className, height and the exports', () => {
   expect(root).toHaveAttribute('data-height', 'fixed');
   expect(root).toHaveAccessibleName('Song');
   expect(CrfTilesDefault).toBe(CrfTiles);
-  expect(version).toBe('0.1.0');
+  expect(version).toBe('0.1.1');
   expect(parseSheetJson(JSON.stringify(sheet)).items).toHaveLength(sheet.items.length);
 });

@@ -52,7 +52,9 @@ function silentEngine(): Engine {
   return { ctx, player: { start: () => {}, stop: () => {} }, silent: true };
 }
 
-type Engine = { silent?: boolean; ctx: AudioContext; player: { start: (o: { note: number; time: number; duration: number; velocity?: number }) => void; stop: () => void } };
+// smplr's start() returns a StopFn that cancels the note if it is still queued, or stops it if it is sounding.
+type NoteStop = (time?: number) => void;
+type Engine = { silent?: boolean; ctx: AudioContext; player: { start: (o: { note: number; time: number; duration: number; velocity?: number }) => NoteStop | void; stop: () => void } };
 
 // A short percussive metronome tick synthesised on the shared AudioContext — no
 // extra sample to load. Scheduled at an absolute ctx time so it stays on the
@@ -83,6 +85,7 @@ export function usePiano(options: PianoOptions = {}) {
   const engineRef = useRef<Engine | null>(null);
   const timers = useRef<number[]>([]);
   const clicks = useRef<OscillatorNode[]>([]);
+  const noteStops = useRef<NoteStop[]>([]);
   const looping = useRef(false);
   // Bumped by stop() and by each new playSequence; a play started before an
   // await must bail if the token moved on while it was suspended.
@@ -96,6 +99,14 @@ export function usePiano(options: PianoOptions = {}) {
   const clearClicks = () => {
     clicks.current.forEach(o => { try { o.stop(); } catch { /* already stopped */ } });
     clicks.current = [];
+  };
+  // Silence the piano: sounding voices AND notes smplr has queued ahead of time.
+  // smplr 1.x holds notes beyond its 200ms lookahead in a scheduler queue that a
+  // bare player.stop() never touches, so each note's own StopFn must cancel it.
+  const silenceNotes = () => {
+    noteStops.current.forEach(s => { try { s(); } catch { /* already gone */ } });
+    noteStops.current = [];
+    engineRef.current?.player.stop();
   };
 
   const ensure = useCallback(async (): Promise<Engine> => {
@@ -144,7 +155,7 @@ export function usePiano(options: PianoOptions = {}) {
     if (playToken.current !== token) return; // stop()/another play fired during the load await
     if (ctx.state === 'suspended') await ctx.resume();
     if (playToken.current !== token) return; // ...or during the resume await
-    player.stop();
+    silenceNotes();
     clearTimers();
     clearClicks();
     looping.current = !!opts.loop;
@@ -156,7 +167,10 @@ export function usePiano(options: PianoOptions = {}) {
       let t = startAt;
       if (withCountIn) for (let i = 0; i < countIn; i++) { if (!silent) clicks.current.push(scheduleClick(ctx, t)); t += beatDur; }
       for (const ev of events) {
-        if (ev.midi != null) player.start({ note: ev.midi, time: t, duration: ev.dur * 0.9, velocity: 92 });
+        if (ev.midi != null) {
+          const s = player.start({ note: ev.midi, time: t, duration: ev.dur * 0.9, velocity: 92 });
+          if (typeof s === 'function') noteStops.current.push(s);
+        }
         if (opts.metronome && !silent) clicks.current.push(scheduleClick(ctx, t));
         if (onStep) {
           const at = Math.max(0, (t - ctx.currentTime) * 1000);
@@ -171,7 +185,8 @@ export function usePiano(options: PianoOptions = {}) {
     const arm = () => {
       const ms = Math.max(0, (end - ctx.currentTime) * 1000);
       timers.current.push(window.setTimeout(() => {
-        if (looping.current) { end = runOnce(ctx.currentTime + 0.06, false); arm(); }
+        // The previous pass has fully played out, so its note StopFns can go.
+        if (looping.current) { noteStops.current = []; end = runOnce(ctx.currentTime + 0.06, false); arm(); }
         else if (onStep) onStep(null);
       }, ms));
     };
@@ -181,7 +196,7 @@ export function usePiano(options: PianoOptions = {}) {
   const stop = useCallback(() => {
     playToken.current++; // invalidate any play still awaiting its soundfont load
     looping.current = false;
-    engineRef.current?.player.stop();
+    silenceNotes();
     clearTimers();
     clearClicks();
   }, []);
