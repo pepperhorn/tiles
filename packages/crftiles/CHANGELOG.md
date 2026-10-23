@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1
+
+### Fixed
+
+- Stop now silences the piano. smplr 1.x queues notes more than 200ms ahead and its `stop()` only ends notes already
+  sounding, so after Stop the cursor halted but the rest of the sheet kept playing. Each scheduled note is now
+  cancelled through its own stop handle.
+
 ## 0.1.0
 
 First release: the Note·Tiles read-only sheet viewer/player as an embeddable React component.

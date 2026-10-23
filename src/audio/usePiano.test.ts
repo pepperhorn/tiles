@@ -35,7 +35,7 @@ class FakeAudioContext {
 const lastCtx = () => contexts[contexts.length - 1];
 
 beforeEach(() => {
-  startSpy.mockClear();
+  startSpy.mockReset();
   stopSpy.mockClear();
   contexts.length = 0;
   vi.stubGlobal('AudioContext', FakeAudioContext);
@@ -102,4 +102,20 @@ test('stop() during the load await cancels playback that had not started', async
   });
   // The play resolved past its await, saw the token bumped, and bailed.
   expect(startSpy).not.toHaveBeenCalled();
+});
+
+test('stop() cancels notes smplr has queued but not yet sounded', async () => {
+  // smplr 1.x parks notes more than its 200ms lookahead ahead in a scheduler
+  // queue; a bare player.stop() only stops sounding voices, so those queued
+  // notes would still play. Each start() returns a StopFn that cancels its note.
+  const noteStops: Array<ReturnType<typeof vi.fn>> = [];
+  startSpy.mockImplementation(() => { const s = vi.fn(); noteStops.push(s); return s; });
+  const { result } = renderHook(() => usePiano());
+  await act(async () => {
+    await result.current.playSequence([{ midi: 60, dur: 0.5 }, { midi: 62, dur: 0.5 }, { midi: 64, dur: 0.5 }]);
+  });
+  expect(noteStops).toHaveLength(3);
+
+  act(() => { result.current.stop(); });
+  noteStops.forEach(s => expect(s).toHaveBeenCalled());
 });
