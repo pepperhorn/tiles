@@ -24,3 +24,6 @@ tmp/
 *.sln
 *.sw?
 .gstack/
+
+# Local agent worktrees
+.worktrees/
